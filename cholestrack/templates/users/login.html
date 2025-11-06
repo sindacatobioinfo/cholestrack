@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <style>
+        /* Estilo para centralizar e dar destaque ao box */
+        .login-container {
+            max-width: 400px;
+            margin: 80px auto;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff; /* Fundo branco para o box */
+            font-family: Arial, sans-serif;
+        }
+
+        /* Estilo para o cabeçalho (logo/título) */
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h2 {
+            color: #004080; /* Azul Marinho (Cor corporativa/científica) */
+            margin-top: 0;
+            font-weight: 600;
+        }
+
+        /* Estilo dos campos do formulário */
+        .login-container p {
+            margin-bottom: 15px;
+        }
+
+        .login-container label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .login-container input[type="text"], 
+        .login-container input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box; /* Garante que o padding não aumente o tamanho total */
+            font-size: 16px;
+        }
+
+        /* Estilo para o botão de Login */
+        .login-button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff; /* Azul primário */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        .login-button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Estilo para mensagens de erro */
+        .error-message {
+            color: #dc3545; /* Vermelho forte para erro */
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Estilo para o link de cadastro */
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        
+        /* Estilo do Rodapé (BioHub/Burlo Garofolo) */
+        .login-footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #6c757d;
+            font-size: 12px;
+        }
+    </style>
+
+    <div class="login-container">
+        <div class="login-header">
+            <h2>Cholestrack Login</h2>
+            <p style="color: #6c757d; font-size: 14px;">Acesso Restrito - BioHub Solutions</p>
+        </div>
+
+        {# Exibe erros de login (ex: usuário/senha inválidos) #}
+        {% if form.errors %}
+            <div class="error-message">
+                <p>Seu nome de usuário e/ou senha não estão corretos. Tente novamente.</p>
+            </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            
+            {# Renderiza o formulário de login (username e password) #}
+            {{ form.as_p }}
+            
+            {# Este campo é invisível e garante que o usuário volte para a página original após o login #}
+            <input type="hidden" name="next" value="{{ next }}">
+
+            <button type="submit" class="login-button">
+                Entrar
+            </button>
+        </form>
+        
+        <div class="register-link">
+            Não tem conta? <a href="{% url 'register' %}" style="color: #007bff; text-decoration: none; font-weight: 600;">Cadastre-se aqui</a>
+        </div>
+        
+        <div class="login-footer">
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+            Desenvolvido pelo BioHub Solutions - Burlo Garofolo
+        </div>
+    </div>
+{% endblock %}

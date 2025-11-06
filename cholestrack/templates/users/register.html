@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div style="max-width: 400px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
+        <h2>Cadastro - Cholestrack</h2>
+
+        {# Adiciona um bloco para erros não específicos de campo (ex: senha muito fraca) #}
+        {% if form.non_field_errors %}
+            <div style="color: red; margin-bottom: 15px;">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            
+            {# Renderiza o formulário com o campo e seus respectivos erros #}
+            {{ form.as_p }}
+            
+            <button type="submit" 
+                    style="background-color: #4CAF50; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer;">
+                Registrar
+            </button>
+        </form>
+        <p style="margin-top: 20px;">Já tem conta? <a href="{% url 'login' %}">Faça **login aqui**</a></p>
+    </div>
+{% endblock %}

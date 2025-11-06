@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cholestrack - BioHub Solutions</title>
+    
+    <style>
+        /* Estilos Básicos para o Cholestrack */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f9; /* Fundo suave */
+            color: #333;
+        }
+
+        /* Estilo da Barra de Navegação (Navbar) */
+        .navbar {
+            background-color: #004080; /* Azul Marinho (Corporate/Científico) */
+            padding: 15px 30px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-brand {
+            font-size: 1.5em;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
+        }
+        
+        .navbar-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            margin-left: 10px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .navbar-links a:hover {
+            background-color: #0056b3; /* Azul mais escuro no hover */
+        }
+        
+        .navbar-links .logout-link {
+            background-color: #dc3545; /* Botão Logout em Vermelho */
+        }
+
+        .navbar-links .logout-link:hover {
+            background-color: #c82333;
+        }
+        
+        /* Estilo do Conteúdo Principal */
+        .content {
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="{% url 'home' %}" class="navbar-brand">
+                Cholestrack
+            </a>
+            
+            <div class="navbar-links">
+                {% if user.is_authenticated %}
+                    <span style="margin-right: 20px;">Bem-vindo, {{ user.username }}!</span>
+                    <a href="{% url 'home' %}">Dashboard</a>        
+                    <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="logout-link" 
+                                style="background: none; border: none; color: white; cursor: pointer; padding: 8px 15px; margin-left: 10px; border-radius: 4px; background-color: #dc3545;">
+                            Sair (Logout)
+                        </button>
+                    </form>
+        
+                {% else %}
+                    <a href="{% url 'login' %}">Login</a>
+                    <a href="{% url 'register' %}">Cadastrar</a>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
+    <main class="content">
+        {% block content %}
+        
+        {% endblock %}
+        
+        {% if message %}
+            <div style="margin-top: 20px; padding: 10px; border: 1px solid #007bff; background-color: #e9f5ff; border-radius: 5px; color: #004080;">
+                {{ message }}
+            </div>
+        {% endif %}
+    </main>
+</body>
+</html>
