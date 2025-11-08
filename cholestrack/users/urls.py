@@ -1,19 +1,26 @@
 # users/urls.py
 from django.urls import path
 from . import views
-from django.contrib.auth import views as auth_views # Importa as views nativas de autenticação
+from django.contrib.auth.views import LogoutView
+from .views import CholestrackLoginView
+
+# O namespace é importante para referenciar as URLs como 'users:home'
+app_name = 'users'
 
 urlpatterns = [
-    # 1. Rota de Home/Dashboard
-    path('', views.home, name='home'), 
-    
-    # 2. Rota de Cadastro (Register)
+    # Rotas de Autenticação
     path('register/', views.register, name='register'),
     
-    # 3. Rota de Login (Usando a view nativa do Django)
-    # Dizemos ao LoginView para usar nosso template específico: 'users/login.html'
-    path('login/', auth_views.LoginView.as_view(template_name='users/login.html'), name='login'),
+    # CORREÇÃO: Usando a View de Classe do Django, apontando para o seu template
+    # O .as_view() é necessário para classes
+    path('login/', CholestrackLoginView.as_view(), name='login'),    
+    # A view nativa do Django é recomendada para Logout por questões de segurança (POST)
+    path('logout/', LogoutView.as_view(next_page='/login/'), name='logout'), 
     
-    # 4. Rota de Logout (Usando a view nativa do Django)
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'), 
+    # Rota Principal (Dashboard pós-login)
+    path('home/', views.home, name='home'),
+    
+    # Rota de Download (Segura - usa o ID da localização, que é o 'file_location_id' da View)
+    # Note que a URL utiliza um inteiro (int) como parâmetro, que será passado para a função download_file
+    path('download/<int:file_location_id>/', views.download_file, name='download_file'),
 ]

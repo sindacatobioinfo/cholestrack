@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <style>
+        /* Estilo para centralizar e dar destaque ao box */
+        .login-container {
+            max-width: 400px;
+            margin: 80px auto;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff; /* Fundo branco para o box */
+            font-family: Arial, sans-serif;
+        }
+
+        /* Estilo para o cabeçalho (logo/título) */
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h2 {
+            color: #004080; /* Azul Marinho (Cor corporativa/científica) */
+            margin-top: 0;
+            font-weight: 600;
+        }
+
+        /* Estilo dos campos do formulário */
+        .login-container p {
+            margin-bottom: 15px;
+        }
+
+        .login-container label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .login-container input[type="text"], 
+        .login-container input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box; /* Garante que o padding não aumente o tamanho total */
+            font-size: 16px;
+        }
+
+        /* Estilo para o botão de Login */
+        .login-button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff; /* Azul primário */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        .login-button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Estilo para mensagens de erro */
+        .error-message {
+            color: #dc3545; /* Vermelho forte para erro */
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Estilo para o link de cadastro */
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        
+        /* Estilo do Rodapé (BioHub/Burlo Garofolo) */
+        .login-footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #6c757d;
+            font-size: 12px;
+        }
+    </style>
+
+    <div class="login-container">
+        <div class="login-header">
+            <h2>Cholestrack Login</h2>
+            <p style="color: #6c757d; font-size: 14px;">Restrict Acces - Lab D'adamo</p>
+        </div>
+
+        {# Exibe erros de login (ex: usuário/senha inválidos) #}
+        {% if form.errors %}
+            <div class="error-message">
+                <p>Your username and/or password is wrong. Try again.</p>
+            </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            
+            {# Renderiza o formulário de login (username e password) #}
+            {{ form.as_p }}
+            
+            {# Este campo é invisível e garante que o usuário volte para a página original após o login #}
+            <input type="hidden" name="next" value="{{ next }}">
+
+            <button type="submit" class="login-button">
+                Enter
+            </button>
+        </form>
+        
+        <div class="register-link">
+            Create account? <a href="{% url 'register' %}" style="color: #007bff; text-decoration: none; font-weight: 600;">Register</a>
+        </div>
+        
+        <div class="login-footer">
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+            Developed by Lab D'adamo - Burlo Garofolo
+        </div>
+    </div>
+{% endblock %}{% extends "base.html" %}
+
+{% block content %}
+<style>
+/* Estilo para centralizar e garantir o tamanho compacto (400px) /
+.login-container {
+max-width: 400px;
+width: 90%; / Garante que ocupe 90% da tela em telas pequenas, mas não mais que 400px /
+margin: 80px auto; / Centraliza vertical e horizontalmente /
+padding: 30px;
+border-radius: 10px;
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+background-color: #ffffff;
+font-family: Arial, sans-serif;
+box-sizing: border-box; / Garante que padding não estique o elemento */
+}
+
+    /* Estilo do Cabeçalho e Título */
+    .login-header {
+        text-align: center;
+        margin-bottom: 25px;
+    }
+
+    .login-header h2 {
+        color: #004080;
+        margin: 0;
+        font-size: 24px;
+    }
+
+    /* Estilização dos Campos de Formulário ({{ form.as_p }}) */
+    .login-container p {
+        margin-bottom: 15px;
+        text-align: left; /* Garante que o texto da label não fique centralizado */
+    }
+
+    .login-container label {
+        display: block;
+        margin-bottom: 5px;
+        color: #333;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    /* CORREÇÃO CRÍTICA: Estiliza os campos de input gerados pelo Django para serem visíveis e em bloco */
+    .login-container input[type="text"], 
+    .login-container input[type="password"],
+    .login-container input[type="email"], /* Adicionado 'email' para maior compatibilidade */
+    /* Seletores mais específicos para os IDs padrão do formulário de auth do Django */
+    .login-container input#id_username,
+    .login-container input#id_email,
+    .login-container input#id_password { 
+        width: 100%; 
+        padding: 10px 12px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box; /* Essencial para manter a largura dentro do limite */
+        font-size: 16px;
+        display: block; /* Garante que ocupe uma linha inteira */
+    }
+    
+    /* Estiliza erros de campo */
+    .login-container .errorlist {
+        list-style: none;
+        color: #dc3545;
+        font-size: 12px;
+        margin-top: 5px;
+        padding: 0;
+    }
+
+    /* Estilo para o botão de Login */
+    .login-button {
+        width: 100%;
+        padding: 12px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        margin-top: 20px; /* Adiciona espaço acima do botão */
+        transition: background-color 0.3s;
+    }
+
+    .login-button:hover {
+        background-color: #0056b3;
+    }
+
+    /* Estilo para mensagens de erro gerais */
+    .error-message {
+        color: #dc3545; 
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    /* Estilo do link de cadastro e rodapé */
+    .register-link, .login-footer {
+        text-align: center;
+        font-size: 14px;
+        margin-top: 15px;
+    }
+    
+    .login-footer {
+        margin-top: 30px;
+        color: #6c757d;
+        font-size: 12px;
+    }
+
+    /* Estilo para o separador */
+    .login-footer hr {
+        border: 0; 
+        border-top: 1px solid #eee; 
+        margin: 15px auto;
+        width: 80%; /* Linha divisória menor e centralizada */
+    }
+</style>
+
+<div class="login-container">
+    <div class="login-header">
+        <h2>Cholestrack Login</h2>
+        <p style="color: #6c757d; font-size: 14px; margin-top: 5px;">Acesso Restrito - Lab D'adamo</p>
+    </div>
+
+    {# Exibe erros gerais (como credenciais inválidas) #}
+    {% if form.non_field_errors %}
+        <div class="error-message">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        
+        {# Renderiza o formulário de login (username e password) com o layout corrigido pelo CSS acima #}
+        {{ form.as_p }}
+        
+        {# Campo invisível para redirecionamento após o login #}
+        <input type="hidden" name="next" value="{{ next }}">
+
+        <button type="submit" class="login-button">
+            Entrar
+        </button>
+    </form>
+    
+    <div class="register-link">
+        Não tem conta? <a href="{% url 'users:register' %}" style="color: #007bff; text-decoration: none; font-weight: 600;">Crie uma conta</a>
+    </div>
+    
+    <div class="login-footer">
+        <hr>
+        Desenvolvido por Lab D'adamo - Burlo Garofolo
+    </div>
+</div>
+
+
+{% endblock %}

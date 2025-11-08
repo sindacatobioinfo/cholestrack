@@ -1,0 +1,6 @@
+/.venv
+/logs/
+/run/
+.env
+db.sqlite3
+create.sh

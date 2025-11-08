@@ -1,36 +1,76 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="en"> <!-- Alterado para 'en' -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cholestrack - BioHub Solutions</title>
+    <title>Cholestrack - IRCCS Materno Infantile Burlo Garofolo</title>
+    
+    <!-- Links de CSS (Tailwind, Bootstrap, Font Awesome) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     
     <style>
-        /* Estilos Básicos para o Cholestrack */
+        /* Estilos Básicos */
         body {
             font-family: 'Arial', sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f4f7f9; /* Fundo suave */
+            background-color: #f4f7f9; 
             color: #333;
         }
 
-        /* Estilo da Barra de Navegação (Navbar) */
+        /* Cabeçalho Burlo */
+        .burlo-header {
+            background-color: #f8f8f8;
+            padding: 10px 30px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .burlo-logo {
+            height: 60px;
+            margin-right: 20px;
+        }
+        
+        .burlo-logo-placeholder {
+            width: 60px;
+            height: 60px;
+            border: 1px solid #ccc;
+            background-color: #008080;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        .burlo-title h1 {
+            color: #008080;
+            font-size: 1.8em;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .burlo-title p {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin: 0;
+        }
+
+
+        /* Navbar */
         .navbar {
-            background-color: #004080; /* Azul Marinho (Corporate/Científico) */
+            background-color: #008080;
             padding: 15px 30px;
             color: white;
             display: flex;
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .navbar-brand {
-            font-size: 1.5em;
-            font-weight: bold;
-            text-decoration: none;
-            color: white;
         }
         
         .navbar-links a {
@@ -43,53 +83,69 @@
         }
 
         .navbar-links a:hover {
-            background-color: #0056b3; /* Azul mais escuro no hover */
+            background-color: #006666;
         }
         
         .navbar-links .logout-link {
-            background-color: #dc3545; /* Botão Logout em Vermelho */
+            background-color: #dc3545;
         }
 
         .navbar-links .logout-link:hover {
             background-color: #c82333;
         }
         
-        /* Estilo do Conteúdo Principal */
+        /* Estilo do Conteúdo Principal - MUDANÇA AQUI */
         .content {
             padding: 30px;
-            max-width: 1200px;
+            max-width: 95%; /* Alterado de 1200px para 95% */
             margin: 0 auto;
         }
     </style>
 </head>
 <body>
     <header>
+        <div class="burlo-header">
+            <div class="burlo-logo-placeholder">B</div> 
+            <div class="burlo-title">
+                <h1>IRCCS materno infantile Burlo Garofolo</h1>
+                <p>Regione Friuli Venezia Giulia</p>
+            </div>
+        </div>
+
         <nav class="navbar">
-            <a href="{% url 'home' %}" class="navbar-brand">
-                Cholestrack
-            </a>
+            <div class="choltrack">
+                <div class="burlo-title">
+                    <h1 style="color:white">Cholestrack</h1>
+                    <p style="color: white;">Lab D'adamo</p>
+                </div>
+            </div>
+
             
             <div class="navbar-links">
                 {% if user.is_authenticated %}
-                    <span style="margin-right: 20px;">Bem-vindo, {{ user.username }}!</span>
-                    <a href="{% url 'home' %}">Dashboard</a>        
-                    <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                    <!-- TEXTO TRADUZIDO -->
+                    <span style="margin-right: 20px; font-weight: bold;">Hello, {{ user.username }}!</span> 
+                    <a href="{% url 'users:home' %}">Dashboard</a>
+                    
+                    <form method="post" action="{% url 'users:logout' %}" style="display: inline;">
                         {% csrf_token %}
                         <button type="submit" class="logout-link" 
                                 style="background: none; border: none; color: white; cursor: pointer; padding: 8px 15px; margin-left: 10px; border-radius: 4px; background-color: #dc3545;">
-                            Sair (Logout)
+                            Logout <!-- TEXTO TRADUZIDO -->
                         </button>
                     </form>
-        
+                    
                 {% else %}
-                    <a href="{% url 'login' %}">Login</a>
-                    <a href="{% url 'register' %}">Cadastrar</a>
+                    <!-- TEXTO TRADUZIDO -->
+                    <a href="{% url 'users:login' %}">Login</a>
+                    <a href="{% url 'users:register' %}">Register</a>
                 {% endif %}
             </div>
-        </nav>
-    </header>
+        </nav>
+    </header>
 
     <main class="content">
+        <!-- O bloco content é onde home.html renderizará seu conteúdo -->
         {% block content %}
         
         {% endblock %}
@@ -100,5 +156,11 @@
             </div>
         {% endif %}
     </main>
+    
+    <!-- Dependências JavaScript do Bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
 </body>
 </html>

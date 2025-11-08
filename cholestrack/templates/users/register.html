@@ -1,29 +1,172 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div style="max-width: 400px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
-        <h2>Cadastro - Cholestrack</h2>
+<style>
+/* Estilo para centralizar e garantir o tamanho compacto (400px) */
+.login-container {
+max-width: 400px;
+width: 90%;
+margin: 80px auto;
+padding: 30px;
+border-radius: 10px;
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+background-color: #ffffff;
+font-family: Arial, sans-serif;
+box-sizing: border-box;
+}
 
-        {# Adiciona um bloco para erros não específicos de campo (ex: senha muito fraca) #}
-        {% if form.non_field_errors %}
-            <div style="color: red; margin-bottom: 15px;">
-                {% for error in form.non_field_errors %}
-                    <p>{{ error }}</p>
-                {% endfor %}
-            </div>
-        {% endif %}
+    /* Estilo do Cabeçalho e Título */
+    .login-header {
+        text-align: center;
+        margin-bottom: 25px;
+    }
 
-        <form method="post">
-            {% csrf_token %}
-            
-            {# Renderiza o formulário com o campo e seus respectivos erros #}
-            {{ form.as_p }}
-            
-            <button type="submit" 
-                    style="background-color: #4CAF50; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer;">
-                Registrar
-            </button>
-        </form>
-        <p style="margin-top: 20px;">Já tem conta? <a href="{% url 'login' %}">Faça **login aqui**</a></p>
+    .login-header h2 {
+        color: #004080;
+        margin: 0;
+        font-size: 24px;
+    }
+
+    /* --- GARANTIA DE VISIBILIDADE E LAYOUT DOS CAMPOS --- */
+    
+    /* OBRIGA os parágrafos (onde o form.as_p insere os campos) a serem visíveis */
+    .login-container p {
+        margin-bottom: 15px !important; 
+        text-align: left; 
+        display: block !important;
+    }
+
+    /* OBRIGA a label a ser visível */
+    .login-container label {
+        display: block !important;
+        margin-bottom: 5px !important;
+        color: #333 !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+    }
+
+    /* OBRIGA o input a ser visível, ter tamanho total e padding */
+    .login-container input[type="text"], 
+    .login-container input[type="password"],
+    .login-container input[type="email"],
+    /* Seletores por ID com !important para alta especificidade */
+    .login-container input#id_username,
+    .login-container input#id_email,
+    .login-container input#id_password1,
+    .login-container input#id_password2 { 
+        width: 100% !important; 
+        height: auto !important;
+        padding: 10px 12px !important;
+        border: 1px solid #ccc !important;
+        border-radius: 5px !important;
+        box-sizing: border-box !important; 
+        font-size: 16px !important;
+        display: block !important; 
+        visibility: visible !important;
+        opacity: 1 !important;
+        background-color: white !important; 
+    }
+    
+    /* Estiliza erros de campo */
+    .login-container .errorlist {
+        list-style: none;
+        color: #dc3545;
+        font-size: 12px;
+        margin-top: 5px;
+        padding: 0;
+    }
+
+    /* Estilo para o botão de Registro (Verde) */
+    .register-button {
+        width: 100%;
+        padding: 12px;
+        background-color: #28a745; 
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        margin-top: 20px; 
+        transition: background-color 0.3s;
+    }
+
+    .register-button:hover {
+        background-color: #1e7e34;
+    }
+
+    /* Estilo para mensagens de erro gerais */
+    .error-message {
+        color: #dc3545; 
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    /* Estilo do link de login e rodapé */
+    .login-link, .login-footer {
+        text-align: center;
+        font-size: 14px;
+        margin-top: 15px;
+    }
+    
+    .login-footer {
+        margin-top: 30px;
+        color: #6c757d;
+        font-size: 12px;
+    }
+
+    /* Estilo para o separador */
+    .login-footer hr {
+        border: 0; 
+        border-top: 1px solid #eee; 
+        margin: 15px auto;
+        width: 80%; 
+    }
+</style>
+
+<div class="login-container">
+    <div class="login-header">
+        <h2>Registro Cholestrack</h2>
+        <p style="color: #6c757d; font-size: 14px; margin-top: 5px;">Crie sua conta para acesso ao sistema</p>
     </div>
+
+    {# Exibe erros de formulário #}
+    {% if form.non_field_errors %}
+        <div class="error-message">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        
+        <p style="font-size: 14px; color: #004080; font-weight: bold; margin-bottom: 20px; text-align: center;">
+            Preencha os dados abaixo:
+        </p>
+        
+        {# RENDERIZA OS CAMPOS DO FORMULÁRIO DE REGISTRO #}
+        {{ form.as_p }}
+        
+        <button type="submit" class="register-button">
+            Registrar
+        </button>
+    </form>
+    
+    <div class="login-link">
+        Já tem uma conta? <a href="{% url 'users:login' %}" style="color: #007bff; text-decoration: none; font-weight: 600;">Faça Login</a>
+    </div>
+    
+    <div class="login-footer">
+        <hr>
+        Desenvolvido por Lab D'adamo - Burlo Garofolo
+    </div>
+</div>
+
+
 {% endblock %}
