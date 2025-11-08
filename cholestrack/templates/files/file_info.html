@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* File info page styling */
+    .file-info-container {
+        max-width: 900px;
+        margin: 30px auto;
+    }
+
+    .file-info-header {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 10px 10px 0 0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .file-info-header h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .file-info-header p {
+        margin: 10px 0 0 0;
+        font-size: 14px;
+        opacity: 0.9;
+    }
+
+    .file-type-icon {
+        font-size: 36px;
+        display: inline-block;
+    }
+
+    .info-card {
+        background-color: white;
+        border-radius: 0 0 10px 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+    }
+
+    .info-section {
+        margin-bottom: 30px;
+    }
+
+    .info-section h3 {
+        color: #17a2b8;
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #17a2b8;
+    }
+
+    .info-row {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 15px;
+        padding: 12px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #555;
+        font-size: 14px;
+    }
+
+    .info-value {
+        color: #333;
+        font-size: 14px;
+        word-break: break-all;
+    }
+
+    .info-value code {
+        background-color: #f8f9fa;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        color: #e83e8c;
+    }
+
+    .badge-file-type {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+    }
+
+    .file-vcf { background-color: #28a745; color: white; }
+    .file-bam { background-color: #007bff; color: white; }
+    .file-fastq { background-color: #ffc107; color: #333; }
+    .file-pdf { background-color: #dc3545; color: white; }
+    .file-tsv { background-color: #6c757d; color: white; }
+    .file-cram { background-color: #17a2b8; color: white; }
+
+    .badge-data-type {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-weight: 600;
+        font-size: 12px;
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .badge-server {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-weight: 600;
+        font-size: 12px;
+        background-color: #6610f2;
+        color: white;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px solid #e9ecef;
+    }
+
+    .btn-download {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-download:hover {
+        background-color: #218838;
+    }
+
+    .btn-back {
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-back:hover {
+        background-color: #5a6268;
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-patient {
+        background-color: #17a2b8;
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-patient:hover {
+        background-color: #138496;
+        color: white;
+        text-decoration: none;
+    }
+
+    .checksum-box {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        border-left: 4px solid #17a2b8;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        word-break: break-all;
+        color: #495057;
+    }
+
+    .alert-info {
+        background-color: #d1ecf1;
+        border-left: 4px solid #0c5460;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+
+    .alert-info p {
+        margin: 0;
+        color: #0c5460;
+        font-size: 14px;
+    }
+
+    .timestamp {
+        color: #6c757d;
+        font-size: 13px;
+        font-style: italic;
+    }
+</style>
+
+<div class="file-info-container">
+    <div class="file-info-header">
+        <h1>
+            <span class="file-type-icon"><i class="fas fa-file-alt"></i></span>
+            File Information
+        </h1>
+        <p>Detailed metadata for genomic analysis file</p>
+    </div>
+
+    <div class="info-card">
+        <div class="alert-info">
+            <p>
+                <i class="fas fa-info-circle"></i>
+                <strong>Security Note:</strong> Internal file paths are kept confidential.
+                All file access is mediated through secure download endpoints.
+            </p>
+        </div>
+
+        <!-- File Identification Section -->
+        <div class="info-section">
+            <h3><i class="fas fa-fingerprint"></i> File Identification</h3>
+
+            <div class="info-row">
+                <div class="info-label">File Type:</div>
+                <div class="info-value">
+                    <span class="badge-file-type file-{{ file_location.file_type|lower }}">
+                        {{ file_location.file_type }}
+                    </span>
+                    - {{ file_location.get_file_type_display }}
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Data Type:</div>
+                <div class="info-value">
+                    <span class="badge-data-type">{{ file_location.get_data_type_display }}</span>
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Sample ID:</div>
+                <div class="info-value"><code>{{ file_location.sample_id }}</code></div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Project Name:</div>
+                <div class="info-value"><strong>{{ file_location.project_name }}</strong></div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Batch ID:</div>
+                <div class="info-value"><code>{{ file_location.batch_id }}</code></div>
+            </div>
+        </div>
+
+        <!-- Patient Information Section -->
+        <div class="info-section">
+            <h3><i class="fas fa-user-injured"></i> Associated Patient</h3>
+
+            <div class="info-row">
+                <div class="info-label">Patient ID:</div>
+                <div class="info-value"><code>{{ file_location.patient.patient_id }}</code></div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Patient Name:</div>
+                <div class="info-value">{{ file_location.patient.name|default:"Not Informed" }}</div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Main Result:</div>
+                <div class="info-value">{{ file_location.patient.main_exome_result|default:"Awaiting Analysis" }}</div>
+            </div>
+        </div>
+
+        <!-- Storage Information Section -->
+        <div class="info-section">
+            <h3><i class="fas fa-server"></i> Storage Information</h3>
+
+            <div class="info-row">
+                <div class="info-label">Server Location:</div>
+                <div class="info-value">
+                    <span class="badge-server">{{ file_location.server_name }}</span>
+                    - {{ file_location.get_server_name_display }}
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">File Size:</div>
+                <div class="info-value">
+                    {% if file_location.file_size_mb %}
+                        <strong>{{ file_location.file_size_mb|floatformat:2 }} MB</strong>
+                    {% else %}
+                        <span class="text-muted">Not specified</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">File Status:</div>
+                <div class="info-value">
+                    {% if file_location.is_active %}
+                        <span style="color: #28a745; font-weight: 600;">
+                            <i class="fas fa-check-circle"></i> Active
+                        </span>
+                    {% else %}
+                        <span style="color: #dc3545; font-weight: 600;">
+                            <i class="fas fa-times-circle"></i> Inactive
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- File Integrity Section -->
+        {% if file_location.checksum %}
+        <div class="info-section">
+            <h3><i class="fas fa-shield-alt"></i> File Integrity</h3>
+
+            <div class="info-row">
+                <div class="info-label">MD5 Checksum:</div>
+                <div class="info-value">
+                    <div class="checksum-box">{{ file_location.checksum }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Metadata Section -->
+        <div class="info-section">
+            <h3><i class="fas fa-clock"></i> Metadata</h3>
+
+            <div class="info-row">
+                <div class="info-label">Uploaded By:</div>
+                <div class="info-value">
+                    {% if file_location.uploaded_by %}
+                        <i class="fas fa-user"></i> {{ file_location.uploaded_by.username }}
+                    {% else %}
+                        <span class="text-muted">Unknown</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Upload Date:</div>
+                <div class="info-value">
+                    <span class="timestamp">{{ file_location.created_at|date:"F d, Y - H:i:s" }}</span>
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Last Modified:</div>
+                <div class="info-value">
+                    <span class="timestamp">{{ file_location.updated_at|date:"F d, Y - H:i:s" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <form method="post" action="{% url 'files:download_file' file_location_id=file_location.id %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="btn-download">
+                    <i class="fas fa-download"></i> Download File
+                </button>
+            </form>
+
+            <a href="{% url 'samples:sample_detail' patient_id=file_location.patient.patient_id %}" class="btn-patient">
+                <i class="fas fa-user-injured"></i> View Patient Details
+            </a>
+
+            <a href="{% url 'samples:sample_list' %}" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Back to Sample List
+            </a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
