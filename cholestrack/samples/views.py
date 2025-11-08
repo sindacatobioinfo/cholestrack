@@ -105,3 +105,60 @@ def patient_create(request):
         'title': 'Create New Patient Record'
     }
     return render(request, 'samples/patient_create.html', context)
+
+
+@login_required
+def patient_edit(request, patient_id):
+    """
+    View for editing an existing patient record.
+    Updates patient information and clinical data.
+    """
+    try:
+        patient = Patient.objects.get(patient_id=patient_id)
+    except Patient.DoesNotExist:
+        messages.error(request, 'Patient not found.')
+        return redirect('samples:sample_list')
+
+    if request.method == 'POST':
+        form = PatientForm(request.POST, instance=patient)
+        if form.is_valid():
+            patient = form.save()
+            messages.success(request, f'Patient {patient.patient_id} has been updated successfully.')
+            return redirect('samples:sample_detail', patient_id=patient.patient_id)
+    else:
+        form = PatientForm(instance=patient)
+
+    context = {
+        'form': form,
+        'patient': patient,
+        'title': 'Edit Patient Record'
+    }
+    return render(request, 'samples/patient_edit.html', context)
+
+
+@login_required
+def patient_delete(request, patient_id):
+    """
+    View for deleting a patient record.
+    Requires confirmation before deletion.
+    """
+    try:
+        patient = Patient.objects.get(patient_id=patient_id)
+    except Patient.DoesNotExist:
+        messages.error(request, 'Patient not found.')
+        return redirect('samples:sample_list')
+
+    if request.method == 'POST':
+        patient_id_display = patient.patient_id
+        patient.delete()
+        messages.success(request, f'Patient {patient_id_display} has been deleted successfully.')
+        return redirect('samples:sample_list')
+
+    # Count associated files
+    file_count = patient.file_locations.filter(is_active=True).count()
+
+    context = {
+        'patient': patient,
+        'file_count': file_count,
+    }
+    return render(request, 'samples/patient_delete_confirm.html', context)

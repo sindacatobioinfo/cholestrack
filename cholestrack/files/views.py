@@ -154,3 +154,63 @@ def file_upload(request):
         'title': 'Register Analysis File Location'
     }
     return render(request, 'files/file_upload.html', context)
+
+
+@login_required
+def file_edit(request, file_location_id):
+    """
+    View for editing file location metadata.
+    Allows updating file information without changing the actual file.
+    """
+    try:
+        file_location = AnalysisFileLocation.objects.select_related('patient').get(
+            id=file_location_id,
+            is_active=True
+        )
+    except AnalysisFileLocation.DoesNotExist:
+        messages.error(request, 'File location not found.')
+        return redirect('samples:sample_list')
+
+    if request.method == 'POST':
+        form = FileLocationForm(request.POST, instance=file_location, current_user=request.user)
+        if form.is_valid():
+            file_location = form.save()
+            messages.success(request, 'File location metadata has been updated successfully.')
+            return redirect('files:file_info', file_location_id=file_location.id)
+    else:
+        form = FileLocationForm(instance=file_location, current_user=request.user)
+
+    context = {
+        'form': form,
+        'file_location': file_location,
+        'title': 'Edit File Location Metadata'
+    }
+    return render(request, 'files/file_edit.html', context)
+
+
+@login_required
+def file_delete(request, file_location_id):
+    """
+    View for soft-deleting a file location record.
+    Sets is_active=False instead of permanently deleting.
+    """
+    try:
+        file_location = AnalysisFileLocation.objects.select_related('patient').get(
+            id=file_location_id,
+            is_active=True
+        )
+    except AnalysisFileLocation.DoesNotExist:
+        messages.error(request, 'File location not found.')
+        return redirect('samples:sample_list')
+
+    if request.method == 'POST':
+        # Soft delete - set is_active to False
+        file_location.is_active = False
+        file_location.save()
+        messages.success(request, 'File location has been removed from the system.')
+        return redirect('samples:sample_detail', patient_id=file_location.patient.patient_id)
+
+    context = {
+        'file_location': file_location,
+    }
+    return render(request, 'files/file_delete_confirm.html', context)

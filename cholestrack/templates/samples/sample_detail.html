@@ -200,6 +200,57 @@
         text-decoration: none;
     }
 
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        margin: 20px 0;
+        justify-content: flex-end;
+    }
+
+    .btn-edit {
+        background-color: #ffc107;
+        color: #333;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-edit:hover {
+        background-color: #e0a800;
+        color: #333;
+        text-decoration: none;
+    }
+
+    .btn-delete {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-delete:hover {
+        background-color: #c82333;
+        color: white;
+        text-decoration: none;
+    }
+
     .clinical-json {
         background-color: #f8f9fa;
         padding: 15px;
@@ -248,6 +299,16 @@
     <div class="detail-header">
         <h1><i class="fas fa-user-injured"></i> Patient Details: {{ patient.patient_id }}</h1>
         <p>Complete clinical and genomic analysis information</p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <a href="{% url 'samples:patient_edit' patient_id=patient.patient_id %}" class="btn-edit">
+            <i class="fas fa-edit"></i> Edit Patient
+        </a>
+        <a href="{% url 'samples:patient_delete' patient_id=patient.patient_id %}" class="btn-delete">
+            <i class="fas fa-trash-alt"></i> Delete Patient
+        </a>
     </div>
 
     <!-- Patient Information Card -->
