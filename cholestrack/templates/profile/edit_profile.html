@@ -36,18 +36,18 @@
         margin-top: 8px;
     }
 
-    /* Welcome message */
-    .welcome-message {
-        background-color: #e6f7f7;
-        border-left: 4px solid #008080;
+    /* Info message */
+    .info-message {
+        background-color: #d1ecf1;
+        border-left: 4px solid #0c5460;
         padding: 15px;
         margin-bottom: 25px;
         border-radius: 5px;
     }
 
-    .welcome-message p {
+    .info-message p {
         margin: 0;
-        color: #004d4d;
+        color: #0c5460;
         font-size: 14px;
         line-height: 1.6;
     }
@@ -136,9 +136,16 @@
         text-align: center;
     }
 
+    /* Button container */
+    .button-container {
+        display: flex;
+        gap: 15px;
+        margin-top: 25px;
+    }
+
     /* Submit button */
     .profile-submit-button {
-        width: 100%;
+        flex: 1;
         padding: 14px;
         background-color: #008080;
         color: white;
@@ -147,12 +154,36 @@
         cursor: pointer;
         font-size: 16px;
         font-weight: 600;
-        margin-top: 25px;
         transition: background-color 0.3s;
     }
 
     .profile-submit-button:hover {
         background-color: #006666;
+    }
+
+    /* Cancel button */
+    .profile-cancel-button {
+        flex: 1;
+        padding: 14px;
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .profile-cancel-button:hover {
+        background-color: #5a6268;
+        color: white;
+        text-decoration: none;
     }
 
     /* Form sections */
@@ -188,19 +219,49 @@
         margin-top: 5px;
         display: block;
     }
+
+    /* Profile status badge */
+    .status-badge {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 10px;
+    }
+
+    .status-approved {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+    }
 </style>
 
 <div class="profile-container">
     <div class="profile-header">
-        <h2>Complete Your Profile</h2>
-        <p>Welcome to Cholestrack - Please provide your information below</p>
+        <h2>Edit Your Profile</h2>
+        <p>Update your institutional information</p>
+
+        {% if profile.approved %}
+            <span class="status-badge status-approved">
+                <i class="fas fa-check-circle"></i> Account Approved
+            </span>
+        {% else %}
+            <span class="status-badge status-pending">
+                <i class="fas fa-clock"></i> Pending Approval
+            </span>
+        {% endif %}
     </div>
 
-    <div class="welcome-message">
+    <div class="info-message">
         <p>
-            <strong>Welcome, {{ user.username }}!</strong><br>
-            To get started with Cholestrack, please complete your profile with your institutional information.
-            This helps us maintain secure access and proper record-keeping for all research activities.
+            <strong><i class="fas fa-info-circle"></i> Note:</strong>
+            Your profile information is used for institutional access control and record-keeping.
+            Changes to critical fields may require administrator approval.
         </p>
     </div>
 
@@ -313,14 +374,19 @@
             </p>
         </div>
 
-        <button type="submit" class="profile-submit-button">
-            <i class="fas fa-check-circle"></i> Complete Profile
-        </button>
+        <div class="button-container">
+            <button type="submit" class="profile-submit-button">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+            <a href="{% url 'home:dashboard' %}" class="profile-cancel-button">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
     </form>
 
     <div class="profile-footer">
         <p>All fields marked with <span style="color: #dc3545;">*</span> are required.</p>
-        <p>Your information will be reviewed by an administrator before granting full access.</p>
+        <p><strong>Account:</strong> {{ user.username }} | <strong>Last Updated:</strong> {{ profile.updated_at|date:"F j, Y, g:i a" }}</p>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 15px auto; width: 80%;">
         <p>Developed by Lab D'adamo - IRCCS Burlo Garofolo</p>
     </div>

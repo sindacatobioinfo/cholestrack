@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .delete-confirm-container {
+        max-width: 700px;
+        margin: 60px auto;
+        padding: 40px;
+        background-color: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .delete-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 3px solid #dc3545;
+    }
+
+    .delete-header h2 {
+        color: #dc3545;
+        margin: 0;
+        font-size: 28px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .delete-header p {
+        color: #6c757d;
+        font-size: 14px;
+        margin-top: 10px;
+    }
+
+    .warning-box {
+        background-color: #f8d7da;
+        border-left: 5px solid #dc3545;
+        padding: 20px;
+        margin-bottom: 25px;
+        border-radius: 5px;
+    }
+
+    .warning-box h3 {
+        color: #dc3545;
+        margin: 0 0 10px 0;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .warning-box p {
+        margin: 0;
+        color: #721c24;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .file-info-box {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+        border: 1px solid #dee2e6;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .info-value {
+        color: #212529;
+        text-align: right;
+    }
+
+    .info-box {
+        background-color: #d1ecf1;
+        border-left: 5px solid #17a2b8;
+        padding: 20px;
+        margin-bottom: 25px;
+        border-radius: 5px;
+    }
+
+    .info-box h3 {
+        color: #17a2b8;
+        margin: 0 0 10px 0;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .info-box p {
+        margin: 0;
+        color: #0c5460;
+        font-size: 14px;
+    }
+
+    .button-container {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+    }
+
+    .btn-delete {
+        flex: 1;
+        padding: 14px;
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-delete:hover {
+        background-color: #c82333;
+    }
+
+    .btn-cancel {
+        flex: 1;
+        padding: 14px;
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-cancel:hover {
+        background-color: #5a6268;
+        color: white;
+        text-decoration: none;
+    }
+</style>
+
+<div class="delete-confirm-container">
+    <div class="delete-header">
+        <h2>
+            <i class="fas fa-exclamation-triangle"></i>
+            Remove File Location
+        </h2>
+        <p>Confirm file location removal</p>
+    </div>
+
+    <div class="warning-box">
+        <h3><i class="fas fa-info-circle"></i> Important Information</h3>
+        <p>
+            You are about to <strong>remove this file location record</strong> from the system.
+            The file metadata will be marked as inactive (soft delete).
+            The actual file on the server will <strong>not</strong> be deleted.
+        </p>
+    </div>
+
+    <div class="file-info-box">
+        <h3 style="margin-top: 0; margin-bottom: 15px; color: #495057;">
+            <i class="fas fa-file-alt"></i> File Location to be Removed
+        </h3>
+
+        <div class="info-row">
+            <span class="info-label">File Type:</span>
+            <span class="info-value"><strong>{{ file_location.file_type }}</strong> - {{ file_location.get_file_type_display }}</span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">Patient ID:</span>
+            <span class="info-value">{{ file_location.patient.patient_id }}</span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">Sample ID:</span>
+            <span class="info-value"><code>{{ file_location.sample_id }}</code></span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">Data Type:</span>
+            <span class="info-value">{{ file_location.get_data_type_display }}</span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">Project:</span>
+            <span class="info-value">{{ file_location.project_name }}</span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">Batch:</span>
+            <span class="info-value">{{ file_location.batch_id }}</span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">Server:</span>
+            <span class="info-value">{{ file_location.get_server_name_display }}</span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">Uploaded:</span>
+            <span class="info-value">{{ file_location.created_at|date:"M d, Y" }}</span>
+        </div>
+    </div>
+
+    <div class="info-box">
+        <h3><i class="fas fa-shield-alt"></i> What Happens Next</h3>
+        <p>
+            • The file location record will be marked as <strong>inactive</strong><br>
+            • It will no longer appear in patient file lists<br>
+            • The actual file on <strong>{{ file_location.get_server_name_display }}</strong> remains unchanged<br>
+            • Database administrators can restore this record if needed
+        </p>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="button-container">
+            <button type="submit" class="btn-delete">
+                <i class="fas fa-times-circle"></i> Remove File Location
+            </button>
+            <a href="{% url 'files:file_info' file_location_id=file_location.id %}" class="btn-cancel">
+                <i class="fas fa-arrow-left"></i> Cancel, Keep File Location
+            </a>
+        </div>
+    </form>
+
+    <div style="text-align: center; margin-top: 20px; color: #6c757d; font-size: 12px;">
+        <p><i class="fas fa-info-circle"></i> This is a soft delete - the record can be restored by administrators</p>
+    </div>
+</div>
+
+{% endblock %}

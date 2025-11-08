@@ -1,0 +1,446 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* File upload form styling */
+    .file-upload-container {
+        max-width: 900px;
+        width: 90%;
+        margin: 40px auto;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        background-color: #ffffff;
+        font-family: Arial, sans-serif;
+        box-sizing: border-box;
+    }
+
+    .form-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #ffc107;
+    }
+
+    .form-header h2 {
+        color: #ffc107;
+        margin: 0;
+        font-size: 28px;
+        font-weight: 600;
+    }
+
+    .form-header p {
+        color: #6c757d;
+        font-size: 14px;
+        margin-top: 8px;
+    }
+
+    .info-message {
+        background-color: #d1ecf1;
+        border-left: 4px solid #0c5460;
+        padding: 15px;
+        margin-bottom: 25px;
+        border-radius: 5px;
+    }
+
+    .info-message p {
+        margin: 0;
+        color: #0c5460;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .warning-message {
+        background-color: #fff3cd;
+        border-left: 4px solid #856404;
+        padding: 15px;
+        margin-bottom: 25px;
+        border-radius: 5px;
+    }
+
+    .warning-message p {
+        margin: 0;
+        color: #856404;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .form-section {
+        margin-bottom: 30px;
+        padding: 25px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #ffc107;
+    }
+
+    .form-section h3 {
+        color: #ffc107;
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .file-upload-container form p {
+        margin-bottom: 20px !important;
+        text-align: left;
+        display: block !important;
+    }
+
+    .file-upload-container label {
+        display: block !important;
+        margin-bottom: 8px !important;
+        color: #333 !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+    }
+
+    .file-upload-container input[type="text"],
+    .file-upload-container input[type="number"],
+    .file-upload-container select {
+        width: 100% !important;
+        height: auto !important;
+        padding: 12px 15px !important;
+        border: 1px solid #ccc !important;
+        border-radius: 5px !important;
+        box-sizing: border-box !important;
+        font-size: 15px !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        background-color: white !important;
+        transition: border-color 0.3s;
+    }
+
+    .file-upload-container input:focus,
+    .file-upload-container select:focus {
+        border-color: #ffc107 !important;
+        outline: none !important;
+        box-shadow: 0 0 5px rgba(255, 193, 7, 0.2) !important;
+    }
+
+    .file-upload-container .errorlist {
+        list-style: none;
+        color: #dc3545;
+        font-size: 13px;
+        margin-top: 5px;
+        padding: 0;
+        background-color: #f8d7da;
+        padding: 8px 12px;
+        border-radius: 4px;
+        border-left: 3px solid #dc3545;
+    }
+
+    .error-message {
+        color: #dc3545;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 12px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .success-message {
+        color: #155724;
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        padding: 12px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .button-container {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px solid #dee2e6;
+    }
+
+    .btn-submit {
+        flex: 1;
+        padding: 14px;
+        background-color: #ffc107;
+        color: #333;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-submit:hover {
+        background-color: #e0a800;
+    }
+
+    .btn-cancel {
+        flex: 1;
+        padding: 14px;
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-cancel:hover {
+        background-color: #5a6268;
+        color: white;
+        text-decoration: none;
+    }
+
+    .help-text {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 5px;
+        display: block;
+    }
+
+    .required-indicator::after {
+        content: " *";
+        color: #dc3545;
+        font-weight: bold;
+    }
+</style>
+
+<div class="file-upload-container">
+    <div class="form-header">
+        <h2><i class="fas fa-edit"></i> Edit File Location Metadata</h2>
+        <p>Update file location information and metadata</p>
+    </div>
+
+    <div class="info-message">
+        <p>
+            <i class="fas fa-info-circle"></i>
+            <strong>Editing:</strong> {{ file_location.file_type }} file for patient {{ file_location.patient.patient_id }}
+            (Sample: {{ file_location.sample_id }})
+        </p>
+    </div>
+
+    <div class="warning-message">
+        <p>
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>Note:</strong> This updates metadata only. The actual file on the server remains unchanged.
+        </p>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="{% if message.tags == 'error' %}error-message{% elif message.tags == 'success' %}success-message{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if form.non_field_errors %}
+        <div class="error-message">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        <!-- Patient Selection Section -->
+        <div class="form-section">
+            <h3><i class="fas fa-user-injured"></i> Patient Association</h3>
+
+            <p>
+                <label for="{{ form.patient.id_for_label }}" class="required-indicator">{{ form.patient.label }}</label>
+                {{ form.patient }}
+                {% if form.patient.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.patient.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.patient.help_text }}</span>
+            </p>
+        </div>
+
+        <!-- Sample Identification Section -->
+        <div class="form-section">
+            <h3><i class="fas fa-vial"></i> Sample Identification</h3>
+
+            <p>
+                <label for="{{ form.project_name.id_for_label }}" class="required-indicator">{{ form.project_name.label }}</label>
+                {{ form.project_name }}
+                {% if form.project_name.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.project_name.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.project_name.help_text }}</span>
+            </p>
+
+            <p>
+                <label for="{{ form.batch_id.id_for_label }}" class="required-indicator">{{ form.batch_id.label }}</label>
+                {{ form.batch_id }}
+                {% if form.batch_id.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.batch_id.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.batch_id.help_text }}</span>
+            </p>
+
+            <p>
+                <label for="{{ form.sample_id.id_for_label }}" class="required-indicator">{{ form.sample_id.label }}</label>
+                {{ form.sample_id }}
+                {% if form.sample_id.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.sample_id.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.sample_id.help_text }}</span>
+            </p>
+        </div>
+
+        <!-- File Information Section -->
+        <div class="form-section">
+            <h3><i class="fas fa-file-alt"></i> File Information</h3>
+
+            <p>
+                <label for="{{ form.data_type.id_for_label }}" class="required-indicator">{{ form.data_type.label }}</label>
+                {{ form.data_type }}
+                {% if form.data_type.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.data_type.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.data_type.help_text }}</span>
+            </p>
+
+            <p>
+                <label for="{{ form.file_type.id_for_label }}" class="required-indicator">{{ form.file_type.label }}</label>
+                {{ form.file_type }}
+                {% if form.file_type.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.file_type.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.file_type.help_text }}</span>
+            </p>
+
+            <p>
+                <label for="{{ form.file_size_mb.id_for_label }}">{{ form.file_size_mb.label }}</label>
+                {{ form.file_size_mb }}
+                {% if form.file_size_mb.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.file_size_mb.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.file_size_mb.help_text }}</span>
+            </p>
+        </div>
+
+        <!-- Server Location Section -->
+        <div class="form-section">
+            <h3><i class="fas fa-server"></i> Server Location</h3>
+
+            <p>
+                <label for="{{ form.server_name.id_for_label }}" class="required-indicator">{{ form.server_name.label }}</label>
+                {{ form.server_name }}
+                {% if form.server_name.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.server_name.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.server_name.help_text }}</span>
+            </p>
+
+            <p>
+                <label for="{{ form.file_path.id_for_label }}" class="required-indicator">{{ form.file_path.label }}</label>
+                {{ form.file_path }}
+                {% if form.file_path.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.file_path.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.file_path.help_text }}</span>
+            </p>
+        </div>
+
+        <!-- File Integrity & Metadata Section -->
+        <div class="form-section">
+            <h3><i class="fas fa-shield-alt"></i> File Integrity & Metadata</h3>
+
+            <p>
+                <label for="{{ form.checksum.id_for_label }}">{{ form.checksum.label }}</label>
+                {{ form.checksum }}
+                {% if form.checksum.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.checksum.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.checksum.help_text }}</span>
+            </p>
+
+            <p>
+                <label for="{{ form.uploaded_by.id_for_label }}" class="required-indicator">{{ form.uploaded_by.label }}</label>
+                {{ form.uploaded_by }}
+                {% if form.uploaded_by.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.uploaded_by.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.uploaded_by.help_text }}</span>
+            </p>
+        </div>
+
+        <div class="button-container">
+            <button type="submit" class="btn-submit">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+            <a href="{% url 'files:file_info' file_location_id=file_location.id %}" class="btn-cancel">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+
+    <div style="text-align: center; margin-top: 20px; color: #6c757d; font-size: 12px;">
+        <p>Fields marked with <span style="color: #dc3545;">*</span> are required.</p>
+    </div>
+</div>
+
+{% endblock %}

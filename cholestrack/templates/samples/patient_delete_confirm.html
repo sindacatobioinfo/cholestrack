@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .delete-confirm-container {
+        max-width: 700px;
+        margin: 60px auto;
+        padding: 40px;
+        background-color: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .delete-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 3px solid #dc3545;
+    }
+
+    .delete-header h2 {
+        color: #dc3545;
+        margin: 0;
+        font-size: 28px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .delete-header p {
+        color: #6c757d;
+        font-size: 14px;
+        margin-top: 10px;
+    }
+
+    .warning-box {
+        background-color: #f8d7da;
+        border-left: 5px solid #dc3545;
+        padding: 20px;
+        margin-bottom: 25px;
+        border-radius: 5px;
+    }
+
+    .warning-box h3 {
+        color: #dc3545;
+        margin: 0 0 10px 0;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .warning-box p {
+        margin: 0;
+        color: #721c24;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .patient-info-box {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+        border: 1px solid #dee2e6;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .info-value {
+        color: #212529;
+    }
+
+    .consequences-box {
+        background-color: #fff3cd;
+        border-left: 5px solid #ffc107;
+        padding: 20px;
+        margin-bottom: 25px;
+        border-radius: 5px;
+    }
+
+    .consequences-box h3 {
+        color: #856404;
+        margin: 0 0 10px 0;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .consequences-box ul {
+        margin: 0;
+        padding-left: 20px;
+        color: #856404;
+    }
+
+    .consequences-box li {
+        margin-bottom: 8px;
+    }
+
+    .button-container {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+    }
+
+    .btn-delete {
+        flex: 1;
+        padding: 14px;
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-delete:hover {
+        background-color: #c82333;
+    }
+
+    .btn-cancel {
+        flex: 1;
+        padding: 14px;
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-cancel:hover {
+        background-color: #5a6268;
+        color: white;
+        text-decoration: none;
+    }
+</style>
+
+<div class="delete-confirm-container">
+    <div class="delete-header">
+        <h2>
+            <i class="fas fa-exclamation-triangle"></i>
+            Confirm Patient Deletion
+        </h2>
+        <p>This action cannot be undone</p>
+    </div>
+
+    <div class="warning-box">
+        <h3><i class="fas fa-skull-crossbones"></i> Danger Zone</h3>
+        <p>
+            You are about to <strong>permanently delete</strong> this patient record and all associated data.
+            This action is <strong>irreversible</strong> and will remove all information from the database.
+        </p>
+    </div>
+
+    <div class="patient-info-box">
+        <h3 style="margin-top: 0; margin-bottom: 15px; color: #495057;">
+            <i class="fas fa-user"></i> Patient to be Deleted
+        </h3>
+
+        <div class="info-row">
+            <span class="info-label">Patient ID:</span>
+            <span class="info-value"><strong>{{ patient.patient_id }}</strong></span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">Name:</span>
+            <span class="info-value">{{ patient.name|default:"Not Informed" }}</span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">Birth Date:</span>
+            <span class="info-value">
+                {% if patient.birth_date %}
+                    {{ patient.birth_date|date:"F d, Y" }}
+                {% else %}
+                    Not Informed
+                {% endif %}
+            </span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">Main Result:</span>
+            <span class="info-value">{{ patient.main_exome_result }}</span>
+        </div>
+
+        <div class="info-row">
+            <span class="info-label">Created:</span>
+            <span class="info-value">{{ patient.created_at|date:"M d, Y" }}</span>
+        </div>
+    </div>
+
+    <div class="consequences-box">
+        <h3><i class="fas fa-exclamation-circle"></i> What will be deleted:</h3>
+        <ul>
+            <li>Patient record and all personal information</li>
+            <li>All clinical data and notes</li>
+            {% if file_count > 0 %}
+                <li><strong>{{ file_count }} associated file location record{{ file_count|pluralize }}</strong></li>
+                <li><strong style="color: #dc3545;">WARNING:</strong> File metadata will be deleted (actual files on servers will remain)</li>
+            {% else %}
+                <li>No associated files to delete</li>
+            {% endif %}
+            <li>All timestamps and history</li>
+        </ul>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="button-container">
+            <button type="submit" class="btn-delete">
+                <i class="fas fa-trash-alt"></i> Yes, Delete Patient
+            </button>
+            <a href="{% url 'samples:sample_detail' patient_id=patient.patient_id %}" class="btn-cancel">
+                <i class="fas fa-times"></i> Cancel, Keep Patient
+            </a>
+        </div>
+    </form>
+
+    <div style="text-align: center; margin-top: 20px; color: #6c757d; font-size: 12px;">
+        <p><i class="fas fa-info-circle"></i> Consider archiving instead of deleting if you need to maintain records</p>
+    </div>
+</div>
+
+{% endblock %}

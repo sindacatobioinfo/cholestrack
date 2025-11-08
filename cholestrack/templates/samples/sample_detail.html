@@ -1,0 +1,474 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Detail page styling */
+    .detail-container {
+        max-width: 1200px;
+        margin: 30px auto;
+    }
+
+    .detail-header {
+        background: linear-gradient(135deg, #008080 0%, #006666 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 10px 10px 0 0;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .detail-header h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 600;
+    }
+
+    .detail-header p {
+        margin: 10px 0 0 0;
+        font-size: 14px;
+        opacity: 0.9;
+    }
+
+    .detail-card {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+
+    .card-header {
+        background-color: #f8f9fa;
+        padding: 15px 20px;
+        border-bottom: 2px solid #008080;
+    }
+
+    .card-header h3 {
+        margin: 0;
+        color: #008080;
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    .card-body {
+        padding: 20px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .info-item {
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        border-left: 4px solid #008080;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #555;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 5px;
+    }
+
+    .info-value {
+        color: #333;
+        font-size: 16px;
+        word-break: break-word;
+    }
+
+    .badge-status {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .files-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 8px;
+    }
+
+    .files-table thead th {
+        background-color: #008080;
+        color: white;
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+    }
+
+    .files-table tbody tr {
+        background-color: #f8f9fa;
+        transition: all 0.2s;
+    }
+
+    .files-table tbody tr:hover {
+        background-color: #e9ecef;
+        transform: translateX(5px);
+    }
+
+    .files-table tbody td {
+        padding: 15px 12px;
+        border-top: 1px solid #dee2e6;
+    }
+
+    .file-type-badge {
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 11px;
+        text-transform: uppercase;
+    }
+
+    .file-type-vcf { background-color: #28a745; color: white; }
+    .file-type-bam { background-color: #007bff; color: white; }
+    .file-type-fastq { background-color: #ffc107; color: #333; }
+    .file-type-pdf { background-color: #dc3545; color: white; }
+    .file-type-tsv { background-color: #6c757d; color: white; }
+    .file-type-cram { background-color: #17a2b8; color: white; }
+
+    .btn-download {
+        background-color: #008080;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .btn-download:hover {
+        background-color: #006666;
+    }
+
+    .btn-info {
+        background-color: #17a2b8;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .btn-info:hover {
+        background-color: #138496;
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-back {
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .btn-back:hover {
+        background-color: #5a6268;
+        color: white;
+        text-decoration: none;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        margin: 20px 0;
+        justify-content: flex-end;
+    }
+
+    .btn-edit {
+        background-color: #ffc107;
+        color: #333;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-edit:hover {
+        background-color: #e0a800;
+        color: #333;
+        text-decoration: none;
+    }
+
+    .btn-delete {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-delete:hover {
+        background-color: #c82333;
+        color: white;
+        text-decoration: none;
+    }
+
+    .clinical-json {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        border-left: 4px solid #008080;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .clinical-json dt {
+        font-weight: 600;
+        color: #008080;
+        margin-top: 10px;
+        font-size: 14px;
+    }
+
+    .clinical-json dt:first-child {
+        margin-top: 0;
+    }
+
+    .clinical-json dd {
+        margin-left: 20px;
+        margin-bottom: 5px;
+        color: #333;
+        font-size: 14px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        margin-bottom: 15px;
+        opacity: 0.5;
+    }
+</style>
+
+<div class="detail-container">
+    <a href="{% url 'samples:sample_list' %}" class="btn-back">
+        <i class="fas fa-arrow-left"></i> Back to Patient List
+    </a>
+
+    <div class="detail-header">
+        <h1><i class="fas fa-user-injured"></i> Patient Details: {{ patient.patient_id }}</h1>
+        <p>Complete clinical and genomic analysis information</p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <a href="{% url 'samples:patient_edit' patient_id=patient.patient_id %}" class="btn-edit">
+            <i class="fas fa-edit"></i> Edit Patient
+        </a>
+        <a href="{% url 'samples:patient_delete' patient_id=patient.patient_id %}" class="btn-delete">
+            <i class="fas fa-trash-alt"></i> Delete Patient
+        </a>
+    </div>
+
+    <!-- Patient Information Card -->
+    <div class="detail-card">
+        <div class="card-header">
+            <h3><i class="fas fa-id-card"></i> Patient Information</h3>
+        </div>
+        <div class="card-body">
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Patient ID</div>
+                    <div class="info-value">{{ patient.patient_id }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Full Name</div>
+                    <div class="info-value">{{ patient.name|default:"Not Informed" }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Birth Date</div>
+                    <div class="info-value">
+                        {% if patient.birth_date %}
+                            {{ patient.birth_date|date:"F d, Y" }}
+                        {% else %}
+                            <span class="text-muted">Not Informed</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Main Exome Result</div>
+                    <div class="info-value">
+                        <span class="badge-status" style="background-color: #17a2b8; color: white;">
+                            {{ patient.main_exome_result|default:"Awaiting Analysis" }}
+                        </span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Responsible User</div>
+                    <div class="info-value">
+                        {% if patient.responsible_user %}
+                            <i class="fas fa-user"></i> {{ patient.responsible_user.username }}
+                        {% else %}
+                            <span class="text-muted">Not Assigned</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Record Created</div>
+                    <div class="info-value">{{ patient.created_at|date:"M d, Y - H:i" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clinical Information Card -->
+    <div class="detail-card">
+        <div class="card-header">
+            <h3><i class="fas fa-stethoscope"></i> Clinical Information</h3>
+        </div>
+        <div class="card-body">
+            {% if patient.clinical_info_json %}
+                <div class="clinical-json">
+                    <dl>
+                        {% for key, value in patient.clinical_info_json.items %}
+                            <dt>{{ key|title }}:</dt>
+                            <dd>{{ value }}</dd>
+                        {% endfor %}
+                    </dl>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-clipboard"></i>
+                    <p>No clinical information available</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Research Notes Card -->
+    {% if patient.notes %}
+    <div class="detail-card">
+        <div class="card-header">
+            <h3><i class="fas fa-sticky-note"></i> Research Notes</h3>
+        </div>
+        <div class="card-body">
+            <div style="padding: 15px; background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px;">
+                {{ patient.notes|linebreaks }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Associated Files Card -->
+    <div class="detail-card">
+        <div class="card-header">
+            <h3><i class="fas fa-folder-open"></i> Associated Analysis Files</h3>
+        </div>
+        <div class="card-body">
+            {% if file_locations %}
+                <table class="files-table">
+                    <thead>
+                        <tr>
+                            <th>File Type</th>
+                            <th>Sample ID</th>
+                            <th>Data Type</th>
+                            <th>Project</th>
+                            <th>Batch</th>
+                            <th>Server</th>
+                            <th>Size (MB)</th>
+                            <th>Uploaded</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for file in file_locations %}
+                        <tr>
+                            <td>
+                                <span class="file-type-badge file-type-{{ file.file_type|lower }}">
+                                    {{ file.file_type }}
+                                </span>
+                            </td>
+                            <td><code>{{ file.sample_id }}</code></td>
+                            <td><strong>{{ file.get_data_type_display }}</strong></td>
+                            <td>{{ file.project_name }}</td>
+                            <td>{{ file.batch_id }}</td>
+                            <td>{{ file.get_server_name_display }}</td>
+                            <td>
+                                {% if file.file_size_mb %}
+                                    {{ file.file_size_mb|floatformat:2 }}
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ file.created_at|date:"M d, Y" }}</td>
+                            <td>
+                                <form method="post" action="{% url 'files:download_file' file_location_id=file.id %}" style="display: inline; margin-right: 5px;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-download">
+                                        <i class="fas fa-download"></i> Download
+                                    </button>
+                                </form>
+                                <a href="{% url 'files:file_info' file_location_id=file.id %}" class="btn-info">
+                                    <i class="fas fa-info-circle"></i> Info
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-file-excel"></i>
+                    <p>No analysis files associated with this patient</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <a href="{% url 'samples:sample_list' %}" class="btn-back">
+        <i class="fas fa-arrow-left"></i> Back to Patient List
+    </a>
+</div>
+
+{% endblock %}
