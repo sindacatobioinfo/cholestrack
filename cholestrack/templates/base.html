@@ -125,7 +125,7 @@
                 {% if user.is_authenticated %}
                     <!-- TEXTO TRADUZIDO -->
                     <span style="margin-right: 20px; font-weight: bold;">Hello, {{ user.username }}!</span> 
-                    <a href="{% url 'users:home' %}">Dashboard</a>
+                    <a href="{% url 'home:dashboard' %}">Dashboard</a>
                     
                     <form method="post" action="{% url 'users:logout' %}" style="display: inline;">
                         {% csrf_token %}

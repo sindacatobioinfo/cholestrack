@@ -53,14 +53,13 @@
                             <td class="py-2 px-4 text-center">
                                 <!-- Coluna de Download -->
                                 {% for file_type, file_data in patient.files.items %}
-                                    <form method="post" action="{% url 'users:download_file' file_location_id=file_data.id %}" style="display: inline-block; margin: 2px;">
+                                    <form method="post" action="{% url 'files:download_file' file_location_id=file_data.id %}" style="display: inline-block; margin: 2px;">
                                         {% csrf_token %}
-                                        
                                         <button type="submit" 
                                                 title="Download {{ file_type }} file from Server {{ file_data.server }}"
                                                 class="btn btn-sm download-btn 
-                                                       {% if file_type == 'VCF' %}bg-green-600 hover:bg-green-700{% elif file_type == 'BAM' %}bg-blue-600 hover:bg-blue-700{% else %}bg-gray-600 hover:bg-gray-700{% endif %}
-                                                       text-white font-bold py-1 px-3 rounded shadow transition duration-150 ease-in-out">
+                                                    {% if file_type == 'VCF' %}bg-green-600 hover:bg-green-700{% elif file_type == 'BAM' %}bg-blue-600 hover:bg-blue-700{% else %}bg-gray-600 hover:bg-gray-700{% endif %}
+                                                    text-white font-bold py-1 px-3 rounded shadow transition duration-150 ease-in-out">
                                             <i class="fas fa-download mr-1"></i> {{ file_type }}
                                         </button>
                                     </form>

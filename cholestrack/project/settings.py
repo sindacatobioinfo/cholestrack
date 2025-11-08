@@ -47,6 +47,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'users',
+    'profile',
+    'samples',
+    'files',
+    'home',
 ]
 
 MIDDLEWARE = [
@@ -144,9 +148,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # URLs de Redirecionamento de Autenticação
 # Redireciona para a rota 'home' (URL: '/') após o login
-LOGIN_REDIRECT_URL = '/' 
+LOGIN_REDIRECT_URL = '/home/' 
 # Redireciona para a rota 'home' (URL: '/') após o logout
-LOGOUT_REDIRECT_URL = '/' 
+LOGOUT_REDIRECT_URL = '/login/' 
 
 LOGIN_URL = 'users:login' 
 

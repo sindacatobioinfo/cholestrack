@@ -1,0 +1,115 @@
+users - to create and manage accounts. This app will allow the account creation and login
+profile - the app to manage user profile. So once the user creates an account, the view redirects to this other app, to make the user create a profile with further information (name, team, role, institutional mail address)
+home - is the page which the user sees when he/she logs in or after finish the profile creation. In this page, the user will have access to their profile (for any edition), and available tools (for now, only sample management will be available).
+samples - this one will allow the user to add and view sample data already inserted to the database. The info displayed is that found in the actual "home" page.
+files - handle with sample data files
+
+cholestrack/
+├── manage.py
+├── requirements.txt
+├── .env
+├── .gitignore
+├── create.sh
+├── gunicorn-start.sh
+│
+├── project/                          # Main Django project configuration
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py                       # Root URL configuration
+│   ├── wsgi.py
+│   └── asgi.py
+│
+├── users/                            # App 1: Authentication & Account Management
+│   ├── __init__.py
+│   ├── apps.py
+│   ├── admin.py
+│   ├── models.py                     # User model extensions (if needed)
+│   ├── forms.py                      # Registration and login forms
+│   ├── views.py                      # register(), login views
+│   ├── urls.py                       # /register/, /login/, /logout/
+│   ├── tests.py
+│   └── migrations/
+│       └── __init__.py
+│
+├── profile/                          # App 2: User Profile Management
+│   ├── __init__.py
+│   ├── apps.py
+│   ├── admin.py
+│   ├── models.py                     # UserProfile model
+│   ├── forms.py                      # Profile creation/edit forms
+│   ├── views.py                      # create_profile(), edit_profile()
+│   ├── urls.py                       # /profile/create/, /profile/edit/
+│   ├── tests.py
+│   └── migrations/
+│       └── __init__.py
+│
+├── home/                             # App 3: Dashboard & Navigation Hub
+│   ├── __init__.py
+│   ├── apps.py
+│   ├── admin.py
+│   ├── models.py                     # (likely minimal or none)
+│   ├── views.py                      # dashboard(), main landing page
+│   ├── urls.py                       # /home/, /dashboard/
+│   ├── tests.py
+│   └── migrations/
+│       └── __init__.py
+│
+├── samples/                          # App 4: Sample Management
+│   ├── __init__.py
+│   ├── apps.py
+│   ├── admin.py
+│   ├── models.py                     # Patient, AnalysisFileLocation models
+│   ├── forms.py                      # Sample entry/edit forms
+│   ├── views.py                      # sample_list(), add_sample(), download_file()
+│   ├── urls.py                       # /samples/, /samples/add/, /samples/download/
+│   ├── tests.py
+│   └── migrations/
+│       └── __init__.py
+|
+├── files/                          # App 4: Patient Data Management
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── models.py                     # Patient, AnalysisFileLocation models
+│   ├── views.py                      # sample_list(), add_sample(), download_file()
+│   ├── urls.py                       # /samples/, /samples/add/, /samples/download/
+│   ├── tests.py
+│   └── migrations/
+│       └── __init__.py
+|
+│
+├── templates/                        # Global templates
+│   ├── base.html                     # Base template with header/navbar
+│   ├── users/                        # User app templates
+│   │   ├── login.html
+│   │   └── register.html
+│   ├── profile/                      # Profile app templates
+│   │   ├── create_profile.html
+│   │   └── edit_profile.html
+│   ├── home/                         # Home app templates
+│   │   └── dashboard.html
+│   └── samples/                      # Samples app templates
+│       ├── sample_list.html          # Current home.html content
+│       ├── sample_detail.html
+│       └── add_sample.html
+│
+├── static/                           # Static files (CSS, JS, images)
+│   ├── css/
+│   │   ├── base.css
+│   │   ├── users.css
+│   │   ├── profile.css
+│   │   ├── home.css
+│   │   └── samples.css
+│   ├── js/
+│   │   └── main.js
+│   └── images/
+│       └── burlo-logo.png
+│
+├── staticfiles/                      # Collected static files (production)
+│
+├── media/                            # User-uploaded files (if any)
+│
+├── logs/                             # Application logs
+│   └── gunicorn-supervisor.log
+│
+└── run/                              # Runtime files
+    └── gunicorn.sock

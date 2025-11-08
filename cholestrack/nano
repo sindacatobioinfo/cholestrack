@@ -1,5 +1,0 @@
-[program:criatorio]
-command = /home/burlo/cholestrack/cholestrack/gunicorn-start.sh                    ; Start app
-user = burlo                                                      ; User to run as
-stdout_logfile = /home/burlo/cholestrack/cholestrack/logs/gunicorn-supervisor.log  ; Where to write log messages
-redirect_stderr = true
