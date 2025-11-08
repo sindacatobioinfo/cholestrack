@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Container for the profile form - centered and compact */
+    .profile-container {
+        max-width: 700px;
+        width: 90%;
+        margin: 60px auto;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        background-color: #ffffff;
+        font-family: Arial, sans-serif;
+        box-sizing: border-box;
+    }
+
+    /* Header styling */
+    .profile-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #008080;
+    }
+
+    .profile-header h2 {
+        color: #008080;
+        margin: 0;
+        font-size: 28px;
+        font-weight: 600;
+    }
+
+    .profile-header p {
+        color: #6c757d;
+        font-size: 14px;
+        margin-top: 8px;
+    }
+
+    /* Info message */
+    .info-message {
+        background-color: #d1ecf1;
+        border-left: 4px solid #0c5460;
+        padding: 15px;
+        margin-bottom: 25px;
+        border-radius: 5px;
+    }
+
+    .info-message p {
+        margin: 0;
+        color: #0c5460;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    /* Form field styling */
+    .profile-container form p {
+        margin-bottom: 20px !important;
+        text-align: left;
+        display: block !important;
+    }
+
+    .profile-container label {
+        display: block !important;
+        margin-bottom: 8px !important;
+        color: #333 !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+    }
+
+    /* Input fields styling */
+    .profile-container input[type="text"],
+    .profile-container input[type="email"],
+    .profile-container select,
+    .profile-container textarea {
+        width: 100% !important;
+        height: auto !important;
+        padding: 12px 15px !important;
+        border: 1px solid #ccc !important;
+        border-radius: 5px !important;
+        box-sizing: border-box !important;
+        font-size: 15px !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        background-color: white !important;
+        transition: border-color 0.3s;
+    }
+
+    .profile-container input:focus,
+    .profile-container select:focus,
+    .profile-container textarea:focus {
+        border-color: #008080 !important;
+        outline: none !important;
+        box-shadow: 0 0 5px rgba(0, 128, 128, 0.2) !important;
+    }
+
+    /* Required field indicator */
+    .profile-container label::after {
+        content: " *";
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    /* Error messages */
+    .profile-container .errorlist {
+        list-style: none;
+        color: #dc3545;
+        font-size: 13px;
+        margin-top: 5px;
+        padding: 0;
+        background-color: #f8d7da;
+        padding: 8px 12px;
+        border-radius: 4px;
+        border-left: 3px solid #dc3545;
+    }
+
+    /* General error messages */
+    .error-message {
+        color: #dc3545;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 12px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    /* Success messages */
+    .success-message {
+        color: #155724;
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        padding: 12px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    /* Button container */
+    .button-container {
+        display: flex;
+        gap: 15px;
+        margin-top: 25px;
+    }
+
+    /* Submit button */
+    .profile-submit-button {
+        flex: 1;
+        padding: 14px;
+        background-color: #008080;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+    }
+
+    .profile-submit-button:hover {
+        background-color: #006666;
+    }
+
+    /* Cancel button */
+    .profile-cancel-button {
+        flex: 1;
+        padding: 14px;
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .profile-cancel-button:hover {
+        background-color: #5a6268;
+        color: white;
+        text-decoration: none;
+    }
+
+    /* Form sections */
+    .form-section {
+        margin-bottom: 30px;
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .form-section h3 {
+        color: #008080;
+        font-size: 18px;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    /* Footer */
+    .profile-footer {
+        text-align: center;
+        margin-top: 30px;
+        color: #6c757d;
+        font-size: 12px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+    }
+
+    /* Help text */
+    .help-text {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 5px;
+        display: block;
+    }
+
+    /* Profile status badge */
+    .status-badge {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 10px;
+    }
+
+    .status-approved {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+</style>
+
+<div class="profile-container">
+    <div class="profile-header">
+        <h2>Edit Your Profile</h2>
+        <p>Update your institutional information</p>
+
+        {% if profile.approved %}
+            <span class="status-badge status-approved">
+                <i class="fas fa-check-circle"></i> Account Approved
+            </span>
+        {% else %}
+            <span class="status-badge status-pending">
+                <i class="fas fa-clock"></i> Pending Approval
+            </span>
+        {% endif %}
+    </div>
+
+    <div class="info-message">
+        <p>
+            <strong><i class="fas fa-info-circle"></i> Note:</strong>
+            Your profile information is used for institutional access control and record-keeping.
+            Changes to critical fields may require administrator approval.
+        </p>
+    </div>
+
+    {# Display Django messages (success, error, etc.) #}
+    {% if messages %}
+        {% for message in messages %}
+            <div class="{% if message.tags == 'error' %}error-message{% elif message.tags == 'success' %}success-message{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {# Display non-field errors #}
+    {% if form.non_field_errors %}
+        <div class="error-message">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        <!-- Personal Information Section -->
+        <div class="form-section">
+            <h3><i class="fas fa-user"></i> Personal Information</h3>
+
+            <p>
+                <label for="{{ form.full_name.id_for_label }}">{{ form.full_name.label }}</label>
+                {{ form.full_name }}
+                {% if form.full_name.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.full_name.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">Enter your complete name as it appears in official documents</span>
+            </p>
+
+            <p>
+                <label for="{{ form.institutional_email.id_for_label }}">{{ form.institutional_email.label }}</label>
+                {{ form.institutional_email }}
+                {% if form.institutional_email.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.institutional_email.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">Use your official Burlo Garofolo email address</span>
+            </p>
+
+            <p>
+                <label for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+                {{ form.phone }}
+                {% if form.phone.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.phone.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">Include country code (e.g., +39 XXX XXX XXXX)</span>
+            </p>
+        </div>
+
+        <!-- Institutional Information Section -->
+        <div class="form-section">
+            <h3><i class="fas fa-building"></i> Institutional Information</h3>
+
+            <p>
+                <label for="{{ form.role.id_for_label }}">{{ form.role.label }}</label>
+                {{ form.role }}
+                {% if form.role.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.role.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">Select your primary role in the research team</span>
+            </p>
+
+            <p>
+                <label for="{{ form.team.id_for_label }}">{{ form.team.label }}</label>
+                {{ form.team }}
+                {% if form.team.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.team.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">Select your department or team</span>
+            </p>
+
+            <p>
+                <label for="{{ form.institution_id.id_for_label }}">{{ form.institution_id.label }}</label>
+                {{ form.institution_id }}
+                {% if form.institution_id.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.institution_id.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">Your institutional identification number or employee ID</span>
+            </p>
+        </div>
+
+        <div class="button-container">
+            <button type="submit" class="profile-submit-button">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+            <a href="{% url 'home:dashboard' %}" class="profile-cancel-button">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+
+    <div class="profile-footer">
+        <p>All fields marked with <span style="color: #dc3545;">*</span> are required.</p>
+        <p><strong>Account:</strong> {{ user.username }} | <strong>Last Updated:</strong> {{ profile.updated_at|date:"F j, Y, g:i a" }}</p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 15px auto; width: 80%;">
+        <p>Developed by Lab D'adamo - IRCCS Burlo Garofolo</p>
+    </div>
+</div>
+
+{% endblock %}
