@@ -2,3 +2,5 @@ django-environ
 Django==5.2.8
 psycopg2==2.9.10
 gunicorn==23.0.0
+certbot==5.1.0
+certbot-nginx==5.1.0

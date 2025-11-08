@@ -8,14 +8,22 @@ NUM_WORKERS=2                                   # How many worker processes shou
 DJANGO_SETTINGS_MODULE=project.settings       # Which settings file should Django use
 DJANGO_WSGI_MODULE=project.wsgi               # WSGI module name
 echo "Starting $NAME as `whoami`"
+
 # Activate the virtual environment
 cd $DJANGODIR
 source /home/burlo/cholestrack/cholestrack/.venv/bin/activate
 export DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE
 export PYTHONPATH=$DJANGODIR:$PYTHONPATH
+
+# Load environment variables from .env file
+if [ -f /home/burlo/cholestrack/cholestrack/.env ]; then
+    export $(grep -v '^#' /home/burlo/cholestrack/cholestrack/.env | xargs)
+fi
+
 # Create the run directory if it doesn't exist
 RUNDIR=$(dirname $SOCKFILE)
 test -d $RUNDIR || mkdir -p $RUNDIR
+
 # Start your Django Unicorn
 exec gunicorn ${DJANGO_WSGI_MODULE}:application \
   --name $NAME \

@@ -28,6 +28,6 @@ python manage.py makemigrations profile --empty --name create_profiles_for_exist
 # RUNSERVER
 python manage.py runserver
 
-# to create user
-#python manage.py startapp users
- 
+#After changing the site do this to restart the production
+sudo systemctl restart nginx
+sudo systemctl restart gunicorn 
