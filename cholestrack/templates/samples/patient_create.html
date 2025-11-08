@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Patient creation form styling */
+    .patient-form-container {
+        max-width: 900px;
+        width: 90%;
+        margin: 40px auto;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        background-color: #ffffff;
+        font-family: Arial, sans-serif;
+        box-sizing: border-box;
+    }
+
+    .form-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #008080;
+    }
+
+    .form-header h2 {
+        color: #008080;
+        margin: 0;
+        font-size: 28px;
+        font-weight: 600;
+    }
+
+    .form-header p {
+        color: #6c757d;
+        font-size: 14px;
+        margin-top: 8px;
+    }
+
+    .info-message {
+        background-color: #d1ecf1;
+        border-left: 4px solid #0c5460;
+        padding: 15px;
+        margin-bottom: 25px;
+        border-radius: 5px;
+    }
+
+    .info-message p {
+        margin: 0;
+        color: #0c5460;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .form-section {
+        margin-bottom: 30px;
+        padding: 25px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #008080;
+    }
+
+    .form-section h3 {
+        color: #008080;
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .patient-form-container form p {
+        margin-bottom: 20px !important;
+        text-align: left;
+        display: block !important;
+    }
+
+    .patient-form-container label {
+        display: block !important;
+        margin-bottom: 8px !important;
+        color: #333 !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+    }
+
+    .patient-form-container input[type="text"],
+    .patient-form-container input[type="date"],
+    .patient-form-container select,
+    .patient-form-container textarea {
+        width: 100% !important;
+        height: auto !important;
+        padding: 12px 15px !important;
+        border: 1px solid #ccc !important;
+        border-radius: 5px !important;
+        box-sizing: border-box !important;
+        font-size: 15px !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        background-color: white !important;
+        transition: border-color 0.3s;
+    }
+
+    .patient-form-container input:focus,
+    .patient-form-container select:focus,
+    .patient-form-container textarea:focus {
+        border-color: #008080 !important;
+        outline: none !important;
+        box-shadow: 0 0 5px rgba(0, 128, 128, 0.2) !important;
+    }
+
+    .patient-form-container .errorlist {
+        list-style: none;
+        color: #dc3545;
+        font-size: 13px;
+        margin-top: 5px;
+        padding: 0;
+        background-color: #f8d7da;
+        padding: 8px 12px;
+        border-radius: 4px;
+        border-left: 3px solid #dc3545;
+    }
+
+    .error-message {
+        color: #dc3545;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 12px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .success-message {
+        color: #155724;
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        padding: 12px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .button-container {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px solid #dee2e6;
+    }
+
+    .btn-submit {
+        flex: 1;
+        padding: 14px;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-submit:hover {
+        background-color: #218838;
+    }
+
+    .btn-cancel {
+        flex: 1;
+        padding: 14px;
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-cancel:hover {
+        background-color: #5a6268;
+        color: white;
+        text-decoration: none;
+    }
+
+    .help-text {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 5px;
+        display: block;
+    }
+
+    .required-indicator::after {
+        content: " *";
+        color: #dc3545;
+        font-weight: bold;
+    }
+</style>
+
+<div class="patient-form-container">
+    <div class="form-header">
+        <h2><i class="fas fa-user-plus"></i> Create New Patient Record</h2>
+        <p>Enter patient information and clinical data for genomic analysis tracking</p>
+    </div>
+
+    <div class="info-message">
+        <p>
+            <i class="fas fa-info-circle"></i>
+            <strong>Note:</strong> All patient data is confidential and subject to institutional ethics protocols.
+            Ensure compliance with data protection regulations when entering patient information.
+        </p>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="{% if message.tags == 'error' %}error-message{% elif message.tags == 'success' %}success-message{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if form.non_field_errors %}
+        <div class="error-message">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        <!-- Patient Identification Section -->
+        <div class="form-section">
+            <h3><i class="fas fa-id-card"></i> Patient Identification</h3>
+
+            <p>
+                <label for="{{ form.patient_id.id_for_label }}" class="required-indicator">{{ form.patient_id.label }}</label>
+                {{ form.patient_id }}
+                {% if form.patient_id.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.patient_id.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.patient_id.help_text }}</span>
+            </p>
+
+            <p>
+                <label for="{{ form.name.id_for_label }}" class="required-indicator">{{ form.name.label }}</label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.name.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.name.help_text }}</span>
+            </p>
+
+            <p>
+                <label for="{{ form.birth_date.id_for_label }}">{{ form.birth_date.label }}</label>
+                {{ form.birth_date }}
+                {% if form.birth_date.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.birth_date.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.birth_date.help_text }}</span>
+            </p>
+        </div>
+
+        <!-- Clinical Information Section -->
+        <div class="form-section">
+            <h3><i class="fas fa-stethoscope"></i> Clinical Information</h3>
+
+            <p>
+                <label for="{{ form.diagnosis.id_for_label }}">{{ form.diagnosis.label }}</label>
+                {{ form.diagnosis }}
+                {% if form.diagnosis.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.diagnosis.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.diagnosis.help_text }}</span>
+            </p>
+
+            <p>
+                <label for="{{ form.phenotype.id_for_label }}">{{ form.phenotype.label }}</label>
+                {{ form.phenotype }}
+                {% if form.phenotype.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.phenotype.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.phenotype.help_text }}</span>
+            </p>
+
+            <p>
+                <label for="{{ form.additional_clinical_info.id_for_label }}">{{ form.additional_clinical_info.label }}</label>
+                {{ form.additional_clinical_info }}
+                {% if form.additional_clinical_info.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.additional_clinical_info.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.additional_clinical_info.help_text }}</span>
+            </p>
+        </div>
+
+        <!-- Analysis Information Section -->
+        <div class="form-section">
+            <h3><i class="fas fa-dna"></i> Genomic Analysis Information</h3>
+
+            <p>
+                <label for="{{ form.main_exome_result.id_for_label }}">{{ form.main_exome_result.label }}</label>
+                {{ form.main_exome_result }}
+                {% if form.main_exome_result.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.main_exome_result.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.main_exome_result.help_text }}</span>
+            </p>
+
+            <p>
+                <label for="{{ form.responsible_user.id_for_label }}">{{ form.responsible_user.label }}</label>
+                {{ form.responsible_user }}
+                {% if form.responsible_user.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.responsible_user.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.responsible_user.help_text }}</span>
+            </p>
+
+            <p>
+                <label for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+                {{ form.notes }}
+                {% if form.notes.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.notes.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.notes.help_text }}</span>
+            </p>
+        </div>
+
+        <div class="button-container">
+            <button type="submit" class="btn-submit">
+                <i class="fas fa-save"></i> Create Patient Record
+            </button>
+            <a href="{% url 'samples:sample_list' %}" class="btn-cancel">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+
+    <div style="text-align: center; margin-top: 20px; color: #6c757d; font-size: 12px;">
+        <p>Fields marked with <span style="color: #dc3545;">*</span> are required.</p>
+    </div>
+</div>
+
+{% endblock %}

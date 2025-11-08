@@ -5,6 +5,7 @@ from . import views
 app_name = 'files'
 
 urlpatterns = [
+    path('upload/', views.file_upload, name='file_upload'),
     path('download/<int:file_location_id>/', views.download_file, name='download_file'),
     path('info/<int:file_location_id>/', views.file_info, name='file_info'),
 ]

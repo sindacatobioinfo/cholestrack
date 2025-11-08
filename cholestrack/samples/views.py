@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
 from django.contrib import messages
 from .models import Patient
+from .forms import PatientForm
 from files.models import AnalysisFileLocation
 
 @login_required
@@ -82,3 +83,25 @@ def sample_detail(request, patient_id):
     except Patient.DoesNotExist:
         messages.error(request, 'Patient not found.')
         return redirect('samples:sample_list')
+
+
+@login_required
+def patient_create(request):
+    """
+    View for creating a new patient record.
+    Handles both patient information and clinical data entry.
+    """
+    if request.method == 'POST':
+        form = PatientForm(request.POST)
+        if form.is_valid():
+            patient = form.save()
+            messages.success(request, f'Patient {patient.patient_id} has been created successfully.')
+            return redirect('samples:sample_detail', patient_id=patient.patient_id)
+    else:
+        form = PatientForm()
+
+    context = {
+        'form': form,
+        'title': 'Create New Patient Record'
+    }
+    return render(request, 'samples/patient_create.html', context)

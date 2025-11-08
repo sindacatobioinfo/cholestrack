@@ -11,9 +11,23 @@
     </h1>
     
     <p class="mb-4 text-gray-600">
-        Welcome, <span class="font-semibold text-teal-700">{{ user.username }}</span>. 
+        Welcome, <span class="font-semibold text-teal-700">{{ user.username }}</span>.
         This is the quick access page for analysis data and files.
     </p>
+
+    <!-- Action Buttons -->
+    <div style="margin-bottom: 20px; display: flex; gap: 15px;">
+        <a href="{% url 'samples:patient_create' %}"
+           class="btn btn-success"
+           style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; transition: background-color 0.3s;">
+            <i class="fas fa-user-plus"></i> Add New Patient
+        </a>
+        <a href="{% url 'files:file_upload' %}"
+           class="btn btn-info"
+           style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background-color: #17a2b8; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; transition: background-color 0.3s;">
+            <i class="fas fa-file-upload"></i> Register File Location
+        </a>
+    </div>
 
     <div class="bg-white shadow-lg rounded-lg p-6 mt-4">
         <!-- TEXTO TRADUZIDO -->
