@@ -2,5 +2,7 @@
 /logs/
 /run/
 .env
+/staticfiles/
+/static/
 db.sqlite3
 create.sh

@@ -12,6 +12,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 # to create general db of django app
+python manage.py showmigrations
 python manage.py makemigrations
 python manage.py migrate
 
