@@ -8,6 +8,8 @@ from .models import AnalysisFileLocation
 from .forms import FileLocationForm
 import logging
 import os
+import zipfile
+import io
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -20,6 +22,11 @@ def download_file(request, file_location_id):
     This view implements the security layer between users and file storage infrastructure.
     It verifies permissions, validates file existence, and streams files from the mounted
     remote directory without exposing internal server paths to the client.
+
+    Special handling:
+    - VCF files: Downloads as ZIP containing the VCF file + .tbi index file
+    - BAM files: Downloads as ZIP containing the BAM file + .bai index file
+    - Other files: Downloads with original filename
 
     Security features:
     - Requires POST request to prevent CSRF attacks
@@ -111,51 +118,114 @@ def download_file(request, file_location_id):
             messages.error(request, 'Invalid file path.')
             return redirect('samples:sample_list')
 
-        # Determine the download filename
-        # Use the original filename from the path, or construct a descriptive name
+        # Use original filename only
         original_filename = full_file_path.name
-        download_filename = f"{file_location.patient.patient_id}_{file_location.sample_id}_{file_location.file_type}_{original_filename}"
 
-        # Determine content type based on file extension
-        content_type_map = {
-            '.vcf': 'text/plain',
-            '.vcf.gz': 'application/gzip',
-            '.bam': 'application/octet-stream',
-            '.fastq': 'text/plain',
-            '.fastq.gz': 'application/gzip',
-            '.pdf': 'application/pdf',
-            '.tsv': 'text/tab-separated-values',
-            '.cram': 'application/octet-stream',
-            '.txt': 'text/plain',
-        }
+        # Check if this is a VCF or BAM file that needs index file included
+        file_type_upper = file_location.file_type.upper()
+        needs_index = file_type_upper in ['VCF', 'BAM']
 
-        # Get file extension and determine content type
-        file_ext = ''.join(full_file_path.suffixes)  # Handles .vcf.gz
-        content_type = content_type_map.get(file_ext.lower(), 'application/octet-stream')
+        if needs_index:
+            # For VCF and BAM files, create a ZIP with the main file and index
+            try:
+                # Determine index file path
+                if file_type_upper == 'VCF':
+                    # VCF index: same name + .tbi extension
+                    index_file_path = Path(str(full_file_path) + '.tbi')
+                    index_filename = original_filename + '.tbi'
+                elif file_type_upper == 'BAM':
+                    # BAM index: replace .bam with .bai
+                    index_file_path = Path(str(full_file_path).replace('.bam', '.bai'))
+                    index_filename = original_filename.replace('.bam', '.bai')
 
-        # Open and stream the file
-        try:
-            file_handle = open(full_file_path, 'rb')
-            response = FileResponse(file_handle, content_type=content_type)
-            response['Content-Disposition'] = f'attachment; filename="{download_filename}"'
-            response['Content-Length'] = full_file_path.stat().st_size
+                # Create ZIP file in memory
+                zip_buffer = io.BytesIO()
+                with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                    # Add main file to ZIP
+                    zip_file.write(full_file_path, arcname=original_filename)
 
-            logger.info(
-                f"File download successful: User={request.user.username}, "
-                f"Patient={file_location.patient.patient_id}, "
-                f"FileType={file_location.file_type}, "
-                f"Size={full_file_path.stat().st_size} bytes"
-            )
+                    # Add index file if it exists
+                    if index_file_path.exists() and index_file_path.is_file():
+                        zip_file.write(index_file_path, arcname=index_filename)
+                        logger.info(
+                            f"Including index file in download: {index_filename}"
+                        )
+                    else:
+                        logger.warning(
+                            f"Index file not found, downloading main file only: "
+                            f"Expected path={index_file_path}"
+                        )
 
-            return response
+                # Prepare ZIP for download
+                zip_buffer.seek(0)
 
-        except IOError as e:
-            logger.error(
-                f"File read error: Path={full_file_path}, "
-                f"User={request.user.username}, Error={str(e)}"
-            )
-            messages.error(request, 'Error reading the file from storage.')
-            return redirect('samples:sample_list')
+                # Create ZIP filename (replace extension with .zip)
+                base_name = original_filename.rsplit('.', 1)[0] if '.' in original_filename else original_filename
+                zip_filename = f"{base_name}.zip"
+
+                response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
+                response['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
+                response['Content-Length'] = len(zip_buffer.getvalue())
+
+                logger.info(
+                    f"File download successful (with index): User={request.user.username}, "
+                    f"Patient={file_location.patient.patient_id}, "
+                    f"FileType={file_location.file_type}, "
+                    f"ZipSize={len(zip_buffer.getvalue())} bytes"
+                )
+
+                return response
+
+            except Exception as e:
+                logger.error(
+                    f"Error creating ZIP with index file: {str(e)}, "
+                    f"falling back to single file download"
+                )
+                # Fall through to regular download if ZIP creation fails
+                needs_index = False
+
+        # Regular download for non-VCF/BAM files or if ZIP creation failed
+        if not needs_index:
+            # Determine content type based on file extension
+            content_type_map = {
+                '.vcf': 'text/plain',
+                '.vcf.gz': 'application/gzip',
+                '.bam': 'application/octet-stream',
+                '.fastq': 'text/plain',
+                '.fastq.gz': 'application/gzip',
+                '.pdf': 'application/pdf',
+                '.tsv': 'text/tab-separated-values',
+                '.cram': 'application/octet-stream',
+                '.txt': 'text/plain',
+            }
+
+            # Get file extension and determine content type
+            file_ext = ''.join(full_file_path.suffixes)  # Handles .vcf.gz
+            content_type = content_type_map.get(file_ext.lower(), 'application/octet-stream')
+
+            # Open and stream the file
+            try:
+                file_handle = open(full_file_path, 'rb')
+                response = FileResponse(file_handle, content_type=content_type)
+                response['Content-Disposition'] = f'attachment; filename="{original_filename}"'
+                response['Content-Length'] = full_file_path.stat().st_size
+
+                logger.info(
+                    f"File download successful: User={request.user.username}, "
+                    f"Patient={file_location.patient.patient_id}, "
+                    f"FileType={file_location.file_type}, "
+                    f"Size={full_file_path.stat().st_size} bytes"
+                )
+
+                return response
+
+            except IOError as e:
+                logger.error(
+                    f"File read error: Path={full_file_path}, "
+                    f"User={request.user.username}, Error={str(e)}"
+                )
+                messages.error(request, 'Error reading the file from storage.')
+                return redirect('samples:sample_list')
 
     except AnalysisFileLocation.DoesNotExist:
         logger.warning(
