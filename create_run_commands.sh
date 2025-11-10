@@ -12,6 +12,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 # to create general db of django app
+python manage.py showmigrations
 python manage.py makemigrations
 python manage.py migrate
 
@@ -27,6 +28,12 @@ python manage.py makemigrations profile --empty --name create_profiles_for_exist
 # RUNSERVER
 python manage.py runserver
 
-# to create user
-#python manage.py startapp users
- 
+#After changing the site do this to restart the production
+sudo systemctl restart nginx
+sudo systemctl restart gunicorn 
+
+#To inject data into the tables (samples and/or files)
+python manage.py import_data \
+--samples /home/burlo/Downloads/samples_patient.tsv \
+--files /home/burlo/Downloads/files_analysisfilelocation.tsv \
+--clear #use this only if you want to overwrite the tables

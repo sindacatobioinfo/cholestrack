@@ -1,0 +1,49 @@
+upstream cholestrack_app_server {
+    server unix:/home/burlo/cholestrack/deploy_management/run/gunicorn.sock fail_timeout=0;
+}
+
+server {
+    listen 80 default_server;
+    server_name _;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl default_server;
+    server_name _;
+    
+    ssl_certificate /etc/nginx/ssl/cholestrack.crt;
+    ssl_certificate_key /etc/nginx/ssl/cholestrack.key;
+    
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
+    
+    client_max_body_size 3m;
+    
+    access_log /home/burlo/cholestrack/deploy_management/logs/nginx-access.log;
+    error_log /home/burlo/cholestrack/deploy_management/logs/nginx-error.log;
+    
+    location /static/ {
+        autoindex off;
+        alias /home/burlo/cholestrack/cholestrack/static/;
+    }
+    
+    location /media/ {
+        autoindex off;
+        alias /home/burlo/cholestrack/cholestrack/media/;
+    }
+    
+    location / {
+        try_files $uri @cholestrack_backend;
+    }
+    
+    location @cholestrack_backend {
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_redirect off;
+        proxy_pass http://cholestrack_app_server;
+    }
+}

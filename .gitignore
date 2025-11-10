@@ -1,0 +1,9 @@
+#Django files and folders
+/cholestrack/.venv
+/cholestrack/.env
+/cholestrack/staticfiles/
+/cholestrack/static/
+
+#Deply logs
+/deploy_management/logs/
+/deploy_management/run

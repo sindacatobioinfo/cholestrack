@@ -7,6 +7,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .models import Patient
 from .forms import PatientForm
 from files.models import AnalysisFileLocation
+import json
 
 @login_required
 @never_cache
@@ -44,6 +45,16 @@ def sample_list(request):
                     'id': location.id,
                     'server': location.server_name
                 }
+
+        # Safely handle clinical_info_json which might be a dict, string, or None
+        clinical_info = patient.clinical_info_json
+        if isinstance(clinical_info, str):
+            try:
+                clinical_info = json.loads(clinical_info)
+            except (json.JSONDecodeError, TypeError):
+                clinical_info = {}
+        elif not clinical_info:
+            clinical_info = {}
 
         patient_data.append({
             'patient_id': patient.patient_id,
