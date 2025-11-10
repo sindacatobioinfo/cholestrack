@@ -2,14 +2,12 @@
 {% load static %}
 
 {% block content %}
-<!-- Removido o <div class="container my-5"> para permitir largura total -->
-<div> 
-    
-    <!-- TEXTO TRADUZIDO -->
+<div>
+
     <h1 class="text-3xl font-bold text-gray-800 mb-6">
         <i class="fas fa-microscope text-teal-600 mr-2"></i> Patient Genomic Analyses
     </h1>
-    
+
     <p class="mb-4 text-gray-600">
         Welcome, <span class="font-semibold text-teal-700">{{ user.username }}</span>.
         This is the quick access page for analysis data and files.
@@ -30,85 +28,149 @@
     </div>
 
     <div class="bg-white shadow-lg rounded-lg p-6 mt-4">
-        <!-- TEXTO TRADUZIDO -->
-        <h2 class="text-2xl font-light text-teal-700 mb-4 border-b pb-2">Available Data Table</h2>
-        
+        <h2 class="text-2xl font-light text-teal-700 mb-4 border-b pb-2">
+            Available Data Table
+            {% if total_count %}
+                <span class="text-sm text-gray-600">({{ total_count }} total records)</span>
+            {% endif %}
+        </h2>
+
         {% if patient_list %}
         <div class="table-responsive">
             <table class="table table-hover table-striped patient-table">
                 <thead class="bg-teal-600 text-white">
                     <tr>
-                        <!-- CABEÇALHOS TRADUZIDOS -->
                         <th class="py-2 px-4">Project</th>
                         <th class="py-2 px-4">Batch</th>
                         <th class="py-2 px-4">Sample ID</th>
                         <th class="py-2 px-4">Data Type</th>
-                        <th class="py-2 px-4">Patient ID</th>
-                        <th class="py-2 px-4">Name (Preview)</th>
-                        <th class="py-2 px-4">Diagnosis (Preview)</th>
                         <th class="py-2 px-4">Main Result</th>
+                        <th class="py-2 px-4">Analysis Status</th>
                         <th class="py-2 px-4 text-center">Files (Download)</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for patient in patient_list %}
                         <tr>
-                            <!-- Dados (project, batch, sample_id, data_type) -->
                             <td class="py-2 px-4 text-sm text-gray-600">{{ patient.project|default:"N/D" }}</td>
                             <td class="py-2 px-4 text-sm text-gray-600">{{ patient.batch|default:"N/D" }}</td>
-                            <td class="py-2 px-4 font-mono text-sm text-blue-700">{{ patient.sample_id|default:"N/D" }}</td>
-                            <td class="py-2 px-4 font-bold text-xs"><span class="badge badge-secondary">{{ patient.data_type|default:"N/D" }}</span></td>
-                            <!-- Dados (patient_id, name, clinical_preview, main_result) -->
-                            <td class="py-2 px-4 font-mono text-sm text-teal-700">
+                            <td class="py-2 px-4 font-mono text-sm">
                                 <a href="{% url 'samples:sample_detail' patient_id=patient.patient_id %}"
                                    class="text-teal-700 hover:text-teal-900 hover:underline font-semibold">
-                                    {{ patient.patient_id }}
+                                    {{ patient.sample_id|default:"N/D" }}
                                 </a>
+                            </td>
+                            <td class="py-2 px-4 font-bold text-xs">
+                                <span class="badge badge-secondary">{{ patient.data_type|default:"N/D" }}</span>
+                            </td>
+                            <td class="py-2 px-4 font-semibold">
+                                <span class="badge badge-info">{{ patient.main_result|default:"N/A" }}</span>
                             </td>
                             <td class="py-2 px-4">
-                                <a href="{% url 'samples:sample_detail' patient_id=patient.patient_id %}"
-                                   class="text-gray-800 hover:text-teal-700 hover:underline">
-                                    {{ patient.name|default:"Not Informed" }}
-                                </a>
+                                <span class="badge
+                                    {% if patient.analysis_status_raw == 'AWAITING_PROCESSING' %}badge-warning
+                                    {% elif patient.analysis_status_raw == 'PROCESSING_DONE' %}badge-primary
+                                    {% elif patient.analysis_status_raw == 'ANALYSIS_DONE' %}badge-success
+                                    {% else %}badge-secondary{% endif %}">
+                                    {{ patient.analysis_status|default:"N/A" }}
+                                </span>
                             </td>
-                            <td class="py-2 px-4 text-sm text-gray-500">{{ patient.clinical_preview|default:"N/D" }}</td>
-                            <td class="py-2 px-4 font-semibold"><span class="badge badge-info">{{ patient.main_result|default:"N/A" }}</span></td>
-                            
                             <td class="py-2 px-4 text-center">
-                                <!-- Coluna de Download -->
                                 {% for file_type, file_data in patient.files.items %}
                                     <form method="post" action="{% url 'files:download_file' file_location_id=file_data.id %}" style="display: inline-block; margin: 2px;">
                                         {% csrf_token %}
-                                        <button type="submit" 
+                                        <button type="submit"
                                                 title="Download {{ file_type }} file from Server {{ file_data.server }}"
-                                                class="btn btn-sm download-btn 
-                                                    {% if file_type == 'VCF' %}bg-green-600 hover:bg-green-700{% elif file_type == 'BAM' %}bg-blue-600 hover:bg-blue-700{% else %}bg-gray-600 hover:bg-gray-700{% endif %}
+                                                class="btn btn-sm download-btn
+                                                    {% if file_type == 'VCF' %}bg-green-600 hover:bg-green-700
+                                                    {% elif file_type == 'BAM' %}bg-blue-600 hover:bg-blue-700
+                                                    {% else %}bg-gray-600 hover:bg-gray-700{% endif %}
                                                     text-white font-bold py-1 px-3 rounded shadow transition duration-150 ease-in-out">
                                             <i class="fas fa-download mr-1"></i> {{ file_type }}
                                         </button>
                                     </form>
                                 {% empty %}
-                                    <!-- TEXTO TRADUZIDO -->
                                     <span class="text-gray-400 text-sm">No files available</span>
                                 {% endfor %}
                             </td>
                         </tr>
                     {% empty %}
                         <tr>
-                            <!-- TEXTO TRADUZIDO -->
-                            <td colspan="9" class="text-center py-4 text-gray-500">No patients registered in the system or with analysis data.</td>
+                            <td colspan="7" class="text-center py-4 text-gray-500">No patients registered in the system or with analysis data.</td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        
-        <!-- TEXTO TRADUZIDO -->
+
+        <!-- Pagination Controls -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Table pagination" class="mt-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-sm text-gray-600">
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ total_count }} entries
+                </div>
+                <ul class="pagination mb-0">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1" aria-label="First">
+                                <span aria-hidden="true">&laquo;&laquo;</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo;&laquo;</span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo;</span>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                                <span aria-hidden="true">&raquo;&raquo;</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&raquo;</span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">&raquo;&raquo;</span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </nav>
+        {% endif %}
+
         <p class="mt-4 text-xs text-gray-500">
             * The file path is kept secret on the backend. The download link is mediated by a security View.
         </p>
         {% else %}
-            <!-- TEXTO TRADUZIDO -->
             <div class="alert alert-warning" role="alert">
                 <i class="fas fa-exclamation-triangle"></i> No patient data found.
             </div>
@@ -116,14 +178,14 @@
     </div>
 </div>
 
-<!-- Estilos customizados para a tabela (mantidos) -->
+<!-- Custom table styles -->
 <style>
     .patient-table {
         width: 100%;
         margin-bottom: 1rem;
         color: #212529;
         border-collapse: separate;
-        border-spacing: 0 0px; 
+        border-spacing: 0 0px;
     }
     .patient-table th {
         border-bottom: 2px solid #e2e8f0;
@@ -143,17 +205,67 @@
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     .patient-table td {
-        border-top: 1px solid #f7fafc; 
+        border-top: 1px solid #f7fafc;
         padding: 1rem;
     }
     .download-btn {
-        min-width: 60px; 
+        min-width: 60px;
     }
     .badge-secondary {
         background-color: #6c757d;
         color: white;
         padding: 0.3em 0.5em;
         border-radius: 0.25rem;
+    }
+    .badge-warning {
+        background-color: #ffc107;
+        color: #333;
+        padding: 0.3em 0.5em;
+        border-radius: 0.25rem;
+        font-weight: 600;
+    }
+    .badge-primary {
+        background-color: #007bff;
+        color: white;
+        padding: 0.3em 0.5em;
+        border-radius: 0.25rem;
+        font-weight: 600;
+    }
+    .badge-success {
+        background-color: #28a745;
+        color: white;
+        padding: 0.3em 0.5em;
+        border-radius: 0.25rem;
+        font-weight: 600;
+    }
+    .pagination {
+        display: flex;
+        list-style: none;
+        gap: 5px;
+    }
+    .page-item.active .page-link {
+        background-color: #008080;
+        border-color: #008080;
+        color: white;
+    }
+    .page-link {
+        padding: 0.5rem 0.75rem;
+        color: #008080;
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .page-link:hover {
+        background-color: #e9ecef;
+        color: #006666;
+    }
+    .page-item.disabled .page-link {
+        color: #6c757d;
+        background-color: #fff;
+        border-color: #dee2e6;
+        cursor: not-allowed;
     }
 </style>
 

@@ -39,11 +39,26 @@ class Patient(models.Model):
         help_text="Unstructured clinical data in JSON format (e.g., diagnosis, symptoms, lab results, phenotype)"
     )
     main_exome_result = models.CharField(
-        max_length=255, 
-        default="Awaiting Analysis", 
+        max_length=255,
+        default="Awaiting Analysis",
         verbose_name="Main Exome Result",
         help_text="Summary of the main genomic finding or current analysis status"
     )
+
+    ANALYSIS_STATUS_CHOICES = [
+        ('AWAITING_PROCESSING', 'Awaiting Processing'),
+        ('PROCESSING_DONE', 'Processing Done'),
+        ('ANALYSIS_DONE', 'Analysis Done'),
+    ]
+    analysis_status = models.CharField(
+        max_length=30,
+        choices=ANALYSIS_STATUS_CHOICES,
+        default='AWAITING_PROCESSING',
+        verbose_name="Analysis Status",
+        help_text="Current status of the genomic analysis pipeline",
+        db_index=True
+    )
+
     notes = models.TextField(
         blank=True,
         null=True,

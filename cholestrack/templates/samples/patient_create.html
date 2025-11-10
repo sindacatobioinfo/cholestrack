@@ -346,6 +346,19 @@
             </p>
 
             <p>
+                <label for="{{ form.analysis_status.id_for_label }}">{{ form.analysis_status.label }}</label>
+                {{ form.analysis_status }}
+                {% if form.analysis_status.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.analysis_status.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <span class="help-text">{{ form.analysis_status.help_text }}</span>
+            </p>
+
+            <p>
                 <label for="{{ form.responsible_user.id_for_label }}">{{ form.responsible_user.label }}</label>
                 {{ form.responsible_user }}
                 {% if form.responsible_user.errors %}
