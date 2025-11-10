@@ -5,4 +5,5 @@
 /cholestrack/static/
 
 #Deply logs
-/logs/
+/deploy_management/logs/
+/deploy_management/run
