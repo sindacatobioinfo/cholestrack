@@ -31,3 +31,9 @@ python manage.py runserver
 #After changing the site do this to restart the production
 sudo systemctl restart nginx
 sudo systemctl restart gunicorn 
+
+#To inject data into the tables (samples and files)
+python manage.py import_data \
+--samples /home/burlo/Downloads/samples_patient.tsv \
+--files /home/burlo/Downloads/files_analysisfilelocation.tsv \
+--clear #use this only if you want to overwrite the tables
