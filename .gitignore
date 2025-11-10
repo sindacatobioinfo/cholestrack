@@ -5,7 +5,7 @@
 /cholestrack/static/
 /cholestrack/media/
 
-#Deply logs
+#Deploy logs
 /deploy_management/logs/
 /deploy_management/run/
 /deploy_management/remote_files_setup.sh
