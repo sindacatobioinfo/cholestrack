@@ -54,6 +54,7 @@ class PatientForm(forms.ModelForm):
             'name',
             'birth_date',
             'main_exome_result',
+            'analysis_status',
             'responsible_user',
             'notes'
         ]
@@ -74,6 +75,9 @@ class PatientForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'e.g., Awaiting Analysis, Positive, Negative'
             }),
+            'analysis_status': forms.Select(attrs={
+                'class': 'form-control'
+            }),
             'responsible_user': forms.Select(attrs={
                 'class': 'form-control'
             }),
@@ -88,6 +92,7 @@ class PatientForm(forms.ModelForm):
             'name': 'Full Name',
             'birth_date': 'Date of Birth',
             'main_exome_result': 'Main Exome Result',
+            'analysis_status': 'Analysis Status',
             'responsible_user': 'Responsible Researcher',
             'notes': 'Research Notes',
         }
@@ -96,6 +101,7 @@ class PatientForm(forms.ModelForm):
             'name': 'Use anonymized ID if required by ethics protocols',
             'birth_date': 'Patient date of birth',
             'main_exome_result': 'Summary of main genomic finding or current status',
+            'analysis_status': 'Current status of the genomic analysis pipeline',
             'responsible_user': 'The researcher or clinician managing this case',
             'notes': 'Additional notes about the patient or case',
         }

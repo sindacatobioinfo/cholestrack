@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
 from django.contrib import messages
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .models import Patient
 from .forms import PatientForm
 from files.models import AnalysisFileLocation
@@ -15,29 +16,30 @@ def sample_list(request):
     Display all patient samples and their associated genomic analysis files.
     This view serves as the main dashboard for sample data management,
     presenting a comprehensive table of patients and available analysis files.
+    Includes pagination (10 rows per page).
     """
     all_patients = Patient.objects.all().prefetch_related('file_locations')
     patient_data = []
-    
+
     for patient in all_patients:
         available_files = {}
         file_metadata = {
-            'project': 'N/D', 
-            'batch': 'N/D', 
-            'sample_id': 'N/D', 
+            'project': 'N/D',
+            'batch': 'N/D',
+            'sample_id': 'N/D',
             'data_type': 'N/D'
         }
-        
+
         # Get only active file locations
         locations = list(patient.file_locations.filter(is_active=True))
-        
+
         if locations:
             first_location = locations[0]
             file_metadata['project'] = getattr(first_location, 'project_name', 'N/D')
             file_metadata['batch'] = getattr(first_location, 'batch_id', 'N/D')
             file_metadata['sample_id'] = getattr(first_location, 'sample_id', 'N/D')
             file_metadata['data_type'] = getattr(first_location, 'data_type', 'N/D').upper()
-            
+
             for location in locations:
                 available_files[location.file_type] = {
                     'id': location.id,
@@ -57,20 +59,35 @@ def sample_list(request):
         patient_data.append({
             'patient_id': patient.patient_id,
             'name': patient.name,
-            'main_result': getattr(patient, 'main_exome_result', 'N/D'), 
-            'clinical_preview': clinical_info.get('diagnostico', 'N/D'),
+            'main_result': getattr(patient, 'main_exome_result', 'N/D'),
+            'analysis_status': patient.get_analysis_status_display(),
+            'analysis_status_raw': patient.analysis_status,
+            'clinical_preview': patient.clinical_info_json.get('diagnostico', 'N/D') if patient.clinical_info_json else 'N/D',
             'files': available_files,
             'project': file_metadata['project'],
             'batch': file_metadata['batch'],
             'sample_id': file_metadata['sample_id'],
             'data_type': file_metadata['data_type'],
         })
-        
+
+    # Pagination: 10 rows per page
+    paginator = Paginator(patient_data, 10)
+    page_number = request.GET.get('page', 1)
+
+    try:
+        page_obj = paginator.get_page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.get_page(1)
+    except EmptyPage:
+        page_obj = paginator.get_page(paginator.num_pages)
+
     context = {
-        'patient_list': patient_data,
-        'user_name': request.user.username
+        'page_obj': page_obj,
+        'patient_list': page_obj.object_list,
+        'user_name': request.user.username,
+        'total_count': paginator.count,
     }
-    
+
     return render(request, 'samples/sample_list.html', context)
 
 
