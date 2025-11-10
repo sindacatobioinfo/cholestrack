@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .models import Patient
 from .forms import PatientForm
+from .filters import PatientSampleFilter
 from files.models import AnalysisFileLocation
 import json
 
@@ -16,9 +17,15 @@ def sample_list(request):
     Display all patient samples and their associated genomic analysis files.
     This view serves as the main dashboard for sample data management,
     presenting a comprehensive table of patients and available analysis files.
-    Includes pagination (10 rows per page).
+    Includes pagination (10 rows per page) and filtering capabilities.
     """
-    all_patients = Patient.objects.all().prefetch_related('file_locations')
+    # Apply filters using django-filter
+    patient_filter = PatientSampleFilter(
+        request.GET,
+        queryset=Patient.objects.all().prefetch_related('file_locations')
+    )
+
+    all_patients = patient_filter.qs
     patient_data = []
 
     for patient in all_patients:
@@ -82,6 +89,7 @@ def sample_list(request):
         page_obj = paginator.get_page(paginator.num_pages)
 
     context = {
+        'filter': patient_filter,
         'page_obj': page_obj,
         'patient_list': page_obj.object_list,
         'user_name': request.user.username,

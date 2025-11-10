@@ -27,6 +27,71 @@
         </a>
     </div>
 
+    <!-- Filter Panel -->
+    <div class="bg-white shadow-md rounded-lg p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3" onclick="toggleFilters()" style="cursor: pointer;">
+            <h3 class="text-lg font-semibold text-teal-700 mb-0">
+                <i class="fas fa-filter mr-2"></i> Filter Data
+            </h3>
+            <span id="filter-toggle-icon" class="text-teal-600">
+                <i class="fas fa-chevron-down"></i>
+            </span>
+        </div>
+
+        <div id="filter-form-container" style="display: none;">
+            <form method="get" action="" class="filter-form">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ filter.form.project.id_for_label }}" class="form-label text-sm font-semibold text-gray-700">
+                            <i class="fas fa-project-diagram mr-1"></i> Project
+                        </label>
+                        {{ filter.form.project }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ filter.form.batch.id_for_label }}" class="form-label text-sm font-semibold text-gray-700">
+                            <i class="fas fa-layer-group mr-1"></i> Batch
+                        </label>
+                        {{ filter.form.batch }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ filter.form.sample_id.id_for_label }}" class="form-label text-sm font-semibold text-gray-700">
+                            <i class="fas fa-vial mr-1"></i> Sample ID
+                        </label>
+                        {{ filter.form.sample_id }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ filter.form.data_type.id_for_label }}" class="form-label text-sm font-semibold text-gray-700">
+                            <i class="fas fa-dna mr-1"></i> Data Type
+                        </label>
+                        {{ filter.form.data_type }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ filter.form.main_result.id_for_label }}" class="form-label text-sm font-semibold text-gray-700">
+                            <i class="fas fa-clipboard-check mr-1"></i> Main Result
+                        </label>
+                        {{ filter.form.main_result }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ filter.form.analysis_status.id_for_label }}" class="form-label text-sm font-semibold text-gray-700">
+                            <i class="fas fa-tasks mr-1"></i> Analysis Status
+                        </label>
+                        {{ filter.form.analysis_status }}
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search mr-1"></i> Apply Filters
+                    </button>
+                    <a href="{% url 'samples:sample_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-undo mr-1"></i> Clear Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="bg-white shadow-lg rounded-lg p-6 mt-4">
         <h2 class="text-2xl font-light text-teal-700 mb-4 border-b pb-2">
             Available Data Table
@@ -113,12 +178,12 @@
                 <ul class="pagination mb-0">
                     {% if page_obj.has_previous %}
                         <li class="page-item">
-                            <a class="page-link" href="?page=1" aria-label="First">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1" aria-label="First">
                                 <span aria-hidden="true">&laquo;&laquo;</span>
                             </a>
                         </li>
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}" aria-label="Previous">
                                 <span aria-hidden="true">&laquo;</span>
                             </a>
                         </li>
@@ -138,19 +203,19 @@
                             </li>
                         {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
                             </li>
                         {% endif %}
                     {% endfor %}
 
                     {% if page_obj.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}" aria-label="Next">
                                 <span aria-hidden="true">&raquo;</span>
                             </a>
                         </li>
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}" aria-label="Last">
                                 <span aria-hidden="true">&raquo;&raquo;</span>
                             </a>
                         </li>
@@ -267,6 +332,82 @@
         border-color: #dee2e6;
         cursor: not-allowed;
     }
+    .filter-form input[type="text"],
+    .filter-form select {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    .filter-form input[type="text"]:focus,
+    .filter-form select:focus {
+        outline: none;
+        border-color: #008080;
+        box-shadow: 0 0 0 3px rgba(0, 128, 128, 0.1);
+    }
+    .btn-primary {
+        background-color: #008080;
+        border-color: #008080;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 600;
+        transition: background-color 0.2s;
+        cursor: pointer;
+        border: none;
+    }
+    .btn-primary:hover {
+        background-color: #006666;
+    }
+    .btn-secondary {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 600;
+        transition: background-color 0.2s;
+        text-decoration: none;
+        display: inline-block;
+        cursor: pointer;
+    }
+    .btn-secondary:hover {
+        background-color: #5a6268;
+        color: white;
+        text-decoration: none;
+    }
 </style>
+
+<script>
+function toggleFilters() {
+    const container = document.getElementById('filter-form-container');
+    const icon = document.getElementById('filter-toggle-icon');
+
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        icon.innerHTML = '<i class="fas fa-chevron-up"></i>';
+    } else {
+        container.style.display = 'none';
+        icon.innerHTML = '<i class="fas fa-chevron-down"></i>';
+    }
+}
+
+// Auto-expand filter panel if any filter is active
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasFilters = Array.from(urlParams.keys()).some(key =>
+        key !== 'page' && urlParams.get(key) !== ''
+    );
+
+    if (hasFilters) {
+        const container = document.getElementById('filter-form-container');
+        const icon = document.getElementById('filter-toggle-icon');
+        container.style.display = 'block';
+        icon.innerHTML = '<i class="fas fa-chevron-up"></i>';
+    }
+});
+</script>
 
 {% endblock content %}
