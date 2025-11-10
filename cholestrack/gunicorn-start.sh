@@ -1,7 +1,7 @@
 #!/bin/bash
 NAME="cholestrack"                                # Name of the application
 DJANGODIR=/home/burlo/cholestrack/cholestrack   # Django project directory
-SOCKFILE=/home/burlo/cholestrack/cholestrack/run/gunicorn.sock   # we will communicate using this unix socket
+SOCKFILE=/home/burlo/cholestrack/deploy_management/run/gunicorn.sock   # we will communicate using this unix socket
 USER=burlo                                   # The user to run as
 GROUP=burlo                                  # The group to run as
 NUM_WORKERS=2                                   # How many worker processes should Gunicorn spawn

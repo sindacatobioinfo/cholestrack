@@ -32,7 +32,7 @@ python manage.py runserver
 sudo systemctl restart nginx
 sudo systemctl restart gunicorn 
 
-#To inject data into the tables (samples and files)
+#To inject data into the tables (samples and/or files)
 python manage.py import_data \
 --samples /home/burlo/Downloads/samples_patient.tsv \
 --files /home/burlo/Downloads/files_analysisfilelocation.tsv \

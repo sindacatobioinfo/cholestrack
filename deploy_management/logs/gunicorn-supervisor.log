@@ -1,0 +1,41 @@
+Starting cholestrack as burlo
+[2025-11-07 15:14:58 +0100] [14643] [INFO] Starting gunicorn 23.0.0
+[2025-11-07 15:14:58 +0100] [14643] [INFO] Listening at: unix:/home/burlo/cholestrack/cholestrack/run/gunicorn.sock (14643)
+[2025-11-07 15:14:58 +0100] [14643] [INFO] Using worker: sync
+[2025-11-07 15:14:58 +0100] [14647] [INFO] Booting worker with pid: 14647
+[2025-11-07 15:14:58 +0100] [14648] [INFO] Booting worker with pid: 14648
+[2025-11-10 17:08:58 +0100] [14643] [INFO] Handling signal: term
+Traceback (most recent call last):
+  File "/home/burlo/cholestrack/cholestrack/.venv/lib/python3.12/site-packages/gunicorn/arbiter.py", line 223, in run
+    handler()
+  File "/home/burlo/cholestrack/cholestrack/.venv/lib/python3.12/site-packages/gunicorn/arbiter.py", line 256, in handle_term
+    raise StopIteration
+StopIteration
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/burlo/cholestrack/cholestrack/.venv/bin/gunicorn", line 8, in <module>
+    sys.exit(run())
+             ^^^^^
+  File "/home/burlo/cholestrack/cholestrack/.venv/lib/python3.12/site-packages/gunicorn/app/wsgiapp.py", line 66, in run
+    WSGIApplication("%(prog)s [OPTIONS] [APP_MODULE]", prog=prog).run()
+  File "/home/burlo/cholestrack/cholestrack/.venv/lib/python3.12/site-packages/gunicorn/app/base.py", line 235, in run
+    super().run()
+  File "/home/burlo/cholestrack/cholestrack/.venv/lib/python3.12/site-packages/gunicorn/app/base.py", line 71, in run
+    Arbiter(self).run()
+  File "/home/burlo/cholestrack/cholestrack/.venv/lib/python3.12/site-packages/gunicorn/arbiter.py", line 226, in run
+    self.halt()
+  File "/home/burlo/cholestrack/cholestrack/.venv/lib/python3.12/site-packages/gunicorn/arbiter.py", line 341, in halt
+    self.stop()
+  File "/home/burlo/cholestrack/cholestrack/.venv/lib/python3.12/site-packages/gunicorn/arbiter.py", line 384, in stop
+    sock.close_sockets(self.LISTENERS, unlink)
+  File "/home/burlo/cholestrack/cholestrack/.venv/lib/python3.12/site-packages/gunicorn/sock.py", line 212, in close_sockets
+    os.unlink(sock_name)
+FileNotFoundError: [Errno 2] No such file or directory: '/home/burlo/cholestrack/cholestrack/run/gunicorn.sock'
+Starting cholestrack as burlo
+[2025-11-10 17:08:59 +0100] [68974] [INFO] Starting gunicorn 23.0.0
+[2025-11-10 17:08:59 +0100] [68974] [INFO] Listening at: unix:/home/burlo/cholestrack/deploy_management/run/gunicorn.sock (68974)
+[2025-11-10 17:08:59 +0100] [68974] [INFO] Using worker: sync
+[2025-11-10 17:08:59 +0100] [68982] [INFO] Booting worker with pid: 68982
+[2025-11-10 17:09:00 +0100] [68983] [INFO] Booting worker with pid: 68983

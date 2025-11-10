@@ -20,13 +20,15 @@ class Command(BaseCommand):
             '--samples',
             type=str,
             help='Path to samples_patient.tsv file',
-            required=True
+            required=False,
+            default=None
         )
         parser.add_argument(
             '--files',
             type=str,
             help='Path to files_analysisfilelocation.tsv file',
-            required=True
+            required=False,
+            default=None
         )
         parser.add_argument(
             '--clear',
@@ -38,27 +40,42 @@ class Command(BaseCommand):
         samples_path = options['samples']
         files_path = options['files']
         
-        # Verify files exist
-        if not Path(samples_path).exists():
+        # Check that at least one file path was provided
+        if not samples_path and not files_path:
+            self.stdout.write(self.style.ERROR(
+                'Error: You must provide at least one file to import (--samples or --files)'
+            ))
+            return
+        
+        # Verify that provided files exist
+        if samples_path and not Path(samples_path).exists():
             self.stdout.write(self.style.ERROR(f'Samples file not found: {samples_path}'))
             return
         
-        if not Path(files_path).exists():
+        if files_path and not Path(files_path).exists():
             self.stdout.write(self.style.ERROR(f'Files file not found: {files_path}'))
             return
 
         # Clear existing data if requested
         if options['clear']:
             self.stdout.write('Clearing existing data...')
-            AnalysisFileLocation.objects.all().delete()
-            Patient.objects.all().delete()
+            if files_path:
+                AnalysisFileLocation.objects.all().delete()
+            if samples_path:
+                Patient.objects.all().delete()
             self.stdout.write(self.style.SUCCESS('Data cleared'))
 
-        # Import samples first (they're referenced by files)
-        self.import_samples(samples_path)
+        # Import samples if provided
+        if samples_path:
+            self.import_samples(samples_path)
+        else:
+            self.stdout.write(self.style.WARNING('Skipping samples import (no file provided)'))
         
-        # Import files
-        self.import_files(files_path)
+        # Import files if provided
+        if files_path:
+            self.import_files(files_path)
+        else:
+            self.stdout.write(self.style.WARNING('Skipping files import (no file provided)'))
         
         self.stdout.write(self.style.SUCCESS('Data import completed successfully!'))
 
@@ -89,7 +106,7 @@ class Command(BaseCommand):
                     created_at = parse_datetime(row['created_at']) if row['created_at'] else None
                     updated_at = parse_datetime(row['updated_at']) if row['updated_at'] else None
                     
-                    # Handle JSON field - it's already a string representation
+                    # Handle JSON field - convert string to actual dict/list object
                     try:
                         clinical_info = json.loads(row['clinical_info_json']) if row['clinical_info_json'] and row['clinical_info_json'].strip() else {}
                     except json.JSONDecodeError:
