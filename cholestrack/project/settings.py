@@ -161,3 +161,25 @@ LOGIN_URL = 'users:login'
 
 # CORREÇÃO: Limpa a sessão quando o usuário fecha o navegador.
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+
+# Email Configuration for User Registration and Notifications
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp-mail.outlook.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='ronald.rodriguesdemoura@burlo.trieste.it')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')  # Must be set in .env file
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='ronald.rodriguesdemoura@burlo.trieste.it')
+
+# Administrator email for receiving role confirmation requests
+ADMIN_EMAIL = 'ronald.rodriguesdemoura@burlo.trieste.it'
+
+# Allowed institutional email domains for registration
+ALLOWED_EMAIL_DOMAINS = [
+    'burlo.trieste.it',
+    'units.it',
+]
+
+# For development/testing, uncomment the line below to print emails to console
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
