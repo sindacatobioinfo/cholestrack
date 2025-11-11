@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h3><i class="fas fa-redo"></i> Resend Verification Email</h3>
+                </div>
+                <div class="card-body">
+                    <p class="lead text-center">
+                        Didn't receive the verification email or the link expired?
+                    </p>
+
+                    <p class="text-muted text-center mb-4">
+                        Enter your email address below and we'll send you a new verification link.
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="form-group mb-3">
+                            <label for="{{ form.email.id_for_label }}">
+                                <i class="fas fa-envelope"></i> Email Address
+                            </label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger">
+                                    {{ form.email.errors }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                {{ form.email.help_text }}
+                            </small>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-paper-plane"></i> Send New Verification Email
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <p class="mb-2">
+                            <a href="{% url 'users:register' %}">
+                                <i class="fas fa-user-plus"></i> Don't have an account? Register here
+                            </a>
+                        </p>
+                        <p class="mb-0">
+                            <a href="{% url 'users:login' %}">
+                                <i class="fas fa-sign-in-alt"></i> Already verified? Log in
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Verify Your Email - Cholestrack</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background-color: #008080; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
+        <h1 style="color: white; margin: 0;">{{ site_name }}</h1>
+        <p style="color: #e0f2f1; margin: 5px 0 0 0;">Genomic Analysis Platform</p>
+    </div>
+
+    <div style="background-color: #ffffff; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 5px 5px;">
+        <h2 style="color: #008080; margin-top: 0;">Welcome to Cholestrack!</h2>
+
+        <p>Hello <strong>{{ user.first_name }} {{ user.last_name }}</strong>,</p>
+
+        <p>Thank you for registering with Cholestrack, the genomic analysis platform for IRCCS Materno Infantile Burlo Garofolo.</p>
+
+        <p>To complete your registration and activate your account, please verify your email address by clicking the button below:</p>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ verification_url }}"
+               style="background-color: #008080; color: white; padding: 14px 35px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; font-size: 16px;">
+                Verify Email Address
+            </a>
+        </div>
+
+        <p>Or copy and paste this link into your browser:</p>
+        <p style="background-color: #f5f5f5; padding: 12px; border-radius: 3px; word-break: break-all; font-size: 12px; font-family: monospace;">
+            {{ verification_url }}
+        </p>
+
+        <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>Important:</strong> This link will expire in 24 hours.</p>
+        </div>
+
+        <div style="background-color: #d1ecf1; border-left: 4px solid #0c5460; padding: 12px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>Next Steps:</strong> After verifying your email, an administrator will review and confirm your role before you can access patient data. You will receive a welcome email once your account is fully activated.</p>
+        </div>
+
+        <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666;">
+            <strong>Account Information:</strong><br>
+            Username: {{ user.username }}<br>
+            Email: {{ user.email }}
+        </p>
+    </div>
+
+    <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin-top: 20px;">
+        <p style="font-size: 12px; color: #666; margin: 0; text-align: center;">
+            If you didn't create this account, please ignore this email.<br>
+            For support, contact the administrator at {{ site_name }}.
+        </p>
+    </div>
+</body>
+</html>

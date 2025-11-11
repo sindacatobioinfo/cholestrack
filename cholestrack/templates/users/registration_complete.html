@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white text-center">
+                    <h3><i class="fas fa-check-circle"></i> Registration Successful!</h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-envelope-open-text" style="font-size: 80px; color: #008080;"></i>
+                    </div>
+
+                    <h4 class="text-center mb-4">Check Your Email</h4>
+
+                    <p class="lead">
+                        Thank you for registering with Cholestrack! We've sent a verification email to your institutional email address.
+                    </p>
+
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-info-circle"></i> What happens next?</h5>
+                        <ol>
+                            <li><strong>Check your email inbox</strong> for a verification message (check spam folder if needed)</li>
+                            <li><strong>Click the verification link</strong> in the email to activate your account</li>
+                            <li><strong>Wait for admin approval</strong> - An administrator will review and confirm your role</li>
+                            <li><strong>You'll receive a welcome email</strong> once your account is fully activated</li>
+                        </ol>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <p class="mb-0">
+                            <i class="fas fa-clock"></i> <strong>Note:</strong> The verification link expires in 24 hours. If you don't receive the email or the link expires, you can request a new verification link below.
+                        </p>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <a href="{% url 'users:resend_verification' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-redo"></i> Resend Verification Email
+                        </a>
+                        <a href="{% url 'users:login' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-sign-in-alt"></i> Go to Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
