@@ -13,12 +13,12 @@ def role_required(allowed_roles):
     Decorator to restrict view access based on user role.
 
     Usage:
-        @role_required(['ADMIN', 'MANAGER', 'RESEARCHER'])
+        @role_required(['ADMIN', 'DATA_MANAGER', 'RESEARCHER'])
         def my_view(request):
             ...
 
     Args:
-        allowed_roles: List of role codes (e.g., ['ADMIN', 'MANAGER'])
+        allowed_roles: List of role codes (e.g., ['ADMIN', 'DATA_MANAGER'])
     """
     def decorator(view_func):
         @wraps(view_func)

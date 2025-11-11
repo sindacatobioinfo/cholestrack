@@ -72,15 +72,15 @@ class UserRole(models.Model):
 
     Role Hierarchy (from highest to lowest):
     - Administrator: Full access to everything
-    - Manager: Create/Edit/View/Soft-delete (no hard delete)
+    - Data Manager: Create/Edit/View/Soft-delete (no hard delete)
     - Researcher: Create/Edit/View (no delete)
-    - Viewer: View only (read-only access)
+    - Clinician: View only (read-only access)
     """
     ROLE_CHOICES = [
         ('ADMIN', 'Administrator'),
-        ('MANAGER', 'Manager'),
+        ('DATA_MANAGER', 'Data Manager'),
         ('RESEARCHER', 'Researcher'),
-        ('VIEWER', 'Viewer'),
+        ('CLINICIAN', 'Clinician'),
     ]
 
     user = models.OneToOneField(
@@ -91,7 +91,7 @@ class UserRole(models.Model):
     role = models.CharField(
         max_length=20,
         choices=ROLE_CHOICES,
-        default='VIEWER',
+        default='CLINICIAN',
         verbose_name="Role"
     )
     assigned_by = models.ForeignKey(
@@ -128,32 +128,32 @@ class UserRole(models.Model):
 
     def can_create_patient(self):
         """Check if user can create patients"""
-        return self.confirmed_by_admin and self.role in ['ADMIN', 'MANAGER', 'RESEARCHER']
+        return self.confirmed_by_admin and self.role in ['ADMIN', 'DATA_MANAGER', 'RESEARCHER']
 
     def can_edit_patient(self):
         """Check if user can edit patients"""
-        return self.confirmed_by_admin and self.role in ['ADMIN', 'MANAGER', 'RESEARCHER']
+        return self.confirmed_by_admin and self.role in ['ADMIN', 'DATA_MANAGER', 'RESEARCHER']
 
     def can_delete_patient(self):
         """Check if user can delete patients"""
-        return self.confirmed_by_admin and self.role in ['ADMIN', 'MANAGER']
+        return self.confirmed_by_admin and self.role in ['ADMIN', 'DATA_MANAGER']
 
     def can_create_file(self):
         """Check if user can register new file locations"""
-        return self.confirmed_by_admin and self.role in ['ADMIN', 'MANAGER', 'RESEARCHER']
+        return self.confirmed_by_admin and self.role in ['ADMIN', 'DATA_MANAGER', 'RESEARCHER']
 
     def can_edit_file(self):
         """Check if user can edit file locations"""
-        return self.confirmed_by_admin and self.role in ['ADMIN', 'MANAGER', 'RESEARCHER']
+        return self.confirmed_by_admin and self.role in ['ADMIN', 'DATA_MANAGER', 'RESEARCHER']
 
     def can_delete_file(self):
         """Check if user can delete file locations"""
-        return self.confirmed_by_admin and self.role in ['ADMIN', 'MANAGER']
+        return self.confirmed_by_admin and self.role in ['ADMIN', 'DATA_MANAGER']
 
     def can_download_files(self):
         """Check if user can download files"""
-        return self.confirmed_by_admin and self.role in ['ADMIN', 'MANAGER', 'RESEARCHER', 'VIEWER']
+        return self.confirmed_by_admin and self.role in ['ADMIN', 'DATA_MANAGER', 'RESEARCHER', 'CLINICIAN']
 
     def can_view_samples(self):
         """Check if user can view sample list"""
-        return self.confirmed_by_admin and self.role in ['ADMIN', 'MANAGER', 'RESEARCHER', 'VIEWER']
+        return self.confirmed_by_admin and self.role in ['ADMIN', 'DATA_MANAGER', 'RESEARCHER', 'CLINICIAN']
