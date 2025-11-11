@@ -246,7 +246,15 @@
         <h2>Edit Your Profile</h2>
         <p>Update your institutional information</p>
 
-        {% if profile.approved %}
+        {% if request.user.role and request.user.role.confirmed_by_admin %}
+            <span class="status-badge status-approved">
+                <i class="fas fa-check-circle"></i> Role Confirmed: {{ request.user.role.get_role_display }}
+            </span>
+        {% elif request.user.role %}
+            <span class="status-badge status-pending">
+                <i class="fas fa-clock"></i> Pending Role Confirmation
+            </span>
+        {% elif profile.approved %}
             <span class="status-badge status-approved">
                 <i class="fas fa-check-circle"></i> Account Approved
             </span>
