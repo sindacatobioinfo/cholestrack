@@ -43,7 +43,7 @@ def register(request):
             # Send verification email
             current_site = get_current_site(request)
             protocol = 'https' if request.is_secure() else 'http'
-            verification_url = f"{protocol}://{current_site.domain}/users/verify-email/{verification.verification_token}/"
+            verification_url = f"{protocol}://{current_site.domain}/verify-email/{verification.verification_token}/"
 
             email_subject = 'Verify Your Cholestrack Account'
             email_body = render_to_string('users/verification_email.html', {
@@ -198,7 +198,7 @@ def resend_verification(request):
                 # Send new verification email
                 current_site = get_current_site(request)
                 protocol = 'https' if request.is_secure() else 'http'
-                verification_url = f"{protocol}://{current_site.domain}/users/verify-email/{verification.verification_token}/"
+                verification_url = f"{protocol}://{current_site.domain}/verify-email/{verification.verification_token}/"
 
                 email_subject = 'Verify Your Cholestrack Account (New Link)'
                 email_body = render_to_string('users/verification_email.html', {
