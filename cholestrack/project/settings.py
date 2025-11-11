@@ -164,16 +164,16 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 
 # Email Configuration for User Registration and Notifications
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp-mail.outlook.com'
+EMAIL_BACKEND = env('EMAIL_BACKEND')
+EMAIL_HOST = env('EMAIL_HOST')
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='ronald.rodriguesdemoura@burlo.trieste.it')
-EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')  # Must be set in .env file
-DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='ronald.rodriguesdemoura@burlo.trieste.it')
+EMAIL_HOST_USER = env('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = env('GOOGLE_APP_PASSWORD')  # Must be set in .env file
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')
 
 # Administrator email for receiving role confirmation requests
-ADMIN_EMAIL = 'ronald.rodriguesdemoura@burlo.trieste.it'
+ADMIN_EMAIL = env('EMAIL_HOST_USER')
 
 # Allowed institutional email domains for registration
 ALLOWED_EMAIL_DOMAINS = [
@@ -182,4 +182,4 @@ ALLOWED_EMAIL_DOMAINS = [
 ]
 
 # For development/testing, uncomment the line below to print emails to console
-# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+#EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
