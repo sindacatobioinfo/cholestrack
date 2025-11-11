@@ -33,10 +33,10 @@ def register(request):
                 verification_token=get_random_string(64)
             )
 
-            # Create default role (Viewer, pending admin confirmation)
+            # Create default role (Clinician, pending admin confirmation)
             UserRole.objects.create(
                 user=user,
-                role='VIEWER',
+                role='CLINICIAN',
                 confirmed_by_admin=False
             )
 

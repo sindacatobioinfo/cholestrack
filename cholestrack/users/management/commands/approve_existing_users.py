@@ -9,6 +9,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from users.models import UserRole, EmailVerification
+from profile.models import UserProfile
 
 
 class Command(BaseCommand):
@@ -103,6 +104,17 @@ class Command(BaseCommand):
                     f'  ✓ Activated user account: {user.username}'
                 )
                 user_updated = True
+
+            # Sync UserProfile.role with UserRole.role if they exist
+            if hasattr(user, 'role') and hasattr(user, 'profile'):
+                if user.profile.role != user.role.role:
+                    if not dry_run:
+                        user.profile.role = user.role.role
+                        user.profile.save()
+                    self.stdout.write(
+                        f'  ✓ Synced profile role with UserRole for user: {user.username}'
+                    )
+                    user_updated = True
 
         # Summary
         self.stdout.write('\n' + '='*60)

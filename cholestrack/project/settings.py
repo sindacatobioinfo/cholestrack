@@ -175,6 +175,9 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL')
 # Administrator email for receiving role confirmation requests
 ADMIN_EMAIL = env('EMAIL_HOST_USER')
 
+# Site domain for email links (e.g., 'example.com' or 'localhost:8000')
+SITE_DOMAIN = env('SITE_DOMAIN', default='localhost:8000')
+
 # Allowed institutional email domains for registration
 ALLOWED_EMAIL_DOMAINS = [
     'burlo.trieste.it',
