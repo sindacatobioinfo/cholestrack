@@ -87,7 +87,8 @@ def get_gene_coordinates(gene_name):
 def extract_bam_region(job):
     """
     Extract a specific region from a BAM file using samtools.
-    Uses the file_path from files app to locate the BAM file.
+    Queries the files database to get the BAM file path based on sample_id.
+    Runs samtools directly on the remote file and outputs to temp directory.
 
     Args:
         job (RegionExtractionJob): The extraction job object
@@ -98,11 +99,22 @@ def extract_bam_region(job):
     Raises:
         Exception: If extraction fails
     """
+    from files.models import AnalysisFileLocation
+
+    # Query the files database to get BAM file for this sample_id
+    try:
+        bam_file = AnalysisFileLocation.objects.get(
+            sample_id=job.sample_id,
+            file_type='BAM',
+            is_active=True
+        )
+    except AnalysisFileLocation.DoesNotExist:
+        raise FileNotFoundError(f"No BAM file found for sample_id: {job.sample_id}")
 
     # Get the original BAM file path from files app
     # Use file_path field which contains relative path
     remote_files_root = getattr(settings, 'REMOTE_FILES_ROOT', settings.MEDIA_ROOT / 'remote_files')
-    file_path_relative = job.original_bam_file.file_path
+    file_path_relative = bam_file.file_path
 
     # Construct full path to original BAM
     original_bam_path = Path(remote_files_root) / file_path_relative
@@ -134,37 +146,25 @@ def extract_bam_region(job):
     job_temp_dir = os.path.join(temp_dir, str(job.job_id))
     os.makedirs(job_temp_dir, exist_ok=True)
 
-    # Temporary copy of original BAM (for processing)
-    temp_original_bam = os.path.join(job_temp_dir, "original_temp.bam")
-
-    # Output file path
+    # Output file path (in temp directory)
     output_bam_path = os.path.join(job_temp_dir, f"{job.sample_id}_extracted.bam")
 
     try:
         # Check if samtools is available
         check_samtools()
 
-        # Copy original BAM to temp directory
-        # Note: For large files over network, this may take time
-        print(f"Copying BAM file to temp directory: {original_bam_path} -> {temp_original_bam}")
-        shutil.copy2(original_bam_path, temp_original_bam)
-
-        # Also copy BAM index if it exists (.bai)
-        original_bai_path = Path(str(original_bam_path).replace('.bam', '.bai'))
-        temp_original_bai = os.path.join(job_temp_dir, "original_temp.bai")
-        if original_bai_path.exists():
-            print(f"Copying BAM index to temp directory: {original_bai_path} -> {temp_original_bai}")
-            shutil.copy2(original_bai_path, temp_original_bai)
-
         # Run samtools view to extract the region
-        print(f"Extracting region {region} from BAM file...")
+        # Use original BAM from remote location, output to temp directory
+        print(f"Extracting region {region} from BAM file: {original_bam_path}")
+        print(f"Output will be saved to: {output_bam_path}")
+
         cmd = [
             'samtools', 'view',
             '-b',  # Output BAM format
             '-h',  # Include header
-            temp_original_bam,
+            str(original_bam_path),  # Input: original BAM in remote location
             region,
-            '-o', output_bam_path
+            '-o', output_bam_path  # Output: extracted BAM in temp directory
         ]
 
         result = subprocess.run(
@@ -181,16 +181,7 @@ def extract_bam_region(job):
         if not os.path.exists(output_bam_path) or os.path.getsize(output_bam_path) == 0:
             raise Exception("Extraction produced no output. The region may be empty or invalid.")
 
-        # Delete the temporary original BAM file to save space
-        if os.path.exists(temp_original_bam):
-            os.remove(temp_original_bam)
-            print(f"Deleted temporary original BAM: {temp_original_bam}")
-
-        # Delete the temporary original BAI file if it exists
-        if os.path.exists(temp_original_bai):
-            os.remove(temp_original_bai)
-            print(f"Deleted temporary original BAI: {temp_original_bai}")
-
+        print(f"Successfully extracted region to: {output_bam_path}")
         return output_bam_path
 
     except Exception as e:
