@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="fas fa-dna"></i> Extract BAM Region</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Extract a specific genomic region from a BAM file. You can specify the region
+                        using either a gene name or genomic coordinates (chromosome, start, end).
+                    </p>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Note:</strong> The extracted file will be available for download for 10 minutes
+                        after processing completes. After download or expiration, the file will be automatically deleted.
+                    </div>
+
+                    <form method="post" id="extractionForm">
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <!-- Sample ID -->
+                        <div class="mb-3">
+                            <label for="{{ form.sample_id.id_for_label }}" class="form-label">
+                                <strong>{{ form.sample_id.label }}</strong>
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.sample_id }}
+                            <small class="form-text text-muted">{{ form.sample_id.help_text }}</small>
+                            {% if form.sample_id.errors %}
+                            <div class="text-danger">{{ form.sample_id.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Region Method Selection -->
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <strong>{{ form.region_method.label }}</strong>
+                                <span class="text-danger">*</span>
+                            </label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="region_method" id="method_coordinates"
+                                       value="coordinates" {% if form.region_method.value == 'coordinates' or not form.region_method.value %}checked{% endif %}>
+                                <label class="btn btn-outline-primary" for="method_coordinates">
+                                    <i class="fas fa-map-marker-alt"></i> Genomic Coordinates
+                                </label>
+
+                                <input type="radio" class="btn-check" name="region_method" id="method_gene"
+                                       value="gene" {% if form.region_method.value == 'gene' %}checked{% endif %}>
+                                <label class="btn btn-outline-primary" for="method_gene">
+                                    <i class="fas fa-dna"></i> Gene Name
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Gene Name Input (shown when gene method selected) -->
+                        <div id="geneSection" class="mb-3" style="display: none;">
+                            <label for="{{ form.gene_name.id_for_label }}" class="form-label">
+                                <strong>{{ form.gene_name.label }}</strong>
+                            </label>
+                            {{ form.gene_name }}
+                            <small class="form-text text-muted">{{ form.gene_name.help_text }}</small>
+                            {% if form.gene_name.errors %}
+                            <div class="text-danger">{{ form.gene_name.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Coordinates Input (shown when coordinates method selected) -->
+                        <div id="coordinatesSection">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.chromosome.id_for_label }}" class="form-label">
+                                        <strong>{{ form.chromosome.label }}</strong>
+                                    </label>
+                                    {{ form.chromosome }}
+                                    <small class="form-text text-muted">{{ form.chromosome.help_text }}</small>
+                                    {% if form.chromosome.errors %}
+                                    <div class="text-danger">{{ form.chromosome.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.start_position.id_for_label }}" class="form-label">
+                                        <strong>{{ form.start_position.label }}</strong>
+                                    </label>
+                                    {{ form.start_position }}
+                                    <small class="form-text text-muted">{{ form.start_position.help_text }}</small>
+                                    {% if form.start_position.errors %}
+                                    <div class="text-danger">{{ form.start_position.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.end_position.id_for_label }}" class="form-label">
+                                        <strong>{{ form.end_position.label }}</strong>
+                                    </label>
+                                    {{ form.end_position }}
+                                    <small class="form-text text-muted">{{ form.end_position.help_text }}</small>
+                                    {% if form.end_position.errors %}
+                                    <div class="text-danger">{{ form.end_position.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'region_selection:job_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-cogs"></i> Create Extraction Job
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Toggle between gene and coordinates input
+document.addEventListener('DOMContentLoaded', function() {
+    const geneRadio = document.getElementById('method_gene');
+    const coordinatesRadio = document.getElementById('method_coordinates');
+    const geneSection = document.getElementById('geneSection');
+    const coordinatesSection = document.getElementById('coordinatesSection');
+
+    function updateSections() {
+        if (geneRadio.checked) {
+            geneSection.style.display = 'block';
+            coordinatesSection.style.display = 'none';
+        } else {
+            geneSection.style.display = 'none';
+            coordinatesSection.style.display = 'block';
+        }
+    }
+
+    geneRadio.addEventListener('change', updateSections);
+    coordinatesRadio.addEventListener('change', updateSections);
+
+    // Initialize on page load
+    updateSections();
+});
+</script>
+{% endblock %}

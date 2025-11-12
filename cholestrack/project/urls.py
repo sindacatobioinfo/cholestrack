@@ -10,5 +10,6 @@ urlpatterns = [
     path('home/', include('home.urls')),
     path('samples/', include('samples.urls')),
     path('files/', include('files.urls')),
+    path('region-selection/', include('region_selection.urls')),
     path('', lambda request: redirect('users:login') if not request.user.is_authenticated else redirect('home:dashboard'), name='root_redirect'),
 ]

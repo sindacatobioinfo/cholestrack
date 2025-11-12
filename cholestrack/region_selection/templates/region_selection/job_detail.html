@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-tasks"></i> Extraction Job Details</h4>
+                    <span class="badge bg-light text-dark">{{ job.get_status_display }}</span>
+                </div>
+                <div class="card-body">
+                    <!-- Status Messages -->
+                    {% if job.status == 'PROCESSING' %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <strong>Processing...</strong> Your BAM region is being extracted. This may take a few minutes.
+                    </div>
+                    {% elif job.status == 'COMPLETED' %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Completed!</strong> Your extracted BAM file is ready for download.
+                        {% if job.expires_at %}
+                        <br><small>Available until: {{ job.expires_at|date:"Y-m-d H:i:s" }}</small>
+                        {% endif %}
+                    </div>
+                    {% elif job.status == 'FAILED' %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Failed!</strong> The extraction job failed.
+                        {% if job.error_message %}
+                        <br><small>Error: {{ job.error_message }}</small>
+                        {% endif %}
+                    </div>
+                    {% elif job.status == 'DOWNLOADED' %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-download"></i>
+                        <strong>Downloaded!</strong> This file has been downloaded.
+                        Files will be cleaned up automatically.
+                    </div>
+                    {% elif job.status == 'EXPIRED' %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-clock"></i>
+                        <strong>Expired!</strong> This file has expired and is no longer available for download.
+                    </div>
+                    {% endif %}
+
+                    <!-- Job Information -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Job Information</h5>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Job ID:</th>
+                                    <td><code>{{ job.job_id }}</code></td>
+                                </tr>
+                                <tr>
+                                    <th>Sample ID:</th>
+                                    <td><strong>{{ job.sample_id }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Status:</th>
+                                    <td>
+                                        {% if job.status == 'PENDING' %}
+                                        <span class="badge bg-secondary">{{ job.get_status_display }}</span>
+                                        {% elif job.status == 'PROCESSING' %}
+                                        <span class="badge bg-info">{{ job.get_status_display }}</span>
+                                        {% elif job.status == 'COMPLETED' %}
+                                        <span class="badge bg-success">{{ job.get_status_display }}</span>
+                                        {% elif job.status == 'FAILED' %}
+                                        <span class="badge bg-danger">{{ job.get_status_display }}</span>
+                                        {% elif job.status == 'DOWNLOADED' %}
+                                        <span class="badge bg-primary">{{ job.get_status_display }}</span>
+                                        {% elif job.status == 'EXPIRED' %}
+                                        <span class="badge bg-warning">{{ job.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h5>Region Specification</h5>
+                            <table class="table table-sm">
+                                {% if job.gene_name %}
+                                <tr>
+                                    <th>Gene Name:</th>
+                                    <td><strong>{{ job.gene_name }}</strong></td>
+                                </tr>
+                                {% endif %}
+                                {% if job.chromosome %}
+                                <tr>
+                                    <th>Chromosome:</th>
+                                    <td>{{ job.chromosome }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Start Position:</th>
+                                    <td>{{ job.start_position|stringformat:"d" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>End Position:</th>
+                                    <td>{{ job.end_position|stringformat:"d" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Region Size:</th>
+                                    <td>{{ job.end_position|add:"-"|add:job.start_position|stringformat:"d" }} bp</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Output Information -->
+                    {% if job.status == 'COMPLETED' or job.status == 'DOWNLOADED' %}
+                    <hr>
+                    <h5>Output File</h5>
+                    <table class="table table-sm">
+                        <tr>
+                            <th>File Size:</th>
+                            <td>{{ job.output_file_size_mb }} MB</td>
+                        </tr>
+                        <tr>
+                            <th>Created:</th>
+                            <td>{{ job.completed_at|date:"Y-m-d H:i:s" }}</td>
+                        </tr>
+                        {% if job.downloaded_at %}
+                        <tr>
+                            <th>Downloaded:</th>
+                            <td>{{ job.downloaded_at|date:"Y-m-d H:i:s" }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                    {% endif %}
+
+                    <!-- Timestamps -->
+                    <hr>
+                    <h5>Timestamps</h5>
+                    <table class="table table-sm">
+                        <tr>
+                            <th>Created:</th>
+                            <td>{{ job.created_at|date:"Y-m-d H:i:s" }}</td>
+                        </tr>
+                        {% if job.processing_started_at %}
+                        <tr>
+                            <th>Processing Started:</th>
+                            <td>{{ job.processing_started_at|date:"Y-m-d H:i:s" }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if job.completed_at %}
+                        <tr>
+                            <th>Completed:</th>
+                            <td>{{ job.completed_at|date:"Y-m-d H:i:s" }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if job.expires_at %}
+                        <tr>
+                            <th>Expires:</th>
+                            <td>{{ job.expires_at|date:"Y-m-d H:i:s" }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+
+                    <!-- Actions -->
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'region_selection:job_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Jobs
+                        </a>
+
+                        {% if job.status == 'COMPLETED' %}
+                        <a href="{% url 'region_selection:download_file' job_id=job.job_id %}" class="btn btn-success">
+                            <i class="fas fa-download"></i> Download BAM File
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if job.status == 'PROCESSING' %}
+<script>
+// Auto-refresh page every 5 seconds while processing
+setTimeout(function() {
+    location.reload();
+}, 5000);
+</script>
+{% endif %}
+{% endblock %}
