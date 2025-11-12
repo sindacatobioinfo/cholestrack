@@ -9,7 +9,7 @@ Type=notify
 User=burlo
 Group=burlo
 WorkingDirectory=/home/burlo/cholestrack/cholestrack
-Environment="PATH=/home/burlo/cholestrack/cholestrack/.venv/bin"
+Environment="PATH=/home/burlo/cholestrack/cholestrack/.venv/bin:/usr/bin"
 ExecStart=/home/burlo/cholestrack/cholestrack/.venv/bin/gunicorn \
           --workers 2 \
           --bind unix:/home/burlo/cholestrack/deploy_management/run/gunicorn.sock \
