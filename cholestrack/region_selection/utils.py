@@ -246,6 +246,7 @@ def check_samtools():
             ['samtools', '--version'],
             capture_output=True,
             text=True,
+            errors='replace',
             timeout=5
         )
 
