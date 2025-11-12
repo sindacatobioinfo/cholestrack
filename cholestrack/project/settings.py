@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'samples',
     'files',
     'home',
+    'region_selection',
 ]
 
 MIDDLEWARE = [
@@ -186,3 +187,7 @@ ALLOWED_EMAIL_DOMAINS = [
 
 # For development/testing, uncomment the line below to print emails to console
 #EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Region Extraction Settings
+REGION_EXTRACTION_TEMP_DIR = env('REGION_EXTRACTION_TEMP_DIR', default='/tmp/cholestrack_extractions')
+GENE_DATABASE_PATH = env('GENE_DATABASE_PATH', default=None)  # Optional: Path to gene annotation JSON file

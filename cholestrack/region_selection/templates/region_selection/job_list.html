@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2><i class="fas fa-list"></i> My Region Extraction Jobs</h2>
+                <a href="{% url 'region_selection:create_extraction' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> New Extraction
+                </a>
+            </div>
+
+            {% if jobs %}
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Job ID</th>
+                                    <th>Sample ID</th>
+                                    <th>Region</th>
+                                    <th>Status</th>
+                                    <th>File Size</th>
+                                    <th>Created</th>
+                                    <th>Expires</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for job in jobs %}
+                                <tr>
+                                    <td>
+                                        <code>{{ job.job_id|slice:":8" }}...</code>
+                                    </td>
+                                    <td>
+                                        <strong>{{ job.sample_id }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if job.gene_name %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-dna"></i> {{ job.gene_name }}
+                                        </span>
+                                        {% elif job.chromosome %}
+                                        <small>{{ job.chromosome }}:{{ job.start_position }}-{{ job.end_position }}</small>
+                                        {% else %}
+                                        <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if job.status == 'PENDING' %}
+                                        <span class="badge bg-secondary">{{ job.get_status_display }}</span>
+                                        {% elif job.status == 'PROCESSING' %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-spinner fa-spin"></i> {{ job.get_status_display }}
+                                        </span>
+                                        {% elif job.status == 'COMPLETED' %}
+                                        <span class="badge bg-success">{{ job.get_status_display }}</span>
+                                        {% elif job.status == 'FAILED' %}
+                                        <span class="badge bg-danger">{{ job.get_status_display }}</span>
+                                        {% elif job.status == 'DOWNLOADED' %}
+                                        <span class="badge bg-primary">{{ job.get_status_display }}</span>
+                                        {% elif job.status == 'EXPIRED' %}
+                                        <span class="badge bg-warning">{{ job.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if job.output_file_size_mb %}
+                                        {{ job.output_file_size_mb }} MB
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ job.created_at|date:"Y-m-d H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        {% if job.expires_at %}
+                                        <small>{{ job.expires_at|date:"Y-m-d H:i" }}</small>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'region_selection:job_detail' job_id=job.job_id %}"
+                                               class="btn btn-outline-primary" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if job.status == 'COMPLETED' %}
+                                            <a href="{% url 'region_selection:download_file' job_id=job.job_id %}"
+                                               class="btn btn-outline-success" title="Download">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-info mt-3">
+                <i class="fas fa-info-circle"></i>
+                <strong>Note:</strong> Extracted files are automatically deleted 10 minutes after completion
+                or immediately after download to save storage space.
+            </div>
+            {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h4>No Extraction Jobs</h4>
+                    <p class="text-muted">You haven't created any region extraction jobs yet.</p>
+                    <a href="{% url 'region_selection:create_extraction' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Your First Extraction
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
