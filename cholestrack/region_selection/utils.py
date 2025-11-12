@@ -31,7 +31,7 @@ def get_temp_directory():
 
 def get_gene_coordinates(gene_name):
     """
-    Convert gene name to genomic coordinates.
+    Convert gene name to genomic coordinates based on GRCh38/hg38 reference genome.
 
     Args:
         gene_name (str): Gene symbol (e.g., 'BRCA1', 'TP53')
@@ -45,11 +45,12 @@ def get_gene_coordinates(gene_name):
         2. Query a REST API (e.g., MyGene.info, Ensembl REST API)
         3. Use a local gene annotation file (GTF/GFF)
 
-    For now, we'll use a simple lookup of common genes.
+    All coordinates are based on GRCh38/hg38 reference genome.
     """
 
     # TODO: Replace this with actual gene database lookup
     # This is a small example dataset for demonstration
+    # All coordinates are for GRCh38/hg38 reference genome
     COMMON_GENES = {
         'BRCA1': {'chromosome': 'chr17', 'start': 43044295, 'end': 43125483},
         'BRCA2': {'chromosome': 'chr13', 'start': 32315474, 'end': 32400266},
@@ -86,6 +87,7 @@ def get_gene_coordinates(gene_name):
 def extract_bam_region(job):
     """
     Extract a specific region from a BAM file using samtools.
+    Uses the file_path from files app to locate the BAM file.
 
     Args:
         job (RegionExtractionJob): The extraction job object
@@ -97,11 +99,30 @@ def extract_bam_region(job):
         Exception: If extraction fails
     """
 
-    # Get the original BAM file path
-    original_bam_path = job.original_bam_file.get_full_server_path()
+    # Get the original BAM file path from files app
+    # Use file_path field which contains relative path
+    remote_files_root = getattr(settings, 'REMOTE_FILES_ROOT', settings.MEDIA_ROOT / 'remote_files')
+    file_path_relative = job.original_bam_file.file_path
 
-    if not os.path.exists(original_bam_path):
+    # Construct full path to original BAM
+    original_bam_path = Path(remote_files_root) / file_path_relative
+
+    # Security: Resolve the path and ensure it's within allowed directory
+    try:
+        original_bam_path = original_bam_path.resolve()
+        remote_files_root_resolved = Path(remote_files_root).resolve()
+
+        if not str(original_bam_path).startswith(str(remote_files_root_resolved)):
+            raise ValueError("Invalid file path - security violation")
+    except (ValueError, OSError) as e:
+        raise Exception(f"Path resolution error: {e}")
+
+    # Check if original BAM file exists
+    if not original_bam_path.exists():
         raise FileNotFoundError(f"Original BAM file not found: {original_bam_path}")
+
+    if not original_bam_path.is_file():
+        raise ValueError(f"Path is not a file: {original_bam_path}")
 
     # Get region specification
     region = job.get_region_string()
@@ -113,6 +134,9 @@ def extract_bam_region(job):
     job_temp_dir = os.path.join(temp_dir, str(job.job_id))
     os.makedirs(job_temp_dir, exist_ok=True)
 
+    # Temporary copy of original BAM (for processing)
+    temp_original_bam = os.path.join(job_temp_dir, "original_temp.bam")
+
     # Output file path
     output_bam_path = os.path.join(job_temp_dir, f"{job.sample_id}_extracted.bam")
 
@@ -120,13 +144,25 @@ def extract_bam_region(job):
         # Check if samtools is available
         check_samtools()
 
+        # Copy original BAM to temp directory
+        # Note: For large files over network, this may take time
+        print(f"Copying BAM file to temp directory: {original_bam_path} -> {temp_original_bam}")
+        shutil.copy2(original_bam_path, temp_original_bam)
+
+        # Also copy BAM index if it exists (.bai)
+        original_bai_path = Path(str(original_bam_path).replace('.bam', '.bai'))
+        temp_original_bai = os.path.join(job_temp_dir, "original_temp.bai")
+        if original_bai_path.exists():
+            print(f"Copying BAM index to temp directory: {original_bai_path} -> {temp_original_bai}")
+            shutil.copy2(original_bai_path, temp_original_bai)
+
         # Run samtools view to extract the region
-        # samtools view -b -h original.bam "region" > output.bam
+        print(f"Extracting region {region} from BAM file...")
         cmd = [
             'samtools', 'view',
             '-b',  # Output BAM format
             '-h',  # Include header
-            original_bam_path,
+            temp_original_bam,
             region,
             '-o', output_bam_path
         ]
@@ -144,6 +180,16 @@ def extract_bam_region(job):
         # Verify output file was created
         if not os.path.exists(output_bam_path) or os.path.getsize(output_bam_path) == 0:
             raise Exception("Extraction produced no output. The region may be empty or invalid.")
+
+        # Delete the temporary original BAM file to save space
+        if os.path.exists(temp_original_bam):
+            os.remove(temp_original_bam)
+            print(f"Deleted temporary original BAM: {temp_original_bam}")
+
+        # Delete the temporary original BAI file if it exists
+        if os.path.exists(temp_original_bai):
+            os.remove(temp_original_bai)
+            print(f"Deleted temporary original BAI: {temp_original_bai}")
 
         return output_bam_path
 
