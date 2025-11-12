@@ -9,3 +9,6 @@
 /deploy_management/logs/
 /deploy_management/run/
 /deploy_management/remote_files_setup.sh
+
+#tmp folder
+/cholestrack/tmp/

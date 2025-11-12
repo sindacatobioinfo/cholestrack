@@ -189,5 +189,5 @@ ALLOWED_EMAIL_DOMAINS = [
 #EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Region Extraction Settings
-REGION_EXTRACTION_TEMP_DIR = env('REGION_EXTRACTION_TEMP_DIR', default='/tmp/cholestrack_extractions')
+REGION_EXTRACTION_TEMP_DIR = env('REGION_EXTRACTION_TEMP_DIR')
 GENE_DATABASE_PATH = env('GENE_DATABASE_PATH', default=None)  # Optional: Path to gene annotation JSON file
