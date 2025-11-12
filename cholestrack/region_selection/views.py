@@ -217,6 +217,13 @@ def download_extracted_file(request, job_id):
             region_str = f"{job.chromosome}_{job.start_position}_{job.end_position}"
             filename = f"{job.sample_id}_{region_str}_extracted.bam"
 
+        # Verify file exists and is readable
+        if not os.path.isfile(job.output_file_path):
+            raise FileNotFoundError(f"Output file is not a valid file: {job.output_file_path}")
+
+        # Get file size
+        file_size = os.path.getsize(job.output_file_path)
+
         # Open the file for download
         file_handle = open(job.output_file_path, 'rb')
         response = FileResponse(
@@ -225,15 +232,11 @@ def download_extracted_file(request, job_id):
             filename=filename,
             content_type='application/octet-stream'
         )
+        response['Content-Length'] = file_size
 
         # Mark job as downloaded
         job.mark_downloaded()
 
-        # Schedule cleanup after download
-        # Note: We'll use a management command for cleanup
-        # The file will be cleaned up by a periodic task
-
-        messages.success(request, f'Download started for {filename}')
         return response
 
     except Exception as e:
