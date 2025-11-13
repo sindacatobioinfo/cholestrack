@@ -11,7 +11,7 @@ from django.utils import timezone
 from users.decorators import role_confirmed_required
 from .models import GeneSearchQuery
 from .forms import GeneSearchForm
-from .api_utils import fetch_all_relationships
+from .api_utils import fetch_all_relationships, fetch_disease_relationships
 
 
 @login_required
@@ -82,13 +82,36 @@ def process_search(request, query_id):
         # Get OMIM API key from settings if available
         omim_api_key = getattr(settings, 'OMIM_API_KEY', None)
 
-        # Fetch all relationships
+        # Fetch all relationships based on search type
         if query.search_type == 'GENE':
             results = fetch_all_relationships(query.search_term, omim_api_key)
 
             # Store results
             query.hpo_results = results['hpo_results']
             query.omim_results = results['omim_results']
+            query.pharmgkb_results = results['pharmgkb_results']
+            query.is_pharmvar_gene = results.get('is_pharmvar_gene', False)
+            query.success = True
+
+            # Set cache expiration (7 days)
+            query.set_cache_expiration(days=7)
+
+            query.save()
+
+            pharmvar_status = "This is a PharmVar gene." if query.is_pharmvar_gene else ""
+            messages.success(
+                request,
+                f'Found {len(results["hpo_results"])} HPO terms, '
+                f'{len(results["omim_results"])} OMIM diseases, and '
+                f'{len(results["pharmgkb_results"])} PharmGKB entries for {query.search_term}. {pharmvar_status}'
+            )
+
+        elif query.search_type == 'DISEASE':
+            results = fetch_disease_relationships(query.search_term, omim_api_key)
+
+            # Store results
+            query.hpo_results = results['hpo_results']
+            query.omim_results = results.get('omim_results', [])
             query.pharmgkb_results = results['pharmgkb_results']
             query.success = True
 
@@ -99,15 +122,14 @@ def process_search(request, query_id):
 
             messages.success(
                 request,
-                f'Found {len(results["hpo_results"])} HPO terms, '
-                f'{len(results["omim_results"])} OMIM diseases, and '
-                f'{len(results["pharmgkb_results"])} PharmGKB entries for {query.search_term}.'
+                f'Found {len(results["hpo_results"])} HPO terms and '
+                f'{len(results["pharmgkb_results"])} PharmGKB drug associations for {query.search_term}.'
             )
 
         else:
-            # For DISEASE and DRUG search types (future implementation)
+            # For DRUG search type (future implementation)
             query.success = False
-            query.error_message = f'{query.search_type} search is not yet implemented. Please use GENE search.'
+            query.error_message = f'{query.search_type} search is not yet implemented. Please use GENE or DISEASE search.'
             query.save()
 
             messages.warning(request, query.error_message)

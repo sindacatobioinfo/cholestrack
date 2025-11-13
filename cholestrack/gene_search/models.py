@@ -64,6 +64,12 @@ class GeneSearchQuery(models.Model):
         help_text="Pharmacogenetics information (ADME genes, drug response variants)"
     )
 
+    is_pharmvar_gene = models.BooleanField(
+        default=False,
+        verbose_name="Is PharmVar Gene",
+        help_text="Whether this gene is a PharmGKB pharmacogenomics variant gene"
+    )
+
     # Metadata
     created_at = models.DateTimeField(
         auto_now_add=True,

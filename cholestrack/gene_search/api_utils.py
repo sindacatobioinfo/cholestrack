@@ -79,6 +79,82 @@ class HPOClient:
             print(f"Unexpected error in HPO search: {e}")
             return []
 
+    @staticmethod
+    def search_disease_phenotypes(disease_name: str) -> List[Dict]:
+        """
+        Search for HPO terms associated with a disease.
+
+        Args:
+            disease_name: Disease name (e.g., 'progressive familial intrahepatic cholestasis')
+
+        Returns:
+            List of HPO term dictionaries
+        """
+        try:
+            # Search for disease
+            search_url = f"{HPOClient.BASE_URL}/hpo/search"
+            params = {
+                'q': disease_name,
+                'category': 'diseases'
+            }
+
+            response = requests.get(search_url, params=params, timeout=10)
+            response.raise_for_status()
+
+            search_results = response.json()
+
+            if not search_results or 'diseases' not in search_results:
+                return []
+
+            diseases = search_results.get('diseases', [])
+            if not diseases:
+                return []
+
+            # Get the first matching disease
+            disease = diseases[0]
+            disease_id = disease.get('diseaseId') or disease.get('dbId')
+
+            if not disease_id:
+                return []
+
+            # Get phenotypes for this disease
+            phenotype_url = f"{HPOClient.BASE_URL}/hpo/disease/{disease_id}"
+            pheno_response = requests.get(phenotype_url, timeout=10)
+            pheno_response.raise_for_status()
+
+            pheno_data = pheno_response.json()
+
+            phenotypes = []
+            if 'termAssoc' in pheno_data:
+                for term in pheno_data['termAssoc']:
+                    phenotypes.append({
+                        'hpo_id': term.get('ontologyId'),
+                        'name': term.get('name'),
+                        'definition': term.get('definition', 'No definition available'),
+                        'frequency': term.get('frequency', 'Unknown')
+                    })
+
+            # Also check catTermsMap for additional terms
+            elif 'catTermsMap' in pheno_data:
+                for category, terms in pheno_data['catTermsMap'].items():
+                    for term in terms:
+                        phenotypes.append({
+                            'hpo_id': term.get('ontologyId'),
+                            'name': term.get('name'),
+                            'definition': term.get('definition', 'No definition available'),
+                            'frequency': term.get('frequency', 'Unknown'),
+                            'category': category
+                        })
+
+            return phenotypes
+
+        except requests.RequestException as e:
+            print(f"Error fetching HPO data for disease {disease_name}: {e}")
+            return []
+        except Exception as e:
+            print(f"Unexpected error in HPO disease search: {e}")
+            return []
+
 
 class OMIMClient:
     """
@@ -206,7 +282,7 @@ class PharmGKBClient:
     BASE_URL = "https://api.pharmgkb.org/v1/data"
 
     @staticmethod
-    def search_gene_drugs(gene_symbol: str) -> List[Dict]:
+    def search_gene_drugs(gene_symbol: str) -> Dict:
         """
         Search for drug-gene relationships and ADME genes.
 
@@ -214,20 +290,24 @@ class PharmGKBClient:
             gene_symbol: Gene symbol (e.g., 'ATP8B1')
 
         Returns:
-            List of pharmacogenetics associations
+            Dictionary with pharmgkb_data list and is_pharmvar_gene boolean
         """
         try:
-            # Search for gene
+            # Search for gene with view=base to get pharmVarGene field
             gene_url = f"{PharmGKBClient.BASE_URL}/gene/{gene_symbol}"
+            params = {'view': 'base'}
 
-            response = requests.get(gene_url, timeout=10)
+            response = requests.get(gene_url, params=params, timeout=10)
 
             # PharmGKB may return 404 if gene not found
             if response.status_code == 404:
-                return []
+                return {'data': [], 'is_pharmvar_gene': False}
 
             response.raise_for_status()
             gene_data = response.json()
+
+            # Check if this is a pharmVarGene
+            is_pharmvar_gene = gene_data.get('pharmVarGene', False)
 
             pharmgkb_data = []
 
@@ -254,13 +334,79 @@ class PharmGKBClient:
                         'effect': variant.get('effect', 'Unknown')
                     })
 
-            return pharmgkb_data
+            return {
+                'data': pharmgkb_data,
+                'is_pharmvar_gene': is_pharmvar_gene
+            }
 
         except requests.RequestException as e:
             print(f"Error fetching PharmGKB data for {gene_symbol}: {e}")
-            return []
+            return {'data': [], 'is_pharmvar_gene': False}
         except Exception as e:
             print(f"Unexpected error in PharmGKB search: {e}")
+            return {'data': [], 'is_pharmvar_gene': False}
+
+    @staticmethod
+    def search_disease_drugs(disease_name: str) -> List[Dict]:
+        """
+        Search for drug associations with a disease.
+
+        Args:
+            disease_name: Disease name
+
+        Returns:
+            List of disease-drug associations
+        """
+        try:
+            # Search for disease with view=base
+            search_url = f"{PharmGKBClient.BASE_URL}/disease"
+            params = {
+                'view': 'base',
+                'name': disease_name
+            }
+
+            response = requests.get(search_url, params=params, timeout=10)
+
+            if response.status_code == 404:
+                return []
+
+            response.raise_for_status()
+            disease_data = response.json()
+
+            # If data is a list, take first result
+            if isinstance(disease_data, list) and disease_data:
+                disease_data = disease_data[0]
+
+            pharmgkb_data = []
+
+            # Get drug associations
+            if 'relatedDrugs' in disease_data:
+                for drug in disease_data['relatedDrugs']:
+                    pharmgkb_data.append({
+                        'type': 'Disease-Drug Association',
+                        'disease': disease_name,
+                        'drug': drug.get('name', 'Unknown'),
+                        'pharmgkb_id': drug.get('id', 'Unknown')
+                    })
+
+            # Get clinical annotations if available
+            if 'clinicalAnnotations' in disease_data:
+                for annotation in disease_data['clinicalAnnotations']:
+                    pharmgkb_data.append({
+                        'type': 'Clinical Annotation',
+                        'disease': disease_name,
+                        'drug': annotation.get('drug', {}).get('name', 'Unknown'),
+                        'phenotype': annotation.get('phenotype', 'Unknown'),
+                        'significance': annotation.get('significance', 'Unknown')
+                    })
+
+            return pharmgkb_data
+
+        except requests.RequestException as e:
+            print(f"Error fetching PharmGKB data for disease {disease_name}: {e}")
+            return []
+        except Exception as e:
+            print(f"Unexpected error in PharmGKB disease search: {e}")
             return []
 
     @staticmethod
@@ -315,12 +461,13 @@ def fetch_all_relationships(gene_symbol: str, omim_api_key: Optional[str] = None
         omim_api_key: Optional OMIM API key
 
     Returns:
-        Dictionary with hpo_results, omim_results, and pharmgkb_results
+        Dictionary with hpo_results, omim_results, pharmgkb_results, and is_pharmvar_gene
     """
     results = {
         'hpo_results': [],
         'omim_results': [],
-        'pharmgkb_results': []
+        'pharmgkb_results': [],
+        'is_pharmvar_gene': False
     }
 
     # Fetch HPO phenotypes
@@ -339,12 +486,46 @@ def fetch_all_relationships(gene_symbol: str, omim_api_key: Optional[str] = None
 
     # Fetch PharmGKB drug associations
     pharmgkb_client = PharmGKBClient()
-    pharmgkb_results = pharmgkb_client.search_gene_drugs(gene_symbol)
+    pharmgkb_response = pharmgkb_client.search_gene_drugs(gene_symbol)
+
+    # Extract pharmgkb_data and is_pharmvar_gene
+    results['pharmgkb_results'] = pharmgkb_response.get('data', [])
+    results['is_pharmvar_gene'] = pharmgkb_response.get('is_pharmvar_gene', False)
 
     # If primary method fails, try alternative
-    if not pharmgkb_results:
-        pharmgkb_results = pharmgkb_client.search_gene_drugs_alternative(gene_symbol)
+    if not results['pharmgkb_results']:
+        alternative_results = pharmgkb_client.search_gene_drugs_alternative(gene_symbol)
+        results['pharmgkb_results'] = alternative_results
 
-    results['pharmgkb_results'] = pharmgkb_results
+    return results
+
+
+def fetch_disease_relationships(disease_name: str, omim_api_key: Optional[str] = None) -> Dict:
+    """
+    Fetch all relationships for a disease from HPO and PharmGKB.
+
+    Args:
+        disease_name: Disease name (e.g., 'progressive familial intrahepatic cholestasis')
+        omim_api_key: Optional OMIM API key (not used for disease search yet)
+
+    Returns:
+        Dictionary with hpo_results and pharmgkb_results
+    """
+    results = {
+        'hpo_results': [],
+        'omim_results': [],
+        'pharmgkb_results': []
+    }
+
+    # Fetch HPO phenotypes for disease
+    hpo_client = HPOClient()
+    results['hpo_results'] = hpo_client.search_disease_phenotypes(disease_name)
+
+    # Small delay to avoid rate limiting
+    time.sleep(0.5)
+
+    # Fetch PharmGKB drug associations for disease
+    pharmgkb_client = PharmGKBClient()
+    results['pharmgkb_results'] = pharmgkb_client.search_disease_drugs(disease_name)
 
     return results
