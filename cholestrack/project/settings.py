@@ -190,4 +190,4 @@ ALLOWED_EMAIL_DOMAINS = [
 
 # Region Extraction Settings
 REGION_EXTRACTION_TEMP_DIR = env('REGION_EXTRACTION_TEMP_DIR')
-GENE_DATABASE_PATH = env('GENE_DATABASE_PATH', default=None)  # Optional: Path to gene annotation JSON file
+GENE_DATABASE_PATH = env('GENE_DATABASE_PATH')  # Optional: Path to gene annotation JSON file
