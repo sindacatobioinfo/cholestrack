@@ -141,6 +141,13 @@ def extract_bam_region(job):
     if not region:
         raise ValueError("Invalid region specification")
 
+    region = region.lower()  # Convert to lowercase for samtools
+    
+    # Fix duplicated 'chr' prefix if present
+    if region.startswith('chrchr'):
+        region = region[3:]  # Remove the first 'chr', keeping only one
+        print(f"Fixed duplicated chr prefix. Corrected region: {region}")
+
     # Create temporary directory for this job
     temp_dir = get_temp_directory()
     job_temp_dir = os.path.join(temp_dir, str(job.job_id))

@@ -1,3 +1,6 @@
+#vscode folder
+.vscode/
+
 #Django files and folders
 /cholestrack/.venv
 /cholestrack/.env
@@ -12,3 +15,4 @@
 
 #tmp folder
 /cholestrack/tmp/
+
