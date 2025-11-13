@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gene/Disease/Drug Search - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-7xl">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">
+            <i class="fas fa-dna text-purple-600 mr-2"></i>
+            Gene/Disease/Drug Search
+        </h1>
+        <p class="text-gray-600">
+            Search for genes to discover associated phenotypes (HPO), diseases (OMIM), and pharmacogenetics data (PharmGKB)
+        </p>
+    </div>
+
+    <!-- Search Form -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <form method="post" action="{% url 'gene_search:search_home' %}">
+            {% csrf_token %}
+
+            <!-- Search Type Selection -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-3">
+                    {{ form.search_type.label }}
+                </label>
+                <div class="flex space-x-6">
+                    {% for choice in form.search_type %}
+                        <div class="flex items-center">
+                            {{ choice.tag }}
+                            <label for="{{ choice.id_for_label }}" class="ml-2 text-gray-700">
+                                {{ choice.choice_label }}
+                            </label>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if form.search_type.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.search_type.errors }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Search Term Input -->
+            <div class="mb-6">
+                <label for="{{ form.search_term.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ form.search_term.label }}
+                </label>
+                {{ form.search_term }}
+                {% if form.search_term.help_text %}
+                    <p class="mt-2 text-sm text-gray-500">{{ form.search_term.help_text }}</p>
+                {% endif %}
+                {% if form.search_term.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.search_term.errors }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search mr-2"></i>
+                    Search
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Info Box -->
+    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-8">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-info-circle text-blue-400"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-blue-800">Search Information</h3>
+                <div class="mt-2 text-sm text-blue-700">
+                    <ul class="list-disc list-inside space-y-1">
+                        <li><strong>HPO (Human Phenotype Ontology):</strong> Clinical phenotypes and abnormalities</li>
+                        <li><strong>OMIM (Online Mendelian Inheritance in Man):</strong> Genetic disorders and disease IDs</li>
+                        <li><strong>PharmGKB:</strong> Pharmacogenetics data including ADME genes and drug response</li>
+                        <li><strong>Note:</strong> Results are cached for 7 days to improve performance</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Searches -->
+    {% if recent_searches %}
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">
+            <i class="fas fa-history text-gray-600 mr-2"></i>
+            Recent Searches
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Search Term
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Type
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Results
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for search in recent_searches %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ search.search_term }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                {{ search.get_search_type_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div class="flex space-x-3">
+                                <span title="HPO Terms">
+                                    <i class="fas fa-heartbeat text-red-500"></i> {{ search.get_hpo_count }}
+                                </span>
+                                <span title="OMIM Diseases">
+                                    <i class="fas fa-disease text-orange-500"></i> {{ search.get_omim_count }}
+                                </span>
+                                <span title="PharmGKB Entries">
+                                    <i class="fas fa-pills text-green-500"></i> {{ search.get_pharmgkb_count }}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ search.created_at|date:"Y-m-d H:i" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="{% url 'gene_search:search_result' search.id %}" class="text-blue-600 hover:text-blue-900">
+                                View Results
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-4">
+            <a href="{% url 'gene_search:search_history' %}" class="text-sm text-blue-600 hover:text-blue-900">
+                View all search history →
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
