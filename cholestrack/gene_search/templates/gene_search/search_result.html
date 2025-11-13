@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Results for {{ query.search_term }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-7xl">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                    Results for <span class="text-purple-600">{{ query.search_term }}</span>
+                </h1>
+                <p class="text-gray-600">
+                    Search Type: <span class="font-medium">{{ query.get_search_type_display }}</span> |
+                    Searched: {{ query.created_at|date:"Y-m-d H:i" }}
+                </p>
+            </div>
+            <div class="flex space-x-3">
+                <a href="{% url 'gene_search:search_home' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    New Search
+                </a>
+                <a href="{% url 'gene_search:refresh_search' query.id %}" class="btn btn-primary">
+                    <i class="fas fa-sync-alt mr-2"></i>
+                    Refresh
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cache Warning -->
+    {% if cache_expired %}
+    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm text-yellow-700">
+                    These results are cached and may be outdated. Click "Refresh" to fetch new data.
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Error Message -->
+    {% if not query.success %}
+    <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-times-circle text-red-400"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">Search Failed</h3>
+                <p class="mt-2 text-sm text-red-700">{{ query.error_message }}</p>
+            </div>
+        </div>
+    </div>
+    {% else %}
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- HPO Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-t-4 border-red-500">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-lg font-semibold text-gray-800">HPO Terms</h3>
+                <i class="fas fa-heartbeat text-red-500 text-2xl"></i>
+            </div>
+            <p class="text-3xl font-bold text-gray-900">{{ query.get_hpo_count }}</p>
+            <p class="text-sm text-gray-600 mt-1">Phenotype associations</p>
+        </div>
+
+        <!-- OMIM Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-t-4 border-orange-500">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-lg font-semibold text-gray-800">OMIM Diseases</h3>
+                <i class="fas fa-disease text-orange-500 text-2xl"></i>
+            </div>
+            <p class="text-3xl font-bold text-gray-900">{{ query.get_omim_count }}</p>
+            <p class="text-sm text-gray-600 mt-1">Disease associations</p>
+        </div>
+
+        <!-- PharmGKB Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-t-4 border-green-500">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-lg font-semibold text-gray-800">PharmGKB</h3>
+                <i class="fas fa-pills text-green-500 text-2xl"></i>
+            </div>
+            <p class="text-3xl font-bold text-gray-900">{{ query.get_pharmgkb_count }}</p>
+            <p class="text-sm text-gray-600 mt-1">Pharmacogenetics entries</p>
+        </div>
+    </div>
+
+    <!-- HPO Results -->
+    {% if query.hpo_results %}
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">
+            <i class="fas fa-heartbeat text-red-500 mr-2"></i>
+            Human Phenotype Ontology (HPO) Terms
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HPO ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phenotype Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Definition</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for phenotype in query.hpo_results %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="https://hpo.jax.org/app/browse/term/{{ phenotype.hpo_id }}"
+                               target="_blank"
+                               class="text-blue-600 hover:text-blue-900 font-mono text-sm">
+                                {{ phenotype.hpo_id }}
+                                <i class="fas fa-external-link-alt text-xs ml-1"></i>
+                            </a>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">{{ phenotype.name }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-500">{{ phenotype.definition }}</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- OMIM Results -->
+    {% if query.omim_results %}
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">
+            <i class="fas fa-disease text-orange-500 mr-2"></i>
+            OMIM Diseases
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">OMIM ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Disease Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gene</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for disease in query.omim_results %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="https://omim.org/entry/{{ disease.omim_id }}"
+                               target="_blank"
+                               class="text-blue-600 hover:text-blue-900 font-mono text-sm">
+                                {{ disease.omim_id }}
+                                <i class="fas fa-external-link-alt text-xs ml-1"></i>
+                            </a>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">{{ disease.name }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                                {{ disease.gene_symbol }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- PharmGKB Results -->
+    {% if query.pharmgkb_results %}
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">
+            <i class="fas fa-pills text-green-500 mr-2"></i>
+            PharmGKB Pharmacogenetics Data
+        </h2>
+        <p class="text-sm text-gray-600 mb-4">
+            Information about drug metabolism (ADME), drug response, and pharmacogenetic variants
+        </p>
+        <div class="space-y-4">
+            {% for entry in query.pharmgkb_results %}
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                <div class="flex items-start justify-between mb-2">
+                    <h3 class="text-lg font-semibold text-gray-800">{{ entry.type }}</h3>
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                        {{ entry.gene }}
+                    </span>
+                </div>
+                <dl class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                    {% if entry.drug %}
+                    <div>
+                        <dt class="font-medium text-gray-700">Drug:</dt>
+                        <dd class="text-gray-600">{{ entry.drug }}</dd>
+                    </div>
+                    {% endif %}
+                    {% if entry.phenotype %}
+                    <div>
+                        <dt class="font-medium text-gray-700">Phenotype:</dt>
+                        <dd class="text-gray-600">{{ entry.phenotype }}</dd>
+                    </div>
+                    {% endif %}
+                    {% if entry.significance %}
+                    <div>
+                        <dt class="font-medium text-gray-700">Significance:</dt>
+                        <dd class="text-gray-600">{{ entry.significance }}</dd>
+                    </div>
+                    {% endif %}
+                    {% if entry.variant %}
+                    <div>
+                        <dt class="font-medium text-gray-700">Variant:</dt>
+                        <dd class="text-gray-600">{{ entry.variant }}</dd>
+                    </div>
+                    {% endif %}
+                    {% if entry.effect %}
+                    <div>
+                        <dt class="font-medium text-gray-700">Effect:</dt>
+                        <dd class="text-gray-600">{{ entry.effect }}</dd>
+                    </div>
+                    {% endif %}
+                </dl>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- No Results Message -->
+    {% if not query.hpo_results and not query.omim_results and not query.pharmgkb_results %}
+    <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+        <i class="fas fa-search text-gray-400 text-5xl mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-700 mb-2">No Results Found</h3>
+        <p class="text-gray-600 mb-4">
+            No data was found for "{{ query.search_term }}" in HPO, OMIM, or PharmGKB databases.
+        </p>
+        <p class="text-sm text-gray-500">
+            This could mean the gene name is not recognized or there are no associated phenotypes/diseases/drugs in the databases.
+        </p>
+    </div>
+    {% endif %}
+
+    {% endif %}
+</div>
+{% endblock %}
