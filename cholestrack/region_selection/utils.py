@@ -160,8 +160,7 @@ def extract_bam_region(job):
 
         cmd = [
             'samtools', 'view',
-            '-b',  # Output BAM format
-            '-h',  # Include header
+            '-bS',  # Output BAM format
             str(original_bam_path),  # Input: original BAM in remote location
             region,
             '-o', output_bam_path  # Output: extracted BAM in temp directory
@@ -211,8 +210,8 @@ def create_bam_index(bam_file_path):
     index_path = f"{bam_file_path}.bai"
 
     try:
-        # Run samtools index
-        cmd = ['samtools', 'index', bam_file_path]
+        # Run samtools index with explicit output file
+        cmd = ['samtools', 'index', '-b', bam_file_path, index_path]
 
         result = subprocess.run(
             cmd,

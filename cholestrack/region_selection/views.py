@@ -7,6 +7,7 @@ import os
 import subprocess
 import tempfile
 import shutil
+import zipfile
 from pathlib import Path
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -210,29 +211,44 @@ def download_extracted_file(request, job_id):
         return redirect('region_selection:job_detail', job_id=job.job_id)
 
     try:
-        # Prepare filename for download
+        # Verify BAM file exists and is readable
+        if not os.path.isfile(job.output_file_path):
+            raise FileNotFoundError(f"Output BAM file is not a valid file: {job.output_file_path}")
+
+        # Check for BAI index file
+        bai_file_path = f"{job.output_file_path}.bai"
+        if not os.path.isfile(bai_file_path):
+            raise FileNotFoundError(f"BAM index file not found: {bai_file_path}")
+
+        # Create zip file with both BAM and BAI
         if job.gene_name:
-            filename = f"{job.sample_id}_{job.gene_name}_extracted.bam"
+            base_filename = f"{job.sample_id}_{job.gene_name}_extracted"
         else:
             region_str = f"{job.chromosome}_{job.start_position}_{job.end_position}"
-            filename = f"{job.sample_id}_{region_str}_extracted.bam"
+            base_filename = f"{job.sample_id}_{region_str}_extracted"
 
-        # Verify file exists and is readable
-        if not os.path.isfile(job.output_file_path):
-            raise FileNotFoundError(f"Output file is not a valid file: {job.output_file_path}")
+        # Create temporary zip file
+        job_temp_dir = os.path.dirname(job.output_file_path)
+        zip_path = os.path.join(job_temp_dir, f"{base_filename}.zip")
 
-        # Get file size
-        file_size = os.path.getsize(job.output_file_path)
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            # Add BAM file
+            zipf.write(job.output_file_path, f"{base_filename}.bam")
+            # Add BAI index file
+            zipf.write(bai_file_path, f"{base_filename}.bam.bai")
 
-        # Open the file for download
-        file_handle = open(job.output_file_path, 'rb')
+        # Get zip file size
+        zip_size = os.path.getsize(zip_path)
+
+        # Open the zip file for download
+        file_handle = open(zip_path, 'rb')
         response = FileResponse(
             file_handle,
             as_attachment=True,
-            filename=filename,
-            content_type='application/octet-stream'
+            filename=f"{base_filename}.zip",
+            content_type='application/zip'
         )
-        response['Content-Length'] = file_size
+        response['Content-Length'] = zip_size
 
         # Mark job as downloaded
         job.mark_downloaded()
@@ -248,9 +264,9 @@ def download_extracted_file(request, job_id):
 @role_confirmed_required
 def job_list(request):
     """
-    List all extraction jobs for the current user.
+    List the 20 most recent extraction jobs for the current user.
     """
-    jobs = RegionExtractionJob.objects.filter(user=request.user).order_by('-created_at')
+    jobs = RegionExtractionJob.objects.filter(user=request.user).order_by('-created_at')[:20]
 
     context = {
         'jobs': jobs,

@@ -167,8 +167,8 @@ class RegionExtractionJob(models.Model):
     def get_region_string(self):
         """Returns the region specification in samtools format."""
         if self.chromosome and self.start_position and self.end_position:
-            # Normalize chromosome name (remove 'chr' prefix if present for samtools)
-            chr_name = self.chromosome.replace('chr', '')
+            # Ensure chromosome has 'chr' prefix for samtools (e.g., 'chr6:32578770-32589836')
+            chr_name = self.chromosome if self.chromosome.startswith('chr') else f'chr{self.chromosome}'
             return f"{chr_name}:{self.start_position}-{self.end_position}"
         return None
 
