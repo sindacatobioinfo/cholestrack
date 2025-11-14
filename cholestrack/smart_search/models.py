@@ -129,7 +129,7 @@ class HPOTerm(models.Model):
     HPO phenotype term from the Human Phenotype Ontology.
     """
     hpo_id = models.CharField(
-        max_length=20,
+        max_length=50,
         unique=True,
         db_index=True,
         verbose_name="HPO ID",
@@ -198,7 +198,7 @@ class Disease(models.Model):
     Disease information from HPO annotations.
     """
     database_id = models.CharField(
-        max_length=50,
+        max_length=200,
         unique=True,
         db_index=True,
         verbose_name="Database ID",
@@ -212,7 +212,7 @@ class Disease(models.Model):
     )
 
     database = models.CharField(
-        max_length=50,
+        max_length=100,
         default="OMIM",
         verbose_name="Database",
         help_text="Source database (OMIM, ORPHA, DECIPHER, etc.)"

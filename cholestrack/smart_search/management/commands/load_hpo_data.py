@@ -178,10 +178,15 @@ class Command(BaseCommand):
                         continue
 
                     try:
-                        entrez_id = int(row[0])
-                        gene_symbol = row[1]
-                        hpo_name = row[2]
-                        hpo_id = row[3]
+                        # Strip whitespace and validate data
+                        entrez_id = int(row[0].strip())
+                        gene_symbol = row[1].strip()[:50]  # Max 50 chars
+                        hpo_name = row[2].strip()[:500]     # Max 500 chars
+                        hpo_id = row[3].strip()[:50]        # Max 50 chars
+
+                        # Skip if any required field is empty
+                        if not gene_symbol or not hpo_id:
+                            continue
 
                         # Create or get Gene
                         gene, created = Gene.objects.get_or_create(
@@ -209,7 +214,12 @@ class Command(BaseCommand):
 
                     except (ValueError, IndexError) as e:
                         self.stdout.write(
-                            self.style.WARNING(f'Skipping invalid row: {row} - {e}')
+                            self.style.WARNING(f'Skipping invalid row: {row[:4] if len(row) >= 4 else row} - {e}')
+                        )
+                        continue
+                    except Exception as e:
+                        self.stdout.write(
+                            self.style.ERROR(f'Error processing row: {row[:4] if len(row) >= 4 else row} - {e}')
                         )
                         continue
 
@@ -240,17 +250,20 @@ class Command(BaseCommand):
             with transaction.atomic():
                 for row in reader:
                     try:
-                        database_id = row.get('database_id') or row.get('DatabaseID', '')
-                        disease_name = row.get('disease_name') or row.get('DiseaseName', '')
-                        hpo_id = row.get('hpo_id') or row.get('HPO_ID', '')
-                        hpo_name = row.get('hpo_name', '')
-                        frequency = row.get('frequency') or row.get('Frequency', '')
+                        # Get and strip data, handling both lowercase and uppercase column names
+                        database_id = (row.get('database_id') or row.get('DatabaseID', '')).strip()[:200]
+                        disease_name = (row.get('disease_name') or row.get('DiseaseName', '')).strip()[:500]
+                        hpo_id = (row.get('hpo_id') or row.get('HPO_ID', '')).strip()[:50]
+                        hpo_name = row.get('hpo_name', '').strip()[:500]
+                        frequency = (row.get('frequency') or row.get('Frequency', '')).strip()[:100]
 
+                        # Skip if required fields are empty
                         if not database_id or not hpo_id:
                             continue
 
                         # Extract database type (e.g., OMIM, ORPHA)
                         database = database_id.split(':')[0] if ':' in database_id else 'OMIM'
+                        database = database[:100]  # Truncate to max length
 
                         # Create or get Disease
                         disease, created = Disease.objects.get_or_create(
@@ -282,7 +295,7 @@ class Command(BaseCommand):
 
                     except Exception as e:
                         self.stdout.write(
-                            self.style.WARNING(f'Skipping invalid row: {e}')
+                            self.style.ERROR(f'Skipping row due to error: {str(e)[:200]}')
                         )
                         continue
 
