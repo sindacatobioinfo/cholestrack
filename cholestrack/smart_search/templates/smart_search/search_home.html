@@ -18,7 +18,7 @@
 
     <!-- Search Form -->
     <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-        <form method="post" action="{% url 'gene_search:search_home' %}">
+        <form method="post" action="{% url 'smart_search:search_home' %}">
             {% csrf_token %}
 
             <!-- Search Type Selection -->
@@ -141,7 +141,7 @@
                             {{ search.created_at|date:"Y-m-d H:i" }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <a href="{% url 'gene_search:search_result' search.id %}" class="text-blue-600 hover:text-blue-900">
+                            <a href="{% url 'smart_search:search_result' search.id %}" class="text-blue-600 hover:text-blue-900">
                                 View Results
                             </a>
                         </td>
@@ -151,7 +151,7 @@
             </table>
         </div>
         <div class="mt-4">
-            <a href="{% url 'gene_search:search_history' %}" class="text-sm text-blue-600 hover:text-blue-900">
+            <a href="{% url 'smart_search:search_history' %}" class="text-sm text-blue-600 hover:text-blue-900">
                 View all search history →
             </a>
         </div>

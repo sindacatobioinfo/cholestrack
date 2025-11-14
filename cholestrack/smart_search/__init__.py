@@ -1,1 +1,1 @@
-# gene_search app
+# smart_search app
