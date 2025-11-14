@@ -1,24 +1,29 @@
 # smart_search/api_utils.py
 """
-API integration utilities for HPO (Human Phenotype Ontology).
-Fetches gene-phenotype-disease relationships from the HPO API.
+Local database utilities for HPO (Human Phenotype Ontology).
+Fetches gene-phenotype-disease relationships from the local HPO database.
 """
 
-import requests
 from typing import Dict, List
+from django.db.models import Q
+from .models import (
+    HPOTerm, Gene, Disease,
+    GenePhenotypeAssociation,
+    DiseasePhenotypeAssociation,
+    GeneDiseaseAssociation
+)
 
 
-class HPOClient:
+class HPOLocalClient:
     """
-    Client for Human Phenotype Ontology (HPO) API.
-    Documentation: https://hpo.jax.org/api/hpo/docs/
+    Client for querying local HPO database.
+    Uses Django ORM to query HPO annotation data stored locally.
     """
-    BASE_URL = "https://ontology.jax.org/api"
 
     @staticmethod
     def search_gene(gene_symbol: str) -> Dict:
         """
-        Search for phenotypes and diseases associated with a gene.
+        Search for phenotypes and diseases associated with a gene in local database.
 
         Args:
             gene_symbol: Gene symbol (e.g., 'ATP8B1', 'BRCA1')
@@ -27,117 +32,205 @@ class HPOClient:
             Dictionary with:
             - phenotypes: List of HPO phenotype terms
             - diseases: List of associated diseases
-            - gene_info: Gene information from HPO
+            - gene_info: Gene information
         """
         try:
-            # Step 1: Search for gene first
-            search_url = f"{HPOClient.BASE_URL}/hpo/search"
-            params = {
-                'q': gene_symbol,
-                'category': 'genes'
-            }
+            # Search for gene (case-insensitive)
+            gene = Gene.objects.filter(
+                gene_symbol__iexact=gene_symbol
+            ).first()
 
-            response = requests.get(search_url, params=params, timeout=10)
-            response.raise_for_status()
-
-            search_results = response.json()
-
-            if not search_results or 'genes' not in search_results:
+            if not gene:
                 return {
                     'phenotypes': [],
                     'diseases': [],
                     'gene_info': None,
-                    'error': 'Gene not found in HPO database'
+                    'error': f'Gene "{gene_symbol}" not found in local HPO database. '
+                             'Please run "python manage.py load_hpo_data" to populate the database.'
                 }
 
-            genes = search_results.get('genes', [])
-            if not genes:
-                return {
-                    'phenotypes': [],
-                    'diseases': [],
-                    'gene_info': None,
-                    'error': 'Gene not found in HPO database'
-                }
-
-            # Get the first matching gene
-            gene = genes[0]
-            gene_id = gene.get('dbGeneId') or gene.get('entrezGeneId')
-
-            if not gene_id:
-                return {
-                    'phenotypes': [],
-                    'diseases': [],
-                    'gene_info': gene,
-                    'error': 'Gene ID not available'
-                }
-
-            # Step 2: Get detailed gene information including phenotypes and diseases
-            gene_url = f"{HPOClient.BASE_URL}/hpo/gene/{gene_id}"
-            gene_response = requests.get(gene_url, timeout=10)
-            gene_response.raise_for_status()
-
-            gene_data = gene_response.json()
-
-            # Extract phenotypes (HPO terms)
+            # Get phenotypes for this gene
             phenotypes = []
-            if 'termAssoc' in gene_data:
-                for term in gene_data['termAssoc']:
-                    phenotypes.append({
-                        'hpo_id': term.get('ontologyId'),
-                        'name': term.get('name'),
-                        'definition': term.get('definition', 'No definition available')
-                    })
+            gene_phenotype_associations = GenePhenotypeAssociation.objects.filter(
+                gene=gene
+            ).select_related('hpo_term')
 
-            # Extract diseases from gene data
+            for assoc in gene_phenotype_associations:
+                phenotypes.append({
+                    'hpo_id': assoc.hpo_term.hpo_id,
+                    'name': assoc.hpo_term.name,
+                    'definition': assoc.hpo_term.definition or 'No definition available'
+                })
+
+            # Get diseases for this gene
             diseases = []
-            if 'diseaseAssoc' in gene_data:
-                for disease in gene_data['diseaseAssoc']:
-                    diseases.append({
-                        'disease_id': disease.get('diseaseId'),
-                        'disease_name': disease.get('diseaseName'),
-                        'database': disease.get('db', 'HPO')
-                    })
+            gene_disease_associations = GeneDiseaseAssociation.objects.filter(
+                gene=gene
+            ).select_related('disease')
 
-            # If diseaseAssoc is not available, try to get diseases from dbDiseases
-            if not diseases and 'dbDiseases' in gene_data:
-                for disease in gene_data['dbDiseases']:
-                    diseases.append({
-                        'disease_id': disease.get('diseaseId') or f"{disease.get('db')}:{disease.get('dbId')}",
-                        'disease_name': disease.get('diseaseName'),
-                        'database': disease.get('db', 'HPO')
-                    })
+            for assoc in gene_disease_associations:
+                diseases.append({
+                    'disease_id': assoc.disease.database_id,
+                    'disease_name': assoc.disease.disease_name,
+                    'database': assoc.disease.database
+                })
 
+            # Return results
             return {
                 'phenotypes': phenotypes,
                 'diseases': diseases,
                 'gene_info': {
-                    'gene_symbol': gene.get('geneSymbol') or gene_symbol,
-                    'gene_id': gene_id,
-                    'entrez_id': gene.get('entrezGeneId')
+                    'gene_symbol': gene.gene_symbol,
+                    'entrez_id': gene.entrez_id
                 }
             }
 
-        except requests.RequestException as e:
-            print(f"Error fetching HPO data for {gene_symbol}: {e}")
+        except Exception as e:
+            print(f"Error searching local HPO database for {gene_symbol}: {e}")
             return {
                 'phenotypes': [],
                 'diseases': [],
                 'gene_info': None,
-                'error': f'API request failed: {str(e)}'
+                'error': f'Database error: {str(e)}'
+            }
+
+    @staticmethod
+    def get_phenotype_details(hpo_id: str) -> Dict:
+        """
+        Get details for a specific HPO term.
+
+        Args:
+            hpo_id: HPO term ID (e.g., 'HP:0000001')
+
+        Returns:
+            Dictionary with HPO term details
+        """
+        try:
+            hpo_term = HPOTerm.objects.get(hpo_id=hpo_id)
+
+            # Get associated genes
+            genes = Gene.objects.filter(
+                phenotype_associations__hpo_term=hpo_term
+            ).distinct()
+
+            # Get associated diseases
+            diseases = Disease.objects.filter(
+                phenotype_associations__hpo_term=hpo_term
+            ).distinct()
+
+            return {
+                'hpo_id': hpo_term.hpo_id,
+                'name': hpo_term.name,
+                'definition': hpo_term.definition,
+                'gene_count': genes.count(),
+                'disease_count': diseases.count(),
+                'genes': [gene.gene_symbol for gene in genes[:10]],  # Limit to 10
+                'diseases': [disease.disease_name for disease in diseases[:10]]  # Limit to 10
+            }
+
+        except HPOTerm.DoesNotExist:
+            return {
+                'error': f'HPO term "{hpo_id}" not found in local database'
             }
         except Exception as e:
-            print(f"Unexpected error in HPO search: {e}")
             return {
-                'phenotypes': [],
-                'diseases': [],
-                'gene_info': None,
-                'error': f'Unexpected error: {str(e)}'
+                'error': f'Database error: {str(e)}'
+            }
+
+    @staticmethod
+    def search_genes_by_phenotype(hpo_id: str) -> List[Dict]:
+        """
+        Search for genes associated with a specific phenotype.
+
+        Args:
+            hpo_id: HPO term ID (e.g., 'HP:0000001')
+
+        Returns:
+            List of gene dictionaries
+        """
+        try:
+            hpo_term = HPOTerm.objects.get(hpo_id=hpo_id)
+
+            genes = Gene.objects.filter(
+                phenotype_associations__hpo_term=hpo_term
+            ).distinct()
+
+            return [
+                {
+                    'gene_symbol': gene.gene_symbol,
+                    'entrez_id': gene.entrez_id
+                }
+                for gene in genes
+            ]
+
+        except HPOTerm.DoesNotExist:
+            return []
+        except Exception as e:
+            print(f"Error searching genes by phenotype: {e}")
+            return []
+
+    @staticmethod
+    def search_diseases_by_gene(gene_symbol: str) -> List[Dict]:
+        """
+        Search for diseases associated with a gene.
+
+        Args:
+            gene_symbol: Gene symbol (e.g., 'ATP8B1')
+
+        Returns:
+            List of disease dictionaries
+        """
+        try:
+            gene = Gene.objects.filter(
+                gene_symbol__iexact=gene_symbol
+            ).first()
+
+            if not gene:
+                return []
+
+            diseases = Disease.objects.filter(
+                gene_associations__gene=gene
+            ).distinct()
+
+            return [
+                {
+                    'disease_id': disease.database_id,
+                    'disease_name': disease.disease_name,
+                    'database': disease.database
+                }
+                for disease in diseases
+            ]
+
+        except Exception as e:
+            print(f"Error searching diseases by gene: {e}")
+            return []
+
+    @staticmethod
+    def get_database_stats() -> Dict:
+        """
+        Get statistics about the local HPO database.
+
+        Returns:
+            Dictionary with database statistics
+        """
+        try:
+            return {
+                'hpo_terms': HPOTerm.objects.count(),
+                'genes': Gene.objects.count(),
+                'diseases': Disease.objects.count(),
+                'gene_phenotype_associations': GenePhenotypeAssociation.objects.count(),
+                'disease_phenotype_associations': DiseasePhenotypeAssociation.objects.count(),
+                'gene_disease_associations': GeneDiseaseAssociation.objects.count(),
+            }
+        except Exception as e:
+            return {
+                'error': f'Database error: {str(e)}'
             }
 
 
 def fetch_gene_data(gene_symbol: str) -> Dict:
     """
-    Fetch all HPO data for a gene including phenotypes and diseases.
+    Fetch all HPO data for a gene including phenotypes and diseases from local database.
 
     Args:
         gene_symbol: Gene symbol (e.g., 'ATP8B1')
@@ -145,7 +238,18 @@ def fetch_gene_data(gene_symbol: str) -> Dict:
     Returns:
         Dictionary with phenotypes, diseases, and gene_info
     """
-    hpo_client = HPOClient()
+    hpo_client = HPOLocalClient()
     results = hpo_client.search_gene(gene_symbol)
 
     return results
+
+
+def get_hpo_database_stats() -> Dict:
+    """
+    Get statistics about the local HPO database.
+
+    Returns:
+        Dictionary with database statistics
+    """
+    hpo_client = HPOLocalClient()
+    return hpo_client.get_database_stats()
