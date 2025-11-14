@@ -42,6 +42,29 @@ class Command(BaseCommand):
             f'{release}/{filename}'
         )
 
+    def extract_entrez_id(self, gene_id_str):
+        """
+        Extract numeric Entrez ID from various formats.
+
+        Handles formats like:
+        - '2022' -> 2022
+        - 'NCBIGene:2022' -> 2022
+        - 'ENTREZ:2022' -> 2022
+
+        Returns None if parsing fails.
+        """
+        gene_id_str = gene_id_str.strip()
+
+        # If it contains a colon, extract the part after it
+        if ':' in gene_id_str:
+            gene_id_str = gene_id_str.split(':')[-1]
+
+        # Try to convert to integer
+        try:
+            return int(gene_id_str)
+        except ValueError:
+            return None
+
     def add_arguments(self, parser):
         parser.add_argument(
             '--release',
@@ -220,7 +243,10 @@ class Command(BaseCommand):
 
                     try:
                         # Strip whitespace and validate data
-                        entrez_id = int(row[0].strip())
+                        entrez_id = self.extract_entrez_id(row[0])
+                        if entrez_id is None:
+                            continue  # Skip rows with invalid gene IDs
+
                         gene_symbol = row[1].strip()[:50]  # Max 50 chars
                         hpo_id = row[2].strip()[:50]        # Column 3 is HPO ID
                         hpo_name = row[3].strip()[:500]     # Column 4 is HPO Name
@@ -254,14 +280,17 @@ class Command(BaseCommand):
                             associations_created += 1
 
                     except (ValueError, IndexError) as e:
-                        self.stdout.write(
-                            self.style.WARNING(f'Skipping invalid row: {row[:4] if len(row) >= 4 else row} - {e}')
-                        )
+                        # Only log first 10 errors to avoid flooding output
+                        if genes_created + terms_created + associations_created < 10:
+                            self.stdout.write(
+                                self.style.WARNING(f'Skipping invalid row in genes_to_phenotype: {row[:4] if len(row) >= 4 else row}')
+                            )
                         continue
                     except Exception as e:
-                        self.stdout.write(
-                            self.style.ERROR(f'Error processing row: {row[:4] if len(row) >= 4 else row} - {e}')
-                        )
+                        if genes_created + terms_created + associations_created < 10:
+                            self.stdout.write(
+                                self.style.ERROR(f'Error processing row in genes_to_phenotype: {str(e)[:100]}')
+                            )
                         continue
 
         self.stdout.write(self.style.SUCCESS(
@@ -298,7 +327,10 @@ class Command(BaseCommand):
                         continue
 
                     try:
-                        entrez_id = int(row[0].strip())
+                        entrez_id = self.extract_entrez_id(row[0])
+                        if entrez_id is None:
+                            continue  # Skip rows with invalid gene IDs
+
                         gene_symbol = row[1].strip()[:50]
                         disease_id = row[2].strip()[:200]
                         disease_name = row[3].strip()[:500]
@@ -338,14 +370,17 @@ class Command(BaseCommand):
                             associations_created += 1
 
                     except (ValueError, IndexError) as e:
-                        self.stdout.write(
-                            self.style.WARNING(f'Skipping invalid row: {row[:4] if len(row) >= 4 else row} - {e}')
-                        )
+                        # Only log first 10 errors to avoid flooding output
+                        if genes_created + diseases_created + associations_created < 10:
+                            self.stdout.write(
+                                self.style.WARNING(f'Skipping invalid row in genes_to_disease: {row[:4] if len(row) >= 4 else row}')
+                            )
                         continue
                     except Exception as e:
-                        self.stdout.write(
-                            self.style.ERROR(f'Error processing row: {row[:4] if len(row) >= 4 else row} - {e}')
-                        )
+                        if genes_created + diseases_created + associations_created < 10:
+                            self.stdout.write(
+                                self.style.ERROR(f'Error processing row in genes_to_disease: {str(e)[:100]}')
+                            )
                         continue
 
         self.stdout.write(self.style.SUCCESS(
@@ -384,7 +419,10 @@ class Command(BaseCommand):
                     try:
                         hpo_id = row[0].strip()[:50]
                         hpo_name = row[1].strip()[:500]
-                        entrez_id = int(row[2].strip())
+                        entrez_id = self.extract_entrez_id(row[2])
+                        if entrez_id is None:
+                            continue  # Skip rows with invalid gene IDs
+
                         gene_symbol = row[3].strip()[:50]
 
                         if not gene_symbol or not hpo_id:
@@ -415,14 +453,17 @@ class Command(BaseCommand):
                             associations_created += 1
 
                     except (ValueError, IndexError) as e:
-                        self.stdout.write(
-                            self.style.WARNING(f'Skipping invalid row: {row[:4] if len(row) >= 4 else row} - {e}')
-                        )
+                        # Only log first 10 errors to avoid flooding output
+                        if genes_created + terms_created + associations_created < 10:
+                            self.stdout.write(
+                                self.style.WARNING(f'Skipping invalid row in phenotype_to_genes: {row[:4] if len(row) >= 4 else row}')
+                            )
                         continue
                     except Exception as e:
-                        self.stdout.write(
-                            self.style.ERROR(f'Error processing row: {row[:4] if len(row) >= 4 else row} - {e}')
-                        )
+                        if genes_created + terms_created + associations_created < 10:
+                            self.stdout.write(
+                                self.style.ERROR(f'Error processing row in phenotype_to_genes: {str(e)[:100]}')
+                            )
                         continue
 
         self.stdout.write(self.style.SUCCESS(
