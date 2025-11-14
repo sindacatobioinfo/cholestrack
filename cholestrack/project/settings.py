@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     'files',
     'home',
     'region_selection',
-    'gene_search',
+    'smart_search',
 ]
 
 MIDDLEWARE = [
