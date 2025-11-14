@@ -1,12 +1,12 @@
-# gene_search/urls.py
+# smart_search/urls.py
 """
-URL patterns for gene search app.
+URL patterns for smart search app.
 """
 
 from django.urls import path
 from . import views
 
-app_name = 'gene_search'
+app_name = 'smart_search'
 
 urlpatterns = [
     path('', views.search_home, name='search_home'),
