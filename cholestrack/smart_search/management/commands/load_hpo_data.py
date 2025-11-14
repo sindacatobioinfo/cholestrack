@@ -3,17 +3,17 @@
 Management command to download and load HPO annotation data into the local database.
 
 Usage:
-    python manage.py load_hpo_data [--url URL] [--file FILE]
+    python manage.py load_hpo_data [options]
 
 Examples:
     # Download from default HPO GitHub release
     python manage.py load_hpo_data
 
-    # Load from a local file
-    python manage.py load_hpo_data --file /path/to/genes_to_phenotype.txt
+    # Load from local files
+    python manage.py load_hpo_data --genes-file /path/to/genes_to_phenotype.txt
 
-    # Download from specific URL
-    python manage.py load_hpo_data --url https://example.com/genes_to_phenotype.txt
+    # Download from specific release
+    python manage.py load_hpo_data --release v2025-10-22
 """
 
 import os
@@ -32,21 +32,37 @@ from smart_search.models import (
 class Command(BaseCommand):
     help = 'Download and load HPO annotation data into the local database'
 
-    # Default URLs for HPO annotation files
-    DEFAULT_GENES_TO_PHENOTYPE_URL = (
-        'https://github.com/obophenotype/human-phenotype-ontology/releases/latest/download/'
-        'genes_to_phenotype.txt'
-    )
-    DEFAULT_PHENOTYPE_HPOA_URL = (
-        'https://github.com/obophenotype/human-phenotype-ontology/releases/latest/download/'
-        'phenotype.hpoa'
-    )
+    # Default release version (can be overridden with --release argument)
+    DEFAULT_RELEASE = 'v2025-10-22'
+
+    def get_file_url(self, release, filename):
+        """Generate download URL for a file from the specified release."""
+        return (
+            f'https://github.com/obophenotype/human-phenotype-ontology/releases/download/'
+            f'{release}/{filename}'
+        )
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--genes-file',
+            '--release',
+            type=str,
+            default=self.DEFAULT_RELEASE,
+            help=f'HPO release version (default: {self.DEFAULT_RELEASE})',
+        )
+        parser.add_argument(
+            '--genes-to-phenotype-file',
             type=str,
             help='Path to local genes_to_phenotype.txt file',
+        )
+        parser.add_argument(
+            '--genes-to-disease-file',
+            type=str,
+            help='Path to local genes_to_disease.txt file',
+        )
+        parser.add_argument(
+            '--phenotype-to-genes-file',
+            type=str,
+            help='Path to local phenotype_to_genes.txt file',
         )
         parser.add_argument(
             '--disease-file',
@@ -54,26 +70,24 @@ class Command(BaseCommand):
             help='Path to local phenotype.hpoa file',
         )
         parser.add_argument(
-            '--genes-url',
-            type=str,
-            default=self.DEFAULT_GENES_TO_PHENOTYPE_URL,
-            help='URL to download genes_to_phenotype.txt',
-        )
-        parser.add_argument(
-            '--disease-url',
-            type=str,
-            default=self.DEFAULT_PHENOTYPE_HPOA_URL,
-            help='URL to download phenotype.hpoa',
-        )
-        parser.add_argument(
             '--clear',
             action='store_true',
             help='Clear existing HPO data before loading',
         )
         parser.add_argument(
-            '--skip-genes',
+            '--skip-genes-to-phenotype',
             action='store_true',
             help='Skip loading genes_to_phenotype data',
+        )
+        parser.add_argument(
+            '--skip-genes-to-disease',
+            action='store_true',
+            help='Skip loading genes_to_disease data',
+        )
+        parser.add_argument(
+            '--skip-phenotype-to-genes',
+            action='store_true',
+            help='Skip loading phenotype_to_genes data',
         )
         parser.add_argument(
             '--skip-diseases',
@@ -83,40 +97,65 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
+            release = options['release']
+            self.stdout.write(f'Using HPO release: {release}')
+
             # Clear existing data if requested
             if options['clear']:
                 self.stdout.write('Clearing existing HPO data...')
                 self.clear_hpo_data()
 
-            # Load genes to phenotype data
-            if not options['skip_genes']:
-                genes_file = options.get('genes_file')
-                if genes_file and os.path.exists(genes_file):
-                    self.stdout.write(f'Loading genes from file: {genes_file}')
-                    self.load_genes_to_phenotype(genes_file)
+            # Load genes_to_phenotype data
+            if not options['skip_genes_to_phenotype']:
+                file_path = options.get('genes_to_phenotype_file')
+                if file_path and os.path.exists(file_path):
+                    self.stdout.write(f'Loading genes_to_phenotype from file: {file_path}')
+                    self.load_genes_to_phenotype(file_path)
                 else:
-                    genes_url = options['genes_url']
-                    self.stdout.write(f'Downloading genes data from: {genes_url}')
-                    genes_file = self.download_file(genes_url, 'genes_to_phenotype.txt')
-                    self.load_genes_to_phenotype(genes_file)
-                    os.remove(genes_file)
+                    url = self.get_file_url(release, 'genes_to_phenotype.txt')
+                    self.stdout.write(f'Downloading genes_to_phenotype from: {url}')
+                    file_path = self.download_file(url, 'genes_to_phenotype.txt')
+                    self.load_genes_to_phenotype(file_path)
+                    os.remove(file_path)
 
             # Load disease to phenotype data
             if not options['skip_diseases']:
-                disease_file = options.get('disease_file')
-                if disease_file and os.path.exists(disease_file):
-                    self.stdout.write(f'Loading diseases from file: {disease_file}')
-                    self.load_phenotype_hpoa(disease_file)
+                file_path = options.get('disease_file')
+                if file_path and os.path.exists(file_path):
+                    self.stdout.write(f'Loading phenotype.hpoa from file: {file_path}')
+                    self.load_phenotype_hpoa(file_path)
                 else:
-                    disease_url = options['disease_url']
-                    self.stdout.write(f'Downloading disease data from: {disease_url}')
-                    disease_file = self.download_file(disease_url, 'phenotype.hpoa')
-                    self.load_phenotype_hpoa(disease_file)
-                    os.remove(disease_file)
+                    url = self.get_file_url(release, 'phenotype.hpoa')
+                    self.stdout.write(f'Downloading phenotype.hpoa from: {url}')
+                    file_path = self.download_file(url, 'phenotype.hpoa')
+                    self.load_phenotype_hpoa(file_path)
+                    os.remove(file_path)
 
-            # Create gene-disease associations
-            self.stdout.write('Creating gene-disease associations...')
-            self.create_gene_disease_associations()
+            # Load genes_to_disease data (direct gene-disease associations)
+            if not options['skip_genes_to_disease']:
+                file_path = options.get('genes_to_disease_file')
+                if file_path and os.path.exists(file_path):
+                    self.stdout.write(f'Loading genes_to_disease from file: {file_path}')
+                    self.load_genes_to_disease(file_path)
+                else:
+                    url = self.get_file_url(release, 'genes_to_disease.txt')
+                    self.stdout.write(f'Downloading genes_to_disease from: {url}')
+                    file_path = self.download_file(url, 'genes_to_disease.txt')
+                    self.load_genes_to_disease(file_path)
+                    os.remove(file_path)
+
+            # Load phenotype_to_genes data (additional associations)
+            if not options['skip_phenotype_to_genes']:
+                file_path = options.get('phenotype_to_genes_file')
+                if file_path and os.path.exists(file_path):
+                    self.stdout.write(f'Loading phenotype_to_genes from file: {file_path}')
+                    self.load_phenotype_to_genes(file_path)
+                else:
+                    url = self.get_file_url(release, 'phenotype_to_genes.txt')
+                    self.stdout.write(f'Downloading phenotype_to_genes from: {url}')
+                    file_path = self.download_file(url, 'phenotype_to_genes.txt')
+                    self.load_phenotype_to_genes(file_path)
+                    os.remove(file_path)
 
             self.stdout.write(self.style.SUCCESS('Successfully loaded HPO data'))
             self.print_statistics()
@@ -154,8 +193,8 @@ class Command(BaseCommand):
         Load genes_to_phenotype.txt file.
 
         Expected format (tab-separated):
-        #Format: entrez-gene-id<tab>entrez-gene-symbol<tab>HPO-Term-Name<tab>HPO-Term-ID
-        Or similar variations
+        #Format: entrez-gene-id<tab>entrez-gene-symbol<tab>HPO-Term-ID<tab>HPO-Term-Name
+        Note: The actual format has HPO ID before HPO Name (columns 3 and 4 are ID then Name)
         """
         self.stdout.write(f'Processing {file_path}...')
 
@@ -167,10 +206,12 @@ class Command(BaseCommand):
             # Skip header lines
             for line in f:
                 if not line.startswith('#'):
+                    # Read this line as first data line
+                    reader = csv.reader([line] + list(f), delimiter='\t')
                     break
-
-            # Process data lines
-            reader = csv.reader(f, delimiter='\t')
+            else:
+                # If we never broke, there are no data lines
+                reader = []
 
             with transaction.atomic():
                 for row in reader:
@@ -181,8 +222,8 @@ class Command(BaseCommand):
                         # Strip whitespace and validate data
                         entrez_id = int(row[0].strip())
                         gene_symbol = row[1].strip()[:50]  # Max 50 chars
-                        hpo_name = row[2].strip()[:500]     # Max 500 chars
-                        hpo_id = row[3].strip()[:50]        # Max 50 chars
+                        hpo_id = row[2].strip()[:50]        # Column 3 is HPO ID
+                        hpo_name = row[3].strip()[:500]     # Column 4 is HPO Name
 
                         # Skip if any required field is empty
                         if not gene_symbol or not hpo_id:
@@ -225,6 +266,167 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(
             f'Loaded genes_to_phenotype: '
+            f'{genes_created} genes, {terms_created} terms, '
+            f'{associations_created} associations'
+        ))
+
+    def load_genes_to_disease(self, file_path):
+        """
+        Load genes_to_disease.txt file.
+
+        Expected format (tab-separated):
+        #Format: entrez-gene-id<tab>entrez-gene-symbol<tab>disease-ID<tab>disease-name
+        """
+        self.stdout.write(f'Processing {file_path}...')
+
+        genes_created = 0
+        diseases_created = 0
+        associations_created = 0
+
+        with open(file_path, 'r', encoding='utf-8') as f:
+            # Skip header lines
+            for line in f:
+                if not line.startswith('#'):
+                    reader = csv.reader([line] + list(f), delimiter='\t')
+                    break
+            else:
+                reader = []
+
+            with transaction.atomic():
+                for row in reader:
+                    if len(row) < 4:
+                        continue
+
+                    try:
+                        entrez_id = int(row[0].strip())
+                        gene_symbol = row[1].strip()[:50]
+                        disease_id = row[2].strip()[:200]
+                        disease_name = row[3].strip()[:500]
+
+                        if not gene_symbol or not disease_id:
+                            continue
+
+                        # Extract database type (e.g., OMIM, ORPHA)
+                        database = disease_id.split(':')[0] if ':' in disease_id else 'OMIM'
+                        database = database[:100]
+
+                        # Create or get Gene
+                        gene, created = Gene.objects.get_or_create(
+                            entrez_id=entrez_id,
+                            defaults={'gene_symbol': gene_symbol}
+                        )
+                        if created:
+                            genes_created += 1
+
+                        # Create or get Disease
+                        disease, created = Disease.objects.get_or_create(
+                            database_id=disease_id,
+                            defaults={
+                                'disease_name': disease_name,
+                                'database': database
+                            }
+                        )
+                        if created:
+                            diseases_created += 1
+
+                        # Create gene-disease association
+                        _, created = GeneDiseaseAssociation.objects.get_or_create(
+                            gene=gene,
+                            disease=disease
+                        )
+                        if created:
+                            associations_created += 1
+
+                    except (ValueError, IndexError) as e:
+                        self.stdout.write(
+                            self.style.WARNING(f'Skipping invalid row: {row[:4] if len(row) >= 4 else row} - {e}')
+                        )
+                        continue
+                    except Exception as e:
+                        self.stdout.write(
+                            self.style.ERROR(f'Error processing row: {row[:4] if len(row) >= 4 else row} - {e}')
+                        )
+                        continue
+
+        self.stdout.write(self.style.SUCCESS(
+            f'Loaded genes_to_disease: '
+            f'{genes_created} genes, {diseases_created} diseases, '
+            f'{associations_created} associations'
+        ))
+
+    def load_phenotype_to_genes(self, file_path):
+        """
+        Load phenotype_to_genes.txt file.
+
+        Expected format (tab-separated):
+        #Format: HPO-Term-ID<tab>HPO-Term-Name<tab>entrez-gene-id<tab>entrez-gene-symbol
+        """
+        self.stdout.write(f'Processing {file_path}...')
+
+        genes_created = 0
+        terms_created = 0
+        associations_created = 0
+
+        with open(file_path, 'r', encoding='utf-8') as f:
+            # Skip header lines
+            for line in f:
+                if not line.startswith('#'):
+                    reader = csv.reader([line] + list(f), delimiter='\t')
+                    break
+            else:
+                reader = []
+
+            with transaction.atomic():
+                for row in reader:
+                    if len(row) < 4:
+                        continue
+
+                    try:
+                        hpo_id = row[0].strip()[:50]
+                        hpo_name = row[1].strip()[:500]
+                        entrez_id = int(row[2].strip())
+                        gene_symbol = row[3].strip()[:50]
+
+                        if not gene_symbol or not hpo_id:
+                            continue
+
+                        # Create or get HPO Term
+                        hpo_term, created = HPOTerm.objects.get_or_create(
+                            hpo_id=hpo_id,
+                            defaults={'name': hpo_name}
+                        )
+                        if created:
+                            terms_created += 1
+
+                        # Create or get Gene
+                        gene, created = Gene.objects.get_or_create(
+                            entrez_id=entrez_id,
+                            defaults={'gene_symbol': gene_symbol}
+                        )
+                        if created:
+                            genes_created += 1
+
+                        # Create association (may be duplicate from genes_to_phenotype)
+                        _, created = GenePhenotypeAssociation.objects.get_or_create(
+                            gene=gene,
+                            hpo_term=hpo_term
+                        )
+                        if created:
+                            associations_created += 1
+
+                    except (ValueError, IndexError) as e:
+                        self.stdout.write(
+                            self.style.WARNING(f'Skipping invalid row: {row[:4] if len(row) >= 4 else row} - {e}')
+                        )
+                        continue
+                    except Exception as e:
+                        self.stdout.write(
+                            self.style.ERROR(f'Error processing row: {row[:4] if len(row) >= 4 else row} - {e}')
+                        )
+                        continue
+
+        self.stdout.write(self.style.SUCCESS(
+            f'Loaded phenotype_to_genes: '
             f'{genes_created} genes, {terms_created} terms, '
             f'{associations_created} associations'
         ))
@@ -303,41 +505,6 @@ class Command(BaseCommand):
             f'Loaded phenotype.hpoa: '
             f'{diseases_created} diseases, {terms_created} terms, '
             f'{associations_created} associations'
-        ))
-
-    def create_gene_disease_associations(self):
-        """
-        Create gene-disease associations based on shared phenotypes.
-        Links genes to diseases when they share HPO terms.
-        """
-        associations_created = 0
-
-        with transaction.atomic():
-            # Get all genes
-            genes = Gene.objects.all()
-
-            for gene in genes:
-                # Get HPO terms for this gene
-                hpo_terms = HPOTerm.objects.filter(
-                    gene_associations__gene=gene
-                ).distinct()
-
-                # Find diseases associated with these HPO terms
-                diseases = Disease.objects.filter(
-                    phenotype_associations__hpo_term__in=hpo_terms
-                ).distinct()
-
-                # Create gene-disease associations
-                for disease in diseases:
-                    _, created = GeneDiseaseAssociation.objects.get_or_create(
-                        gene=gene,
-                        disease=disease
-                    )
-                    if created:
-                        associations_created += 1
-
-        self.stdout.write(self.style.SUCCESS(
-            f'Created {associations_created} gene-disease associations'
         ))
 
     def print_statistics(self):

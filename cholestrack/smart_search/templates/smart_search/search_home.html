@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Gene/Disease/Drug Search - {{ block.super }}{% endblock %}
+{% block title %}Gene Search - {{ block.super }}{% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8 max-w-7xl">
@@ -9,10 +9,10 @@
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900 mb-2">
             <i class="fas fa-dna text-purple-600 mr-2"></i>
-            Gene/Disease/Drug Search
+            Gene Search
         </h1>
         <p class="text-gray-600">
-            Search for genes to discover associated phenotypes (HPO), diseases (OMIM), and pharmacogenetics data (PharmGKB)
+            Search for genes to discover associated phenotypes and diseases from the Human Phenotype Ontology (HPO)
         </p>
     </div>
 
@@ -76,9 +76,8 @@
                 <div class="mt-2 text-sm text-blue-700">
                     <ul class="list-disc list-inside space-y-1">
                         <li><strong>HPO (Human Phenotype Ontology):</strong> Clinical phenotypes and abnormalities</li>
-                        <li><strong>OMIM (Online Mendelian Inheritance in Man):</strong> Genetic disorders and disease IDs</li>
-                        <li><strong>PharmGKB:</strong> Pharmacogenetics data including ADME genes and drug response</li>
-                        <li><strong>Note:</strong> Results are cached for 7 days to improve performance</li>
+                        <li><strong>Diseases:</strong> Disease associations from multiple databases (OMIM, ORPHA, etc.)</li>
+                        <li><strong>Note:</strong> All data is stored locally for fast access</li>
                     </ul>
                 </div>
             </div>
@@ -126,14 +125,11 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             <div class="flex space-x-3">
-                                <span title="HPO Terms">
-                                    <i class="fas fa-heartbeat text-red-500"></i> {{ search.get_hpo_count }}
+                                <span title="HPO Phenotypes">
+                                    <i class="fas fa-heartbeat text-red-500"></i> {{ search.get_phenotype_count }}
                                 </span>
-                                <span title="OMIM Diseases">
-                                    <i class="fas fa-disease text-orange-500"></i> {{ search.get_omim_count }}
-                                </span>
-                                <span title="PharmGKB Entries">
-                                    <i class="fas fa-pills text-green-500"></i> {{ search.get_pharmgkb_count }}
+                                <span title="Associated Diseases">
+                                    <i class="fas fa-disease text-orange-500"></i> {{ search.get_disease_count }}
                                 </span>
                             </div>
                         </td>
