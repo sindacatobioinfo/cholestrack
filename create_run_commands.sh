@@ -37,3 +37,6 @@ python manage.py import_data \
 --samples /home/burlo/Downloads/samples_patient.tsv \
 --files /home/burlo/Downloads/files_analysisfilelocation.tsv \
 --clear #use this only if you want to overwrite the tables
+
+#clear cache smart search
+python manage.py clear_search_cache --all
