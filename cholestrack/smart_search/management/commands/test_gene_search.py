@@ -66,10 +66,21 @@ class Command(BaseCommand):
             ).select_related('disease')[:10]
 
             for i, assoc in enumerate(disease_assocs, 1):
+                # Extract database prefix from database_id
+                db_prefix = assoc.disease.database_id.split(':')[0] if ':' in assoc.disease.database_id else 'UNKNOWN'
                 self.stdout.write(
-                    f'  {i}. {assoc.disease.database_id}: {assoc.disease.disease_name} '
-                    f'(DB: {assoc.disease.database})'
+                    f'  {i}. database_id: {assoc.disease.database_id}'
                 )
+                self.stdout.write(
+                    f'      disease_name: {assoc.disease.disease_name}'
+                )
+                self.stdout.write(
+                    f'      database field: {assoc.disease.database}'
+                )
+                self.stdout.write(
+                    f'      extracted prefix: {db_prefix}'
+                )
+                self.stdout.write('')
 
             if disease_count > 10:
                 self.stdout.write(f'  ... and {disease_count - 10} more')
@@ -110,12 +121,18 @@ class Command(BaseCommand):
             self.stdout.write('')
 
             if result.get('diseases'):
-                self.stdout.write('Diseases from API call:')
-                for i, disease in enumerate(result['diseases'][:10], 1):
+                self.stdout.write('Diseases from API call (what template receives):')
+                for i, disease in enumerate(result['diseases'][:5], 1):
                     self.stdout.write(
-                        f'  {i}. {disease["disease_id"]}: {disease["disease_name"]} '
-                        f'(DB: {disease["database"]})'
+                        f'  {i}. disease_id: {disease["disease_id"]}'
                     )
+                    self.stdout.write(
+                        f'      disease_name: {disease["disease_name"]}'
+                    )
+                    self.stdout.write(
+                        f'      database: {disease["database"]}'
+                    )
+                    self.stdout.write('')
 
                 if len(result['diseases']) > 10:
                     self.stdout.write(f'  ... and {len(result["diseases"]) - 10} more')
