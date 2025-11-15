@@ -360,6 +360,13 @@ class Command(BaseCommand):
                         )
                         if created:
                             diseases_created += 1
+                        else:
+                            # Update existing disease if database field is not set correctly
+                            if disease.database != database or not disease.disease_name:
+                                disease.database = database
+                                if not disease.disease_name:
+                                    disease.disease_name = disease_name
+                                disease.save()
 
                         # Create gene-disease association
                         _, created = GeneDiseaseAssociation.objects.get_or_create(
@@ -518,6 +525,13 @@ class Command(BaseCommand):
                         )
                         if created:
                             diseases_created += 1
+                        else:
+                            # Update existing disease if database field is not set correctly
+                            if disease.database != database or not disease.disease_name:
+                                disease.database = database
+                                if not disease.disease_name:
+                                    disease.disease_name = disease_name
+                                disease.save()
 
                         # Create or get HPO Term
                         hpo_term, created = HPOTerm.objects.get_or_create(
