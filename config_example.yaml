@@ -12,6 +12,20 @@
 #===============================================================================
 
 #-------------------------------------------------------------------------------
+# PROJECT SETTINGS
+#-------------------------------------------------------------------------------
+
+# Project name - used to automatically create input/output directory structure
+# Example: If project_name is "my_wes_study", paths will be:
+#   - Input:  {base_dir}/{project_name}/samples/
+#   - Output: {base_dir}/{project_name}/
+project_name: workflow_test
+
+# Base directory where project directories are located
+# All input/output paths will be relative to this directory
+base_dir: /home/operator/Downloads
+
+#-------------------------------------------------------------------------------
 # ANALYSIS TYPE
 #-------------------------------------------------------------------------------
 
@@ -72,13 +86,22 @@ minimap2:
 # INPUT/OUTPUT PATHS
 #-------------------------------------------------------------------------------
 # IMPORTANT: All paths must end with "/"
+#
+# NOTE: These paths are automatically constructed from project_name and base_dir.
+# To change your project location, simply modify project_name and base_dir above.
+# The Snakefile will automatically build the full paths.
+#
+# Pattern: {base_dir}/{project_name}/samples/ and {base_dir}/{project_name}/
+#
+# Leave these as "auto" to use automatic path construction, or override with
+# custom paths if you have a non-standard directory structure.
 
 # Input directory containing FASTQ files
 # Expected naming: {sample}_1.fastq.gz and {sample}_2.fastq.gz
-input: /home/operator/Downloads/workflow_test/samples/
+input: auto
 
 # Output directory for all results
-output: /home/operator/Downloads/workflow_test/
+output: auto
 
 #-------------------------------------------------------------------------------
 # REFERENCE GENOME AND RESOURCES
@@ -161,8 +184,8 @@ threads:
   others: 1          # Default for most tools
   bwa: 13            # BWA-MEM alignment
   minimap2: 13       # Minimap2 alignment (same as BWA by default)
-  deepvariant: 56    # DeepVariant (if enabled)
-  strelka: 56        # Strelka variant calling
+  deepvariant: 16    # DeepVariant (if enabled)
+  strelka: 16        # Strelka variant calling
   recal_table: 8     # GATK BaseRecalibrator
   recal_apply: 8     # GATK ApplyBQSR
   annovar: 8         # ANNOVAR annotation (parallel execution)
