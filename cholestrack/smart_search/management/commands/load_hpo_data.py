@@ -303,8 +303,9 @@ class Command(BaseCommand):
         """
         Load genes_to_disease.txt file.
 
-        Expected format (tab-separated):
-        #Format: entrez-gene-id<tab>entrez-gene-symbol<tab>disease-ID<tab>disease-name
+        Actual format (tab-separated):
+        #Format: entrez-gene-id<tab>entrez-gene-symbol<tab>disease-name<tab>disease-ID
+        Note: The actual file has disease-name in column 3 and disease-ID in column 4
         """
         self.stdout.write(f'Processing {file_path}...')
 
@@ -332,8 +333,8 @@ class Command(BaseCommand):
                             continue  # Skip rows with invalid gene IDs
 
                         gene_symbol = row[1].strip()[:50]
-                        disease_id = row[2].strip()[:200]
-                        disease_name = row[3].strip()[:500]
+                        disease_name = row[2].strip()[:500]  # Column 3 is disease name
+                        disease_id = row[3].strip()[:200]    # Column 4 is disease ID
 
                         if not gene_symbol or not disease_id:
                             continue
