@@ -39,6 +39,12 @@ class WorkflowConfiguration(models.Model):
         verbose_name="Configuration Name",
         help_text="Descriptive name for this configuration"
     )
+    project_name = models.CharField(
+        max_length=200,
+        default='workflow_test',
+        verbose_name="Project Name",
+        help_text="Project name for input/output directory structure"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -46,7 +52,7 @@ class WorkflowConfiguration(models.Model):
     aligner = models.CharField(
         max_length=20,
         choices=ALIGNER_CHOICES,
-        default='bwa',
+        default='minimap2',
         verbose_name="Alignment Tool"
     )
     minimap2_preset = models.CharField(
@@ -63,17 +69,17 @@ class WorkflowConfiguration(models.Model):
         verbose_name="Use GATK HaplotypeCaller"
     )
     use_strelka = models.BooleanField(
-        default=False,
+        default=True,
         verbose_name="Use Strelka2"
     )
 
     # Annotation tools
     run_annovar = models.BooleanField(
-        default=True,
+        default=False,
         verbose_name="Run ANNOVAR"
     )
     run_vep = models.BooleanField(
-        default=False,
+        default=True,
         verbose_name="Run VEP"
     )
 

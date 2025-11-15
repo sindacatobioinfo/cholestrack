@@ -18,18 +18,44 @@
     <form method="post" id="config-form">
         {% csrf_token %}
 
-        <!-- Configuration Name (Optional) -->
+        <!-- Project Settings -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">
                 <i class="fas fa-tag text-blue-500 mr-2"></i>
-                Configuration Name (Optional)
+                Project Settings
             </h2>
-            <p class="text-sm text-gray-600 mb-4">Save this configuration for later reuse</p>
-            <input type="text"
-                   name="name"
-                   id="id_name"
-                   class="form-control w-full md:w-1/2"
-                   placeholder="e.g., My WES Analysis Config">
+
+            <!-- Project Name -->
+            <div class="mb-4">
+                <label for="id_project_name" class="block text-sm font-medium text-gray-700 mb-2">
+                    Project Name <span class="text-red-500">*</span>
+                </label>
+                <p class="text-xs text-gray-600 mb-2">
+                    Used for input/output directory structure (e.g., /base_dir/project_name/)
+                </p>
+                <input type="text"
+                       name="project_name"
+                       id="id_project_name"
+                       value="workflow_test"
+                       class="form-control w-full md:w-1/2"
+                       placeholder="e.g., workflow_test"
+                       required>
+            </div>
+
+            <!-- Configuration Name (Optional) -->
+            <div>
+                <label for="id_name" class="block text-sm font-medium text-gray-700 mb-2">
+                    Configuration Name (Optional)
+                </label>
+                <p class="text-xs text-gray-600 mb-2">
+                    Save this configuration for later reuse
+                </p>
+                <input type="text"
+                       name="name"
+                       id="id_name"
+                       class="form-control w-full md:w-1/2"
+                       placeholder="e.g., My WES Analysis Config">
+            </div>
         </div>
 
         <!-- Aligner Selection -->
@@ -42,7 +68,7 @@
                 <!-- BWA Card -->
                 <div class="aligner-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all"
                      data-aligner="bwa" onclick="selectAligner('bwa')">
-                    <input type="radio" name="aligner" value="bwa" id="aligner_bwa" checked class="hidden">
+                    <input type="radio" name="aligner" value="bwa" id="aligner_bwa" class="hidden">
                     <div class="text-center">
                         <i class="fas fa-dna text-4xl text-green-600 mb-3"></i>
                         <h3 class="font-bold text-lg mb-2">BWA-MEM</h3>
@@ -66,9 +92,9 @@
                 </div>
 
                 <!-- Minimap2 Card -->
-                <div class="aligner-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all"
+                <div class="aligner-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all selected"
                      data-aligner="minimap2" onclick="selectAligner('minimap2')">
-                    <input type="radio" name="aligner" value="minimap2" id="aligner_minimap2" class="hidden">
+                    <input type="radio" name="aligner" value="minimap2" id="aligner_minimap2" checked class="hidden">
                     <div class="text-center">
                         <i class="fas fa-stream text-4xl text-purple-600 mb-3"></i>
                         <h3 class="font-bold text-lg mb-2">Minimap2</h3>
@@ -81,7 +107,7 @@
         </div>
 
         <!-- Minimap2 Preset (shown only if minimap2 selected) -->
-        <div id="minimap2-preset-section" class="bg-white rounded-lg shadow-md p-6 mb-6" style="display: none;">
+        <div id="minimap2-preset-section" class="bg-white rounded-lg shadow-md p-6 mb-6" style="display: block;">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">
                 <i class="fas fa-sliders-h text-purple-500 mr-2"></i>
                 Minimap2 Preset
@@ -126,7 +152,7 @@
             <p class="text-sm text-gray-600 mb-4">You can select multiple callers</p>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- GATK HaplotypeCaller -->
-                <div class="caller-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all"
+                <div class="caller-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all selected"
                      onclick="toggleCaller('gatk')">
                     <div class="flex items-center">
                         <input type="checkbox" name="use_gatk" id="caller_gatk" checked class="mr-3 h-5 w-5">
@@ -138,10 +164,10 @@
                 </div>
 
                 <!-- Strelka2 -->
-                <div class="caller-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all"
+                <div class="caller-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all selected"
                      onclick="toggleCaller('strelka')">
                     <div class="flex items-center">
-                        <input type="checkbox" name="use_strelka" id="caller_strelka" class="mr-3 h-5 w-5">
+                        <input type="checkbox" name="use_strelka" id="caller_strelka" checked class="mr-3 h-5 w-5">
                         <div>
                             <h3 class="font-bold text-lg">Strelka2</h3>
                             <p class="text-sm text-gray-600">Fast germline variant caller</p>
@@ -163,7 +189,7 @@
                 <div class="annotation-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all"
                      onclick="toggleAnnotation('annovar')">
                     <div class="flex items-center">
-                        <input type="checkbox" name="run_annovar" id="annotation_annovar" checked class="mr-3 h-5 w-5">
+                        <input type="checkbox" name="run_annovar" id="annotation_annovar" class="mr-3 h-5 w-5">
                         <div>
                             <h3 class="font-bold text-lg">ANNOVAR</h3>
                             <p class="text-sm text-gray-600">Comprehensive variant annotation</p>
@@ -172,10 +198,10 @@
                 </div>
 
                 <!-- VEP -->
-                <div class="annotation-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all"
+                <div class="annotation-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all selected"
                      onclick="toggleAnnotation('vep')">
                     <div class="flex items-center">
-                        <input type="checkbox" name="run_vep" id="annotation_vep" class="mr-3 h-5 w-5">
+                        <input type="checkbox" name="run_vep" id="annotation_vep" checked class="mr-3 h-5 w-5">
                         <div>
                             <h3 class="font-bold text-lg">VEP</h3>
                             <p class="text-sm text-gray-600">Variant Effect Predictor</p>
