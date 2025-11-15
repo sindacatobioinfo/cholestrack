@@ -41,7 +41,7 @@ run_cnv_calling: False
 # - bwa: BWA-MEM (default, recommended for short Illumina reads)
 # - dragmap: DRAGEN DRAGMAP (faster alternative to BWA, Illumina optimized)
 # - minimap2: Minimap2 (versatile aligner, supports short/long reads with different presets)
-aligner: bwa
+aligner: minimap2
 
 # Legacy config (for backward compatibility - use 'aligner' instead)
 # use_bwa: True  # If False, DRAGMAP will be used instead
@@ -52,13 +52,13 @@ use_strelka: True       # Strelka2 germline caller
 use_deepvariant: False  # DeepVariant (requires Singularity)
 
 # Annotation tools
-run_annovar: True       # Run ANNOVAR annotation (and downstream ETL processing)
+run_annovar: False       # Run ANNOVAR annotation (and downstream ETL processing)
 run_vep: True          # Run VEP annotation (Variant Effect Predictor)
 
 # Scatter-gather parallelization (10-50x speedup)
 use_scatter_gather: True       # Enable parallel GATK HaplotypeCaller (recommended)
 use_scatter_gather_bqsr: True  # Enable parallel BQSR (recommended, saves ~3 hours/sample)
-scatter_count: 50              # Number of scatter pieces (adjust based on cores)
+scatter_count: 16              # Number of scatter pieces (adjust based on cores)
 
 # Model type for DeepVariant (if enabled)
 model_type: WES  # Options: WES, WGS
@@ -334,7 +334,7 @@ split_intervals_extra: ""  # e.g., "--subdivision-mode INTERVAL_SUBDIVISION"
 #-------------------------------------------------------------------------------
 
 # Generate HTML report with workflow summary
-generate_report: True
+generate_report: False
 
 # Report title
 report_title: "WES Analysis Report - InterOmics Pipeline"
