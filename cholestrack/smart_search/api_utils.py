@@ -69,14 +69,10 @@ class HPOLocalClient:
             ).select_related('disease')
 
             for assoc in gene_disease_associations:
-                # Extract database name from database_id (substring before ':')
-                database_id = assoc.disease.database_id
-                database_name = database_id.split(':')[0] if ':' in database_id else 'Unknown'
-
                 diseases.append({
-                    'disease_id': database_id,
+                    'disease_id': assoc.disease.database_id,
                     'disease_name': assoc.disease.disease_name,
-                    'database': database_name
+                    'database': assoc.disease.database
                 })
 
             # Return results
@@ -196,19 +192,14 @@ class HPOLocalClient:
                 gene_associations__gene=gene
             ).distinct()
 
-            result = []
-            for disease in diseases:
-                # Extract database name from database_id (substring before ':')
-                database_id = disease.database_id
-                database_name = database_id.split(':')[0] if ':' in database_id else 'Unknown'
-
-                result.append({
-                    'disease_id': database_id,
+            return [
+                {
+                    'disease_id': disease.database_id,
                     'disease_name': disease.disease_name,
-                    'database': database_name
-                })
-
-            return result
+                    'database': disease.database
+                }
+                for disease in diseases
+            ]
 
         except Exception as e:
             print(f"Error searching diseases by gene: {e}")
