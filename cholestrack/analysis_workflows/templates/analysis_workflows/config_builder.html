@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Workflow Configuration Builder - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-6xl">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">
+            <i class="fas fa-cogs text-purple-600 mr-2"></i>
+            Workflow Configuration Builder
+        </h1>
+        <p class="text-gray-600">
+            Configure your WES analysis pipeline parameters and generate a YAML configuration file
+        </p>
+    </div>
+
+    <form method="post" id="config-form">
+        {% csrf_token %}
+
+        <!-- Configuration Name (Optional) -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-tag text-blue-500 mr-2"></i>
+                Configuration Name (Optional)
+            </h2>
+            <p class="text-sm text-gray-600 mb-4">Save this configuration for later reuse</p>
+            <input type="text"
+                   name="name"
+                   id="id_name"
+                   class="form-control w-full md:w-1/2"
+                   placeholder="e.g., My WES Analysis Config">
+        </div>
+
+        <!-- Aligner Selection -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-align-left text-green-500 mr-2"></i>
+                Select Alignment Tool
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- BWA Card -->
+                <div class="aligner-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all"
+                     data-aligner="bwa" onclick="selectAligner('bwa')">
+                    <input type="radio" name="aligner" value="bwa" id="aligner_bwa" checked class="hidden">
+                    <div class="text-center">
+                        <i class="fas fa-dna text-4xl text-green-600 mb-3"></i>
+                        <h3 class="font-bold text-lg mb-2">BWA-MEM</h3>
+                        <p class="text-sm text-gray-600">
+                            Default, recommended for short Illumina reads
+                        </p>
+                    </div>
+                </div>
+
+                <!-- DRAGMAP Card -->
+                <div class="aligner-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all"
+                     data-aligner="dragmap" onclick="selectAligner('dragmap')">
+                    <input type="radio" name="aligner" value="dragmap" id="aligner_dragmap" class="hidden">
+                    <div class="text-center">
+                        <i class="fas fa-rocket text-4xl text-blue-600 mb-3"></i>
+                        <h3 class="font-bold text-lg mb-2">DRAGEN DRAGMAP</h3>
+                        <p class="text-sm text-gray-600">
+                            Faster alternative, Illumina optimized
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Minimap2 Card -->
+                <div class="aligner-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all"
+                     data-aligner="minimap2" onclick="selectAligner('minimap2')">
+                    <input type="radio" name="aligner" value="minimap2" id="aligner_minimap2" class="hidden">
+                    <div class="text-center">
+                        <i class="fas fa-stream text-4xl text-purple-600 mb-3"></i>
+                        <h3 class="font-bold text-lg mb-2">Minimap2</h3>
+                        <p class="text-sm text-gray-600">
+                            Versatile, supports short/long reads
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Minimap2 Preset (shown only if minimap2 selected) -->
+        <div id="minimap2-preset-section" class="bg-white rounded-lg shadow-md p-6 mb-6" style="display: none;">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-sliders-h text-purple-500 mr-2"></i>
+                Minimap2 Preset
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div class="preset-card border-2 rounded-lg p-3 cursor-pointer hover:shadow-md transition-all"
+                     onclick="selectPreset('sr')">
+                    <input type="radio" name="minimap2_preset" value="sr" id="preset_sr" checked class="hidden">
+                    <h4 class="font-semibold text-sm mb-1">Short Reads (sr)</h4>
+                    <p class="text-xs text-gray-600">Illumina WES/WGS</p>
+                </div>
+
+                <div class="preset-card border-2 rounded-lg p-3 cursor-pointer hover:shadow-md transition-all"
+                     onclick="selectPreset('map-ont')">
+                    <input type="radio" name="minimap2_preset" value="map-ont" id="preset_map-ont" class="hidden">
+                    <h4 class="font-semibold text-sm mb-1">Nanopore</h4>
+                    <p class="text-xs text-gray-600">Oxford Nanopore</p>
+                </div>
+
+                <div class="preset-card border-2 rounded-lg p-3 cursor-pointer hover:shadow-md transition-all"
+                     onclick="selectPreset('map-pb')">
+                    <input type="radio" name="minimap2_preset" value="map-pb" id="preset_map-pb" class="hidden">
+                    <h4 class="font-semibold text-sm mb-1">PacBio CLR</h4>
+                    <p class="text-xs text-gray-600">PacBio CLR reads</p>
+                </div>
+
+                <div class="preset-card border-2 rounded-lg p-3 cursor-pointer hover:shadow-md transition-all"
+                     onclick="selectPreset('map-hifi')">
+                    <input type="radio" name="minimap2_preset" value="map-hifi" id="preset_map-hifi" class="hidden">
+                    <h4 class="font-semibold text-sm mb-1">PacBio HiFi</h4>
+                    <p class="text-xs text-gray-600">High accuracy CCS</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Variant Callers -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-search text-orange-500 mr-2"></i>
+                Select Variant Callers
+            </h2>
+            <p class="text-sm text-gray-600 mb-4">You can select multiple callers</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- GATK HaplotypeCaller -->
+                <div class="caller-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all"
+                     onclick="toggleCaller('gatk')">
+                    <div class="flex items-center">
+                        <input type="checkbox" name="use_gatk" id="caller_gatk" checked class="mr-3 h-5 w-5">
+                        <div>
+                            <h3 class="font-bold text-lg">GATK HaplotypeCaller</h3>
+                            <p class="text-sm text-gray-600">Recommended germline caller</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Strelka2 -->
+                <div class="caller-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all"
+                     onclick="toggleCaller('strelka')">
+                    <div class="flex items-center">
+                        <input type="checkbox" name="use_strelka" id="caller_strelka" class="mr-3 h-5 w-5">
+                        <div>
+                            <h3 class="font-bold text-lg">Strelka2</h3>
+                            <p class="text-sm text-gray-600">Fast germline variant caller</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Annotation Tools -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-file-medical-alt text-red-500 mr-2"></i>
+                Select Annotation Tools
+            </h2>
+            <p class="text-sm text-gray-600 mb-4">You can select multiple annotation tools</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- ANNOVAR -->
+                <div class="annotation-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all"
+                     onclick="toggleAnnotation('annovar')">
+                    <div class="flex items-center">
+                        <input type="checkbox" name="run_annovar" id="annotation_annovar" checked class="mr-3 h-5 w-5">
+                        <div>
+                            <h3 class="font-bold text-lg">ANNOVAR</h3>
+                            <p class="text-sm text-gray-600">Comprehensive variant annotation</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VEP -->
+                <div class="annotation-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all"
+                     onclick="toggleAnnotation('vep')">
+                    <div class="flex items-center">
+                        <input type="checkbox" name="run_vep" id="annotation_vep" class="mr-3 h-5 w-5">
+                        <div>
+                            <h3 class="font-bold text-lg">VEP</h3>
+                            <p class="text-sm text-gray-600">Variant Effect Predictor</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="flex gap-4 justify-center">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-eye mr-2"></i>
+                Preview Configuration
+            </button>
+            <a href="{% url 'analysis_workflows:saved_configs' %}" class="btn btn-secondary">
+                <i class="fas fa-folder-open mr-2"></i>
+                View Saved Configs
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .aligner-card.selected,
+    .preset-card.selected {
+        border-color: #9333ea;
+        background-color: #f3e8ff;
+    }
+
+    .caller-card.selected,
+    .annotation-card.selected {
+        border-color: #9333ea;
+        background-color: #f3e8ff;
+    }
+
+    .form-control {
+        padding: 0.5rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #9333ea;
+        box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
+    }
+</style>
+
+<script>
+    function selectAligner(aligner) {
+        // Remove selection from all cards
+        document.querySelectorAll('.aligner-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+
+        // Select the clicked card
+        const card = document.querySelector(`[data-aligner="${aligner}"]`);
+        card.classList.add('selected');
+
+        // Check the radio button
+        document.getElementById(`aligner_${aligner}`).checked = true;
+
+        // Show/hide minimap2 preset section
+        const presetSection = document.getElementById('minimap2-preset-section');
+        if (aligner === 'minimap2') {
+            presetSection.style.display = 'block';
+        } else {
+            presetSection.style.display = 'none';
+        }
+    }
+
+    function selectPreset(preset) {
+        // Remove selection from all preset cards
+        document.querySelectorAll('.preset-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+
+        // Select the clicked card
+        event.currentTarget.classList.add('selected');
+
+        // Check the radio button
+        document.getElementById(`preset_${preset}`).checked = true;
+    }
+
+    function toggleCaller(caller) {
+        const checkbox = document.getElementById(`caller_${caller}`);
+        const card = event.currentTarget;
+
+        checkbox.checked = !checkbox.checked;
+
+        if (checkbox.checked) {
+            card.classList.add('selected');
+        } else {
+            card.classList.remove('selected');
+        }
+    }
+
+    function toggleAnnotation(tool) {
+        const checkbox = document.getElementById(`annotation_${tool}`);
+        const card = event.currentTarget;
+
+        checkbox.checked = !checkbox.checked;
+
+        if (checkbox.checked) {
+            card.classList.add('selected');
+        } else {
+            card.classList.remove('selected');
+        }
+    }
+
+    // Initialize selection on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Select BWA by default
+        selectAligner('bwa');
+
+        // Select checked callers
+        if (document.getElementById('caller_gatk').checked) {
+            document.querySelector('.caller-card:nth-of-type(1)').classList.add('selected');
+        }
+
+        // Select checked annotations
+        if (document.getElementById('annotation_annovar').checked) {
+            document.querySelector('.annotation-card:nth-of-type(1)').classList.add('selected');
+        }
+    });
+</script>
+{% endblock %}

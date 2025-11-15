@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'home',
     'region_selection',
     'smart_search',
+    'analysis_workflows',
 ]
 
 MIDDLEWARE = [
