@@ -15,6 +15,7 @@ class WorkflowConfigForm(forms.ModelForm):
         model = WorkflowConfiguration
         fields = [
             'name',
+            'project_name',
             'aligner',
             'minimap2_preset',
             'use_gatk',
@@ -26,6 +27,10 @@ class WorkflowConfigForm(forms.ModelForm):
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'e.g., My WES Analysis'
+            }),
+            'project_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g., workflow_test'
             }),
         }
 

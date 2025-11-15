@@ -1,0 +1,354 @@
+#===============================================================================
+# INTEROMICS SNAKEMAKE WORKFLOW - CONFIGURATION FILE
+# Whole Exome Sequencing (WES) Analysis Pipeline
+#===============================================================================
+#
+# This configuration file controls all aspects of the WES analysis workflow.
+# Copy this file to a new location (e.g., configfiles/my_config.yaml)
+# and customize for your project.
+#
+# IMPORTANT: Never edit the original config.yaml directly!
+#
+#===============================================================================
+
+#-------------------------------------------------------------------------------
+# PROJECT SETTINGS
+#-------------------------------------------------------------------------------
+
+# Project name - used to automatically create input/output directory structure
+# Example: If project_name is "my_wes_study", paths will be:
+#   - Input:  {base_dir}/{project_name}/samples/
+#   - Output: {base_dir}/{project_name}/
+project_name: workflow_test
+
+# Base directory where project directories are located
+# All input/output paths will be relative to this directory
+base_dir: /home/operator/Downloads
+
+#-------------------------------------------------------------------------------
+# ANALYSIS TYPE
+#-------------------------------------------------------------------------------
+
+# Analysis mode: germline or somatic
+germline: True  # Set to False for somatic (tumor-normal) analysis
+run_cnv_calling: False
+#-------------------------------------------------------------------------------
+# TOOL SELECTION
+#-------------------------------------------------------------------------------
+
+# Alignment tool selection
+# Options: bwa, dragmap, minimap2
+# - bwa: BWA-MEM (default, recommended for short Illumina reads)
+# - dragmap: DRAGEN DRAGMAP (faster alternative to BWA, Illumina optimized)
+# - minimap2: Minimap2 (versatile aligner, supports short/long reads with different presets)
+aligner: minimap2
+
+# Legacy config (for backward compatibility - use 'aligner' instead)
+# use_bwa: True  # If False, DRAGMAP will be used instead
+
+# Variant callers (can enable multiple)
+use_gatk: True          # GATK HaplotypeCaller (recommended)
+use_strelka: True       # Strelka2 germline caller
+use_deepvariant: False  # DeepVariant (requires Singularity)
+
+# Annotation tools
+run_annovar: False       # Run ANNOVAR annotation (and downstream ETL processing)
+run_vep: True          # Run VEP annotation (Variant Effect Predictor)
+
+# Scatter-gather parallelization (10-50x speedup)
+use_scatter_gather: True       # Enable parallel GATK HaplotypeCaller (recommended)
+use_scatter_gather_bqsr: True  # Enable parallel BQSR (recommended, saves ~3 hours/sample)
+scatter_count: 16              # Number of scatter pieces (adjust based on cores)
+
+# Model type for DeepVariant (if enabled)
+model_type: WES  # Options: WES, WGS
+
+#-------------------------------------------------------------------------------
+# MINIMAP2 CONFIGURATION
+#-------------------------------------------------------------------------------
+# Only used if aligner is set to "minimap2"
+
+minimap2:
+  # Preset for alignment mode (critical parameter!)
+  # Short reads (Illumina):
+  #   - sr: Short single-end reads (recommended for Illumina WES/WGS)
+  # Long reads:
+  #   - map-ont: Oxford Nanopore reads
+  #   - map-pb: PacBio CLR reads
+  #   - map-hifi: PacBio HiFi/CCS reads (high accuracy)
+  # Assembly:
+  #   - asm5: Assembly-to-reference (>= 95% identity)
+  #   - asm10: Assembly-to-reference (>= 90% identity)
+  #   - asm20: Assembly-to-reference (>= 80% identity)
+  preset: sr  # Default: sr (for Illumina short reads)
+
+#-------------------------------------------------------------------------------
+# INPUT/OUTPUT PATHS
+#-------------------------------------------------------------------------------
+# IMPORTANT: All paths must end with "/"
+#
+# NOTE: These paths are automatically constructed from project_name and base_dir.
+# To change your project location, simply modify project_name and base_dir above.
+# The Snakefile will automatically build the full paths.
+#
+# Pattern: {base_dir}/{project_name}/samples/ and {base_dir}/{project_name}/
+#
+# Leave these as "auto" to use automatic path construction, or override with
+# custom paths if you have a non-standard directory structure.
+
+# Input directory containing FASTQ files
+# Expected naming: {sample}_1.fastq.gz and {sample}_2.fastq.gz
+input: auto
+
+# Output directory for all results
+output: auto
+
+#-------------------------------------------------------------------------------
+# REFERENCE GENOME AND RESOURCES
+#-------------------------------------------------------------------------------
+
+refgenome:
+  # Reference genome directory
+  ref_dir: /home/operator/InterOmics/workflows/interomics_snakemake/reference/
+
+  # Reference FASTA file (must be indexed with .fai and .dict)
+  ref: /home/operator/InterOmics/workflows/interomics_snakemake/reference/GRCh38_character_genome.fasta
+
+  # Target regions (BED file for exome capture kit)
+  bed: /home/operator/InterOmics/workflows/interomics_snakemake/reference/hg38_no_alt.bed.gz
+
+  # Interval list (GATK format, derived from BED)
+  interval: /home/operator/InterOmics/workflows/interomics_snakemake/reference/hg38_no_alt.interval_list
+
+  # CNV-specific intervals (optional, uses interval if not specified)
+  cnv_intervals: /home/operator/InterOmics/workflows/interomics_snakemake/reference/hg38_no_alt.interval_list
+
+  # Sequence dictionary
+  dict: /home/operator/InterOmics/workflows/interomics_snakemake/reference/GRCh38_character_genome.dict
+
+  # Known variants for BQSR (dbSNP)
+  known_var: /home/operator/InterOmics/workflows/interomics_snakemake/reference/dbsnp_156_chr.vcf.gz
+
+  # Common variants for contamination estimation (uses known_var if not specified)
+  contamination_variants: /home/operator/InterOmics/workflows/interomics_snakemake/reference/dbsnp_156_chr.vcf.gz
+
+  # Funcotator data sources (for variant annotation)
+  data_source: /home/operator/InterOmics/workflows/interomics_snakemake/data_source/funcotator_germline
+
+#-------------------------------------------------------------------------------
+# TOOL-SPECIFIC PATHS
+#-------------------------------------------------------------------------------
+# Paths to external tools and databases
+# (Previously hard-coded, now configurable)
+
+tools:
+  # GATK installation
+  gatk: /home/operator/InterOmics/apps/gatk-4.5.0.0/gatk
+
+  # ANNOVAR installation and database
+  annovar:
+    basedir: /home/operator/InterOmics/apps/annovar
+    humandb: /home/operator/InterOmics/apps/annovar/humandb
+    convert2annovar: /home/operator/InterOmics/apps/annovar/convert2annovar.pl
+    table_annovar: /home/operator/InterOmics/apps/annovar/table_annovar.pl
+
+  # DeepVariant Singularity image
+  deepvariant_sif: /home/operator/InterOmics/workflows/interomics_snakemake/deepvariant_latest.sif
+
+  # VEP (Variant Effect Predictor) installation
+  vep:
+    basedir: /home/operator/InterOmics/apps/ensembl-vep
+    vep: /home/operator/InterOmics/apps/ensembl-vep/vep
+    vep_install: /home/operator/InterOmics/apps/ensembl-vep/INSTALL.pl
+
+#-------------------------------------------------------------------------------
+# SAMPLE METADATA
+#-------------------------------------------------------------------------------
+
+# Library/Capture kit name (for BAM read groups)
+library_name: SureSelectV7  # Will appear in @RG LB tag
+
+# Sequencing platform (for BAM read groups)
+platform: ILLUMINA  # Will appear in @RG PL tag
+
+# Optional: PED file for family/phenotype information (for Peddy)
+ped_file: ""  # Leave empty if not available
+
+#-------------------------------------------------------------------------------
+# THREAD ALLOCATION
+#-------------------------------------------------------------------------------
+# Adjust based on available cores and sample count
+# Threads are automatically scaled with attempt number for failed jobs
+
+threads:
+  others: 1          # Default for most tools
+  bwa: 13            # BWA-MEM alignment
+  minimap2: 13       # Minimap2 alignment (same as BWA by default)
+  deepvariant: 16    # DeepVariant (if enabled)
+  strelka: 16        # Strelka variant calling
+  recal_table: 8     # GATK BaseRecalibrator
+  recal_apply: 8     # GATK ApplyBQSR
+  annovar: 8         # ANNOVAR annotation (parallel execution)
+  vep: 8             # VEP annotation (parallel forking)
+
+#-------------------------------------------------------------------------------
+# MEMORY ALLOCATION (in MB)
+#-------------------------------------------------------------------------------
+# Memory scales automatically with retry attempts
+
+ram_memory:
+  markduplicates: 102400  # 100 GB for MarkDuplicates
+  recal_table: 102400     # 100 GB for BaseRecalibrator
+  bwa: ""                 # Auto-configured
+  gatk: ""                # Auto-configured
+
+#-------------------------------------------------------------------------------
+# VARIANT FILTERING PARAMETERS
+#-------------------------------------------------------------------------------
+
+# Exclude filtered variants from final VCF (keep only PASS)
+exclude_filtered_variants: True  # Set to False to keep all variants
+
+# Hard filtering thresholds (applied if not using VQSR)
+# SNP filters: QD < 2.0 || FS > 60.0 || MQ < 40.0 || MQRankSum < -12.5 || ReadPosRankSum < -8.0
+# INDEL filters: QD < 2.0 || FS > 200.0 || ReadPosRankSum < -20.0
+# Genotype filter: GQ < 20.0
+
+#-------------------------------------------------------------------------------
+# ANNOVAR ANNOTATION PARAMETERS
+#-------------------------------------------------------------------------------
+
+annovar:
+  build_ver: hg38
+  protocols:
+    - refGene
+    - cytoBand
+    - wgRna
+    - 1000g2015aug_all
+    - gnomad41_genome
+    - exac03
+    - dbscsnv11
+    - dbnsfp47a
+    - clinvar_20240917
+    - cosmic101
+    - avsnp154
+  operations: g,r,r,f,f,f,f,f,f,f,f
+  nastring: "."
+
+#-------------------------------------------------------------------------------
+# VEP ANNOTATION PARAMETERS
+#-------------------------------------------------------------------------------
+
+vep:
+  # VEP cache directory (relative to workflow directory, auto-downloaded on first run)
+  cache_dir: /home/operator/InterOmics/workflows/interomics_snakemake/reference/vep_cache
+
+  # Genome assembly (GRCh37 or GRCh38)
+  assembly: GRCh38
+
+  # Species (homo_sapiens, mus_musculus, etc.)
+  species: homo_sapiens
+
+  # Cache version ('auto' = use latest available, or specify version like '112')
+  cache_version: auto
+
+  # Optional VEP plugins (comma-separated, e.g., "LoF,CADD,dbNSFP")
+  plugins: ""
+
+  # Extra VEP options
+  # --everything: Includes most annotations
+  # --check_existing: Check for co-located known variants
+  # --variant_class: Add variant class (SNV, insertion, deletion, etc.)
+  extra_options: "--everything --check_existing --variant_class"
+
+#-------------------------------------------------------------------------------
+# PHASING PARAMETERS
+#-------------------------------------------------------------------------------
+
+# Maximum distance for read-backed phasing (bp)
+phasing_max_distance: 100000  # 100 kb
+
+#-------------------------------------------------------------------------------
+# CNV CALLING PARAMETERS
+#-------------------------------------------------------------------------------
+
+# GATK gCNV parameters
+gcnv_max_copy_number: 5        # Maximum copy number to consider
+gcnv_p_active: 0.01            # Prior probability of CNV event
+contig_ploidy_priors: ""       # Optional pre-computed ploidy priors
+
+# CODEX2 parameters
+codex2_K: auto                 # Number of latent factors (auto-select if "auto")
+codex2_length_cutoff: 3        # Minimum CNV length in exons
+codex2_lmax: 20                # Maximum latent factors to test
+codex2_chr_prefix: chr         # "chr" for hg38, "" for b37
+
+#-------------------------------------------------------------------------------
+# QC PARAMETERS
+#-------------------------------------------------------------------------------
+
+# Master QC toggle - set to False to disable all QC
+run_qc: False
+
+# Granular QC controls (only apply if run_qc is True)
+qc_bam_metrics: True        # Collect GC bias, HS, and WGS metrics
+qc_vcf_metrics: True        # Collect variant calling metrics and bcftools stats
+qc_contamination: True      # Run contamination detection
+qc_peddy: True              # Run Peddy (ancestry, sex check, relatedness)
+
+# Peddy QC settings
+peddy_sites: hg38  # Reference build for Peddy (hg19 or hg38)
+
+# Contamination thresholds
+contamination_warning: 0.01  # Warn if >1%
+contamination_fail: 0.02     # Fail if >2%
+
+#-------------------------------------------------------------------------------
+# PERFORMANCE OPTIMIZATION
+#-------------------------------------------------------------------------------
+
+# Use local storage for intermediate files (shadow directive)
+use_shadow: True  # Recommended for network storage setups
+
+# Keep intermediate files or mark as temporary
+keep_intermediate_files: True  # Set to True to keep all intermediate files
+
+# Remove intermediate files after successful completion
+remove_intermediate_files: True  # Set to True to clean up intermediate files (saves disk space)
+
+# Generate MD5 checksums for key output files
+generate_md5_checksums: True  # Create MD5 hashes for data integrity verification
+
+#-------------------------------------------------------------------------------
+# ADVANCED PARAMETERS
+#-------------------------------------------------------------------------------
+
+# Additional GATK HaplotypeCaller parameters
+haplotypecaller_extra: ""  # e.g., "--native-pair-hmm-threads 4"
+
+# Additional split intervals parameters
+split_intervals_extra: ""  # e.g., "--subdivision-mode INTERVAL_SUBDIVISION"
+
+#-------------------------------------------------------------------------------
+# REPORTING
+#-------------------------------------------------------------------------------
+
+# Generate HTML report with workflow summary
+generate_report: False
+
+# Report title
+report_title: "WES Analysis Report - InterOmics Pipeline"
+
+# Report author/contact
+report_author: "InterOmics Team"
+
+#===============================================================================
+# END OF CONFIGURATION
+#===============================================================================
+#
+# For more information and troubleshooting, see:
+# - Documentation: documentation/README.md
+# - Troubleshooting Guide: documentation/troubleshooting.md
+# - Parameter Tuning Guide: documentation/parameter_tuning.md
+#
+#===============================================================================

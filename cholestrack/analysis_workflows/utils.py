@@ -14,6 +14,7 @@ def generate_workflow_yaml(config_data):
 
     Args:
         config_data: Dictionary containing user selections:
+            - project_name: str
             - aligner: str ('bwa', 'dragmap', or 'minimap2')
             - minimap2_preset: str (if minimap2 selected)
             - use_gatk: bool
@@ -30,8 +31,12 @@ def generate_workflow_yaml(config_data):
     with open(template_path, 'r') as f:
         yaml_content = f.read()
 
+    # Replace project name
+    project_name = config_data.get('project_name', 'workflow_test')
+    yaml_content = replace_yaml_value(yaml_content, 'project_name', project_name)
+
     # Replace aligner setting
-    aligner = config_data.get('aligner', 'bwa')
+    aligner = config_data.get('aligner', 'minimap2')
     yaml_content = replace_yaml_value(yaml_content, 'aligner', aligner)
 
     # Replace minimap2 preset if minimap2 is selected
@@ -46,13 +51,13 @@ def generate_workflow_yaml(config_data):
 
     # Replace variant caller settings
     use_gatk = config_data.get('use_gatk', True)
-    use_strelka = config_data.get('use_strelka', False)
+    use_strelka = config_data.get('use_strelka', True)
     yaml_content = replace_yaml_value(yaml_content, 'use_gatk', str(use_gatk))
     yaml_content = replace_yaml_value(yaml_content, 'use_strelka', str(use_strelka))
 
     # Replace annotation tool settings
-    run_annovar = config_data.get('run_annovar', True)
-    run_vep = config_data.get('run_vep', False)
+    run_annovar = config_data.get('run_annovar', False)
+    run_vep = config_data.get('run_vep', True)
     yaml_content = replace_yaml_value(yaml_content, 'run_annovar', str(run_annovar))
     yaml_content = replace_yaml_value(yaml_content, 'run_vep', str(run_vep))
 
@@ -141,13 +146,13 @@ def get_config_summary(config_data):
     # Add variant callers
     if config_data.get('use_gatk', True):
         summary['variant_callers'].append('GATK HaplotypeCaller')
-    if config_data.get('use_strelka', False):
+    if config_data.get('use_strelka', True):
         summary['variant_callers'].append('Strelka2')
 
     # Add annotation tools
-    if config_data.get('run_annovar', True):
+    if config_data.get('run_annovar', False):
         summary['annotation_tools'].append('ANNOVAR')
-    if config_data.get('run_vep', False):
+    if config_data.get('run_vep', True):
         summary['annotation_tools'].append('VEP')
 
     return summary
