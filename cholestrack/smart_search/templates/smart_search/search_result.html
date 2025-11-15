@@ -86,7 +86,7 @@
                 <h3 class="text-lg font-semibold text-gray-800">HPO Phenotypes</h3>
                 <i class="fas fa-heartbeat text-red-500 text-2xl"></i>
             </div>
-            <p class="text-3xl font-bold text-gray-900">{{ query.get_phenotype_count }}</p>
+            <p class="text-3xl font-bold text-gray-900">{{ phenotypes_total_count }}</p>
             <p class="text-sm text-gray-600 mt-1">Phenotype terms</p>
         </a>
 
@@ -96,7 +96,7 @@
                 <h3 class="text-lg font-semibold text-gray-800">Associated Diseases</h3>
                 <i class="fas fa-disease text-orange-500 text-2xl"></i>
             </div>
-            <p class="text-3xl font-bold text-gray-900">{{ query.get_disease_count }}</p>
+            <p class="text-3xl font-bold text-gray-900">{{ diseases_total_count }}</p>
             <p class="text-sm text-gray-600 mt-1">Disease associations</p>
         </a>
     </div>
@@ -110,10 +110,10 @@
         </h2>
         <p class="text-sm text-gray-600 mb-4">
             Phenotype terms from the Human Phenotype Ontology (HPO) associated with {{ query.search_term }}
-            <span class="font-semibold">({{ query.get_phenotype_count }} total)</span>
+            <span class="font-semibold">({{ phenotypes_total_count }} total)</span>
         </p>
         <div class="overflow-x-auto">
-            <table id="phenotypes-table" class="min-w-full divide-y divide-gray-200">
+            <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HPO ID</th>
@@ -122,8 +122,8 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    {% for phenotype in query.phenotypes %}
-                    <tr class="hover:bg-gray-50 phenotype-row">
+                    {% for phenotype in phenotypes_page_obj %}
+                    <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <a href="https://hpo.jax.org/app/browse/term/{{ phenotype.hpo_id }}"
                                target="_blank"
@@ -145,25 +145,67 @@
         </div>
 
         <!-- Phenotypes Pagination -->
-        {% if query.get_phenotype_count > 10 %}
-        <div id="phenotypes-pagination" class="mt-4 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-            <div class="flex flex-1 justify-between sm:hidden">
-                <button onclick="changePage('phenotypes', -1)" class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Previous</button>
-                <button onclick="changePage('phenotypes', 1)" class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Next</button>
-            </div>
-            <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                <div>
-                    <p class="text-sm text-gray-700">
-                        Showing <span class="font-medium" id="phenotypes-start">1</span> to <span class="font-medium" id="phenotypes-end">10</span> of <span class="font-medium">{{ query.get_phenotype_count }}</span> results
-                    </p>
+        {% if phenotypes_page_obj.has_other_pages %}
+        <nav aria-label="Phenotypes pagination" class="mt-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-sm text-gray-600">
+                    Showing {{ phenotypes_page_obj.start_index }} to {{ phenotypes_page_obj.end_index }} of {{ phenotypes_total_count }} phenotypes
                 </div>
-                <div>
-                    <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination" id="phenotypes-page-numbers">
-                        <!-- Page numbers will be inserted here by JavaScript -->
-                    </nav>
-                </div>
+                <ul class="pagination mb-0">
+                    {% if phenotypes_page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'phenotypes_page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}phenotypes_page=1#phenotypes-section" aria-label="First">
+                                <span aria-hidden="true">&laquo;&laquo;</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'phenotypes_page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}phenotypes_page={{ phenotypes_page_obj.previous_page_number }}#phenotypes-section" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo;&laquo;</span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo;</span>
+                        </li>
+                    {% endif %}
+
+                    {% for num in phenotypes_page_obj.paginator.page_range %}
+                        {% if phenotypes_page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > phenotypes_page_obj.number|add:'-3' and num < phenotypes_page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'phenotypes_page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}phenotypes_page={{ num }}#phenotypes-section">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if phenotypes_page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'phenotypes_page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}phenotypes_page={{ phenotypes_page_obj.next_page_number }}#phenotypes-section" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'phenotypes_page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}phenotypes_page={{ phenotypes_page_obj.paginator.num_pages }}#phenotypes-section" aria-label="Last">
+                                <span aria-hidden="true">&raquo;&raquo;</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&raquo;</span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">&raquo;&raquo;</span>
+                        </li>
+                    {% endif %}
+                </ul>
             </div>
-        </div>
+        </nav>
         {% endif %}
     </div>
     {% endif %}
@@ -177,10 +219,10 @@
         </h2>
         <p class="text-sm text-gray-600 mb-4">
             Diseases associated with {{ query.search_term }} from HPO annotations
-            <span class="font-semibold">({{ query.get_disease_count }} total)</span>
+            <span class="font-semibold">({{ diseases_total_count }} total)</span>
         </p>
         <div class="overflow-x-auto">
-            <table id="diseases-table" class="min-w-full divide-y divide-gray-200">
+            <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Database ID</th>
@@ -189,8 +231,8 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    {% for disease in query.diseases %}
-                    <tr class="hover:bg-gray-50 disease-row">
+                    {% for disease in diseases_page_obj %}
+                    <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <a href="https://hpo.jax.org/browse/disease/{{ disease.disease_id }}"
                                target="_blank"
@@ -214,25 +256,67 @@
         </div>
 
         <!-- Diseases Pagination -->
-        {% if query.get_disease_count > 10 %}
-        <div id="diseases-pagination" class="mt-4 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-            <div class="flex flex-1 justify-between sm:hidden">
-                <button onclick="changePage('diseases', -1)" class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Previous</button>
-                <button onclick="changePage('diseases', 1)" class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Next</button>
-            </div>
-            <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                <div>
-                    <p class="text-sm text-gray-700">
-                        Showing <span class="font-medium" id="diseases-start">1</span> to <span class="font-medium" id="diseases-end">10</span> of <span class="font-medium">{{ query.get_disease_count }}</span> results
-                    </p>
+        {% if diseases_page_obj.has_other_pages %}
+        <nav aria-label="Diseases pagination" class="mt-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-sm text-gray-600">
+                    Showing {{ diseases_page_obj.start_index }} to {{ diseases_page_obj.end_index }} of {{ diseases_total_count }} diseases
                 </div>
-                <div>
-                    <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination" id="diseases-page-numbers">
-                        <!-- Page numbers will be inserted here by JavaScript -->
-                    </nav>
-                </div>
+                <ul class="pagination mb-0">
+                    {% if diseases_page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'diseases_page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}diseases_page=1#diseases-section" aria-label="First">
+                                <span aria-hidden="true">&laquo;&laquo;</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'diseases_page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}diseases_page={{ diseases_page_obj.previous_page_number }}#diseases-section" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo;&laquo;</span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo;</span>
+                        </li>
+                    {% endif %}
+
+                    {% for num in diseases_page_obj.paginator.page_range %}
+                        {% if diseases_page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > diseases_page_obj.number|add:'-3' and num < diseases_page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'diseases_page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}diseases_page={{ num }}#diseases-section">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if diseases_page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'diseases_page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}diseases_page={{ diseases_page_obj.next_page_number }}#diseases-section" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'diseases_page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}diseases_page={{ diseases_page_obj.paginator.num_pages }}#diseases-section" aria-label="Last">
+                                <span aria-hidden="true">&raquo;&raquo;</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&raquo;</span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">&raquo;&raquo;</span>
+                        </li>
+                    {% endif %}
+                </ul>
             </div>
-        </div>
+        </nav>
         {% endif %}
     </div>
     {% endif %}
@@ -264,172 +348,36 @@
     .scroll-mt-8 {
         scroll-margin-top: 2rem;
     }
+
+    /* Pagination styles */
+    .pagination {
+        display: flex;
+        list-style: none;
+        gap: 5px;
+    }
+    .page-item.active .page-link {
+        background-color: #9333ea;
+        border-color: #9333ea;
+        color: white;
+    }
+    .page-link {
+        padding: 0.5rem 0.75rem;
+        color: #9333ea;
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .page-link:hover {
+        background-color: #f3e8ff;
+        color: #7c3aed;
+    }
+    .page-item.disabled .page-link {
+        color: #6c757d;
+        background-color: #fff;
+        border-color: #dee2e6;
+        cursor: not-allowed;
+    }
 </style>
-
-<script>
-    // Pagination state
-    const paginationState = {
-        phenotypes: { currentPage: 1, rowsPerPage: 10 },
-        diseases: { currentPage: 1, rowsPerPage: 10 }
-    };
-
-    // Initialize pagination on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        initPagination('phenotypes');
-        initPagination('diseases');
-    });
-
-    function initPagination(type) {
-        const rows = document.querySelectorAll(`.${type}-row`);
-        if (rows.length === 0) return;
-
-        const totalPages = Math.ceil(rows.length / paginationState[type].rowsPerPage);
-
-        // Only show pagination if more than 10 items
-        if (totalPages <= 1) return;
-
-        showPage(type, 1);
-        renderPageNumbers(type, totalPages);
-    }
-
-    function showPage(type, pageNumber) {
-        const rows = document.querySelectorAll(`.${type}-row`);
-        const { rowsPerPage } = paginationState[type];
-        const totalRows = rows.length;
-        const totalPages = Math.ceil(totalRows / rowsPerPage);
-
-        // Validate page number
-        if (pageNumber < 1) pageNumber = 1;
-        if (pageNumber > totalPages) pageNumber = totalPages;
-
-        paginationState[type].currentPage = pageNumber;
-
-        const start = (pageNumber - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-
-        // Show/hide rows
-        rows.forEach((row, index) => {
-            if (index >= start && index < end) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-
-        // Update pagination info
-        const startElement = document.getElementById(`${type}-start`);
-        const endElement = document.getElementById(`${type}-end`);
-
-        if (startElement) startElement.textContent = start + 1;
-        if (endElement) endElement.textContent = Math.min(end, totalRows);
-
-        // Update page numbers
-        renderPageNumbers(type, totalPages);
-    }
-
-    function changePage(type, delta) {
-        const newPage = paginationState[type].currentPage + delta;
-        showPage(type, newPage);
-
-        // Scroll to section
-        const section = document.getElementById(`${type}-section`);
-        if (section) {
-            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }
-
-    function goToPage(type, pageNumber) {
-        showPage(type, pageNumber);
-
-        // Scroll to section
-        const section = document.getElementById(`${type}-section`);
-        if (section) {
-            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }
-
-    function renderPageNumbers(type, totalPages) {
-        const container = document.getElementById(`${type}-page-numbers`);
-        if (!container) return;
-
-        const currentPage = paginationState[type].currentPage;
-        let html = '';
-
-        // Previous button
-        html += `
-            <button onclick="changePage('${type}', -1)"
-                    ${currentPage === 1 ? 'disabled' : ''}
-                    class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${currentPage === 1 ? 'cursor-not-allowed opacity-50' : ''}">
-                <span class="sr-only">Previous</span>
-                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
-                </svg>
-            </button>
-        `;
-
-        // Page numbers
-        const maxVisible = 7;
-        let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-        let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-
-        if (endPage - startPage < maxVisible - 1) {
-            startPage = Math.max(1, endPage - maxVisible + 1);
-        }
-
-        // First page
-        if (startPage > 1) {
-            html += `
-                <button onclick="goToPage('${type}', 1)"
-                        class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20">
-                    1
-                </button>
-            `;
-            if (startPage > 2) {
-                html += `<span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300">...</span>`;
-            }
-        }
-
-        // Page numbers
-        for (let i = startPage; i <= endPage; i++) {
-            const isActive = i === currentPage;
-            html += `
-                <button onclick="goToPage('${type}', ${i})"
-                        class="relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                            isActive
-                            ? 'z-10 bg-purple-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-600'
-                            : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20'
-                        }">
-                    ${i}
-                </button>
-            `;
-        }
-
-        // Last page
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) {
-                html += `<span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300">...</span>`;
-            }
-            html += `
-                <button onclick="goToPage('${type}', ${totalPages})"
-                        class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20">
-                    ${totalPages}
-                </button>
-            `;
-        }
-
-        // Next button
-        html += `
-            <button onclick="changePage('${type}', 1)"
-                    ${currentPage === totalPages ? 'disabled' : ''}
-                    class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${currentPage === totalPages ? 'cursor-not-allowed opacity-50' : ''}">
-                <span class="sr-only">Next</span>
-                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
-                </svg>
-            </button>
-        `;
-
-        container.innerHTML = html;
-    }
-</script>
 {% endblock %}

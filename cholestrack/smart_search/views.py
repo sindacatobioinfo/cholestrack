@@ -6,6 +6,7 @@ Views for smart gene search functionality using HPO.
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from users.decorators import role_confirmed_required
 from .models import GeneSearchQuery
 from .forms import GeneSearchForm
@@ -116,17 +117,41 @@ def process_search(request, query_id):
 @role_confirmed_required
 def search_result(request, query_id):
     """
-    Display search results for a query.
+    Display search results for a query with pagination.
     """
     query = get_object_or_404(GeneSearchQuery, id=query_id, user=request.user)
 
     # Check if results expired
     cache_expired = not query.is_cache_valid() if query.cache_expires_at else False
 
+    # Paginate phenotypes (10 per page)
+    phenotypes_list = query.phenotypes if query.phenotypes else []
+    phenotypes_paginator = Paginator(phenotypes_list, 10)
+    phenotypes_page_number = request.GET.get('phenotypes_page', 1)
+
+    try:
+        phenotypes_page_obj = phenotypes_paginator.get_page(phenotypes_page_number)
+    except (PageNotAnInteger, EmptyPage):
+        phenotypes_page_obj = phenotypes_paginator.get_page(1)
+
+    # Paginate diseases (10 per page)
+    diseases_list = query.diseases if query.diseases else []
+    diseases_paginator = Paginator(diseases_list, 10)
+    diseases_page_number = request.GET.get('diseases_page', 1)
+
+    try:
+        diseases_page_obj = diseases_paginator.get_page(diseases_page_number)
+    except (PageNotAnInteger, EmptyPage):
+        diseases_page_obj = diseases_paginator.get_page(1)
+
     context = {
         'query': query,
         'cache_expired': cache_expired,
-        'title': f'Results for {query.search_term}'
+        'title': f'Results for {query.search_term}',
+        'phenotypes_page_obj': phenotypes_page_obj,
+        'diseases_page_obj': diseases_page_obj,
+        'phenotypes_total_count': len(phenotypes_list),
+        'diseases_total_count': len(diseases_list),
     }
     return render(request, 'smart_search/search_result.html', context)
 
