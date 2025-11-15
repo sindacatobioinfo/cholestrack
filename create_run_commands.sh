@@ -39,4 +39,6 @@ python manage.py import_data \
 --clear #use this only if you want to overwrite the tables
 
 #clear cache smart search
-python manage.py clear_search_cache --all
+python manage.py load_hpo_data --clear #recreate the database
+python manage.py clear_search_cache --all #clear all cache
+python manage.py test_gene_search --gene BRCA1 #test gene search
