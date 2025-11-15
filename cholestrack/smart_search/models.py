@@ -106,12 +106,14 @@ class GeneSearchQuery(models.Model):
         self.cache_expires_at = timezone.now() + timedelta(days=days)
         self.save(update_fields=['cache_expires_at'])
 
+    @property
     def get_phenotype_count(self):
         """Get count of HPO phenotype terms."""
         if self.phenotypes and isinstance(self.phenotypes, list):
             return len(self.phenotypes)
         return 0
 
+    @property
     def get_disease_count(self):
         """Get count of associated diseases."""
         if self.diseases and isinstance(self.diseases, list):
