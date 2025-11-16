@@ -20,6 +20,7 @@ def generate_workflow_yaml(config_data):
             - minimap2_preset: str (if minimap2 selected)
             - use_gatk: bool
             - use_strelka: bool
+            - use_deepvariant: bool
             - run_annovar: bool
             - run_vep: bool
 
@@ -57,8 +58,10 @@ def generate_workflow_yaml(config_data):
     # Replace variant caller settings
     use_gatk = config_data.get('use_gatk', True)
     use_strelka = config_data.get('use_strelka', True)
+    use_deepvariant = config_data.get('use_deepvariant', False)
     yaml_content = replace_yaml_value(yaml_content, 'use_gatk', str(use_gatk))
     yaml_content = replace_yaml_value(yaml_content, 'use_strelka', str(use_strelka))
+    yaml_content = replace_yaml_value(yaml_content, 'use_deepvariant', str(use_deepvariant))
 
     # Replace annotation tool settings
     run_annovar = config_data.get('run_annovar', False)
@@ -153,6 +156,8 @@ def get_config_summary(config_data):
         summary['variant_callers'].append('GATK HaplotypeCaller')
     if config_data.get('use_strelka', True):
         summary['variant_callers'].append('Strelka2')
+    if config_data.get('use_deepvariant', False):
+        summary['variant_callers'].append('DeepVariant')
 
     # Add annotation tools
     if config_data.get('run_annovar', False):
