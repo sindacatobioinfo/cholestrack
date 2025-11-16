@@ -18,6 +18,20 @@
     <form method="post" id="config-form">
         {% csrf_token %}
 
+        <!-- Display Form Errors -->
+        {% if form.non_field_errors %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <div>
+                    {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Project Settings -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">
@@ -182,10 +196,10 @@
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">
                 <i class="fas fa-search text-orange-500 mr-2"></i>
-                Select Variant Callers
+                Select Variant Callers <span class="text-red-500">*</span>
             </h2>
-            <p class="text-sm text-gray-600 mb-4">You can select multiple callers</p>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <p class="text-sm text-gray-600 mb-4">Select at least one variant caller (multiple allowed)</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- GATK HaplotypeCaller -->
                 <div class="caller-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all selected"
                      onclick="toggleCaller('gatk')">
@@ -209,6 +223,18 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- DeepVariant -->
+                <div class="caller-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all"
+                     onclick="toggleCaller('deepvariant')">
+                    <div class="flex items-center">
+                        <input type="checkbox" name="use_deepvariant" id="caller_deepvariant" class="mr-3 h-5 w-5">
+                        <div>
+                            <h3 class="font-bold text-lg">DeepVariant</h3>
+                            <p class="text-sm text-gray-600">Deep learning variant caller</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -216,9 +242,9 @@
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">
                 <i class="fas fa-file-medical-alt text-red-500 mr-2"></i>
-                Select Annotation Tools
+                Select Annotation Tools <span class="text-red-500">*</span>
             </h2>
-            <p class="text-sm text-gray-600 mb-4">You can select multiple annotation tools</p>
+            <p class="text-sm text-gray-600 mb-4">Select at least one annotation tool (multiple allowed)</p>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- ANNOVAR -->
                 <div class="annotation-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all"

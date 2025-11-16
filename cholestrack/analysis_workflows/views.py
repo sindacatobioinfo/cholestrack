@@ -31,6 +31,7 @@ def config_builder(request):
                 'minimap2_preset': form.cleaned_data['minimap2_preset'],
                 'use_gatk': form.cleaned_data['use_gatk'],
                 'use_strelka': form.cleaned_data['use_strelka'],
+                'use_deepvariant': form.cleaned_data['use_deepvariant'],
                 'run_annovar': form.cleaned_data['run_annovar'],
                 'run_vep': form.cleaned_data['run_vep'],
             }
@@ -55,6 +56,7 @@ def config_builder(request):
             'minimap2_preset': 'sr',
             'use_gatk': True,
             'use_strelka': True,
+            'use_deepvariant': False,
             'run_annovar': False,
             'run_vep': True,
         })
@@ -147,6 +149,7 @@ def load_config(request, config_id):
             'minimap2_preset': config.minimap2_preset,
             'use_gatk': config.use_gatk,
             'use_strelka': config.use_strelka,
+            'use_deepvariant': config.use_deepvariant,
             'run_annovar': config.run_annovar,
             'run_vep': config.run_vep,
         }

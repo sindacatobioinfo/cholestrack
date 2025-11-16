@@ -85,6 +85,10 @@ class WorkflowConfiguration(models.Model):
         default=True,
         verbose_name="Use Strelka2"
     )
+    use_deepvariant = models.BooleanField(
+        default=False,
+        verbose_name="Use DeepVariant"
+    )
 
     # Annotation tools
     run_annovar = models.BooleanField(
