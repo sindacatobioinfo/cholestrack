@@ -26,6 +26,7 @@ def config_builder(request):
             # Extract form data
             config_data = {
                 'project_name': form.cleaned_data['project_name'],
+                'model_type': form.cleaned_data['model_type'],
                 'aligner': form.cleaned_data['aligner'],
                 'minimap2_preset': form.cleaned_data['minimap2_preset'],
                 'use_gatk': form.cleaned_data['use_gatk'],
@@ -49,6 +50,7 @@ def config_builder(request):
         # Initialize with default values
         form = WorkflowConfigForm(initial={
             'project_name': 'workflow_test',
+            'model_type': 'WES',
             'aligner': 'minimap2',
             'minimap2_preset': 'sr',
             'use_gatk': True,
@@ -140,6 +142,7 @@ def load_config(request, config_id):
         # Store in session
         config_data = {
             'project_name': config.project_name,
+            'model_type': config.model_type,
             'aligner': config.aligner,
             'minimap2_preset': config.minimap2_preset,
             'use_gatk': config.use_gatk,

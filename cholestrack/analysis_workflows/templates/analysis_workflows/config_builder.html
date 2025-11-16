@@ -58,6 +58,41 @@
             </div>
         </div>
 
+        <!-- Analysis Type Selection -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-vial text-teal-500 mr-2"></i>
+                Select Analysis Type
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- WES Card -->
+                <div class="model-type-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all selected"
+                     data-model="WES" onclick="selectModelType('WES')">
+                    <input type="radio" name="model_type" value="WES" id="model_type_wes" checked class="hidden">
+                    <div class="text-center">
+                        <i class="fas fa-bullseye text-4xl text-teal-600 mb-3"></i>
+                        <h3 class="font-bold text-lg mb-2">WES</h3>
+                        <p class="text-sm text-gray-600">
+                            Whole Exome Sequencing
+                        </p>
+                    </div>
+                </div>
+
+                <!-- WGS Card -->
+                <div class="model-type-card border-2 rounded-lg p-4 cursor-pointer hover:shadow-lg transition-all"
+                     data-model="WGS" onclick="selectModelType('WGS')">
+                    <input type="radio" name="model_type" value="WGS" id="model_type_wgs" class="hidden">
+                    <div class="text-center">
+                        <i class="fas fa-globe text-4xl text-cyan-600 mb-3"></i>
+                        <h3 class="font-bold text-lg mb-2">WGS</h3>
+                        <p class="text-sm text-gray-600">
+                            Whole Genome Sequencing
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Aligner Selection -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">
@@ -226,6 +261,7 @@
 </div>
 
 <style>
+    .model-type-card.selected,
     .aligner-card.selected,
     .preset-card.selected {
         border-color: #9333ea;
@@ -253,6 +289,20 @@
 </style>
 
 <script>
+    function selectModelType(modelType) {
+        // Remove selection from all model type cards
+        document.querySelectorAll('.model-type-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+
+        // Select the clicked card
+        const card = document.querySelector(`[data-model="${modelType}"]`);
+        card.classList.add('selected');
+
+        // Check the radio button
+        document.getElementById(`model_type_${modelType.toLowerCase()}`).checked = true;
+    }
+
     function selectAligner(aligner) {
         // Remove selection from all cards
         document.querySelectorAll('.aligner-card').forEach(card => {

@@ -48,6 +48,19 @@ class WorkflowConfiguration(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Analysis type
+    MODEL_TYPE_CHOICES = [
+        ('WES', 'Whole Exome Sequencing'),
+        ('WGS', 'Whole Genome Sequencing'),
+    ]
+
+    model_type = models.CharField(
+        max_length=3,
+        choices=MODEL_TYPE_CHOICES,
+        default='WES',
+        verbose_name="Analysis Type"
+    )
+
     # Aligner configuration
     aligner = models.CharField(
         max_length=20,
