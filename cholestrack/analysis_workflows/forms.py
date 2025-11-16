@@ -16,6 +16,7 @@ class WorkflowConfigForm(forms.ModelForm):
         fields = [
             'name',
             'project_name',
+            'model_type',
             'aligner',
             'minimap2_preset',
             'use_gatk',

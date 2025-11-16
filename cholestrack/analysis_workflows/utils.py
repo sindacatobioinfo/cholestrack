@@ -15,6 +15,7 @@ def generate_workflow_yaml(config_data):
     Args:
         config_data: Dictionary containing user selections:
             - project_name: str
+            - model_type: str ('WES' or 'WGS')
             - aligner: str ('bwa', 'dragmap', or 'minimap2')
             - minimap2_preset: str (if minimap2 selected)
             - use_gatk: bool
@@ -34,6 +35,10 @@ def generate_workflow_yaml(config_data):
     # Replace project name
     project_name = config_data.get('project_name', 'workflow_test')
     yaml_content = replace_yaml_value(yaml_content, 'project_name', project_name)
+
+    # Replace model type (WES/WGS)
+    model_type = config_data.get('model_type', 'WES')
+    yaml_content = replace_yaml_value(yaml_content, 'model_type', model_type)
 
     # Replace aligner setting
     aligner = config_data.get('aligner', 'minimap2')

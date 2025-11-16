@@ -58,10 +58,26 @@ run_vep: True          # Run VEP annotation (Variant Effect Predictor)
 # Scatter-gather parallelization (10-50x speedup)
 use_scatter_gather: True       # Enable parallel GATK HaplotypeCaller (recommended)
 use_scatter_gather_bqsr: True  # Enable parallel BQSR (recommended, saves ~3 hours/sample)
-scatter_count: 16              # Number of scatter pieces (adjust based on cores)
+scatter_count: 12              # Number of scatter pieces (adjust based on cores)
 
-# Model type for DeepVariant (if enabled)
+# Model type for Strelka and DeepVariant (if enabled)
 model_type: WES  # Options: WES, WGS
+
+#-------------------------------------------------------------------------------
+# ALIGNMENT OPTIMIZATION
+#-------------------------------------------------------------------------------
+# Extra parameters for aligners to optimize variant calling quality
+
+# BWA-MEM extra parameters (only used if aligner: bwa)
+# -M: Mark shorter split hits as secondary (Picard compatibility)
+# -Y: Use soft clipping for supplementary alignments (better for GATK variant calling)
+bwa_extra: "-M -Y"
+
+# Minimap2 extra parameters (only used if aligner: minimap2)
+# -Y: Use soft clipping for supplementary alignments
+# --MD: Add MD tag for mismatches (required by GATK)
+# --eqx: Use =/X CIGAR operators instead of M (more precise alignment representation)
+minimap2_extra: "-Y --MD --eqx"
 
 #-------------------------------------------------------------------------------
 # MINIMAP2 CONFIGURATION
@@ -127,10 +143,12 @@ refgenome:
   dict: /home/operator/InterOmics/workflows/interomics_snakemake/reference/GRCh38_character_genome.dict
 
   # Known variants for BQSR (dbSNP)
-  known_var: /home/operator/InterOmics/workflows/interomics_snakemake/reference/dbsnp_156_chr.vcf.gz
+  known_var1: /home/operator/InterOmics/apps/gatk_resources/dbsnp_151.vcf.gz
+  known_var2: /home/operator/InterOmics/apps/gatk_resources/1000G_phase1.snps.high_confidence.hg38.vcf.gz
+  known_var3: /home/operator/InterOmics/apps/gatk_resources/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
 
   # Common variants for contamination estimation (uses known_var if not specified)
-  contamination_variants: /home/operator/InterOmics/workflows/interomics_snakemake/reference/dbsnp_156_chr.vcf.gz
+  contamination_variants: /home/operator/InterOmics/apps/gatk_resources/dbsnp_151.vcf.gz
 
   # Funcotator data sources (for variant annotation)
   data_source: /home/operator/InterOmics/workflows/interomics_snakemake/data_source/funcotator_germline
@@ -182,10 +200,11 @@ ped_file: ""  # Leave empty if not available
 
 threads:
   others: 1          # Default for most tools
-  bwa: 13            # BWA-MEM alignment
-  minimap2: 13       # Minimap2 alignment (same as BWA by default)
+  fastp: 16          # fastp quality control and trimming
+  bwa: 12            # BWA-MEM alignment
+  minimap2: 12       # Minimap2 alignment (same as BWA by default)
   deepvariant: 16    # DeepVariant (if enabled)
-  strelka: 16        # Strelka variant calling
+  strelka: 8         # Strelka variant calling
   recal_table: 8     # GATK BaseRecalibrator
   recal_apply: 8     # GATK ApplyBQSR
   annovar: 8         # ANNOVAR annotation (parallel execution)
@@ -262,28 +281,6 @@ vep:
   extra_options: "--everything --check_existing --variant_class"
 
 #-------------------------------------------------------------------------------
-# PHASING PARAMETERS
-#-------------------------------------------------------------------------------
-
-# Maximum distance for read-backed phasing (bp)
-phasing_max_distance: 100000  # 100 kb
-
-#-------------------------------------------------------------------------------
-# CNV CALLING PARAMETERS
-#-------------------------------------------------------------------------------
-
-# GATK gCNV parameters
-gcnv_max_copy_number: 5        # Maximum copy number to consider
-gcnv_p_active: 0.01            # Prior probability of CNV event
-contig_ploidy_priors: ""       # Optional pre-computed ploidy priors
-
-# CODEX2 parameters
-codex2_K: auto                 # Number of latent factors (auto-select if "auto")
-codex2_length_cutoff: 3        # Minimum CNV length in exons
-codex2_lmax: 20                # Maximum latent factors to test
-codex2_chr_prefix: chr         # "chr" for hg38, "" for b37
-
-#-------------------------------------------------------------------------------
 # QC PARAMETERS
 #-------------------------------------------------------------------------------
 
@@ -293,15 +290,6 @@ run_qc: False
 # Granular QC controls (only apply if run_qc is True)
 qc_bam_metrics: True        # Collect GC bias, HS, and WGS metrics
 qc_vcf_metrics: True        # Collect variant calling metrics and bcftools stats
-qc_contamination: True      # Run contamination detection
-qc_peddy: True              # Run Peddy (ancestry, sex check, relatedness)
-
-# Peddy QC settings
-peddy_sites: hg38  # Reference build for Peddy (hg19 or hg38)
-
-# Contamination thresholds
-contamination_warning: 0.01  # Warn if >1%
-contamination_fail: 0.02     # Fail if >2%
 
 #-------------------------------------------------------------------------------
 # PERFORMANCE OPTIMIZATION
@@ -309,9 +297,6 @@ contamination_fail: 0.02     # Fail if >2%
 
 # Use local storage for intermediate files (shadow directive)
 use_shadow: True  # Recommended for network storage setups
-
-# Keep intermediate files or mark as temporary
-keep_intermediate_files: True  # Set to True to keep all intermediate files
 
 # Remove intermediate files after successful completion
 remove_intermediate_files: True  # Set to True to clean up intermediate files (saves disk space)
@@ -328,19 +313,6 @@ haplotypecaller_extra: ""  # e.g., "--native-pair-hmm-threads 4"
 
 # Additional split intervals parameters
 split_intervals_extra: ""  # e.g., "--subdivision-mode INTERVAL_SUBDIVISION"
-
-#-------------------------------------------------------------------------------
-# REPORTING
-#-------------------------------------------------------------------------------
-
-# Generate HTML report with workflow summary
-generate_report: False
-
-# Report title
-report_title: "WES Analysis Report - InterOmics Pipeline"
-
-# Report author/contact
-report_author: "InterOmics Team"
 
 #===============================================================================
 # END OF CONFIGURATION
