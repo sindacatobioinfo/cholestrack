@@ -37,31 +37,37 @@ run_cnv_calling: False
 #-------------------------------------------------------------------------------
 
 # Alignment tool selection
-# Options: bwa, dragmap, minimap2
+# Options: bwa, minimap2
 # - bwa: BWA-MEM (default, recommended for short Illumina reads)
-# - dragmap: DRAGEN DRAGMAP (faster alternative to BWA, Illumina optimized)
 # - minimap2: Minimap2 (versatile aligner, supports short/long reads with different presets)
 aligner: minimap2
 
 # Legacy config (for backward compatibility - use 'aligner' instead)
-# use_bwa: True  # If False, DRAGMAP will be used instead
+# use_bwa: True
 
 # Variant callers (can enable multiple)
 use_gatk: True          # GATK HaplotypeCaller (recommended)
 use_strelka: True       # Strelka2 germline caller
-use_deepvariant: False  # DeepVariant (requires Singularity)
+use_deepvariant: True   # DeepVariant (requires Singularity)
 
 # Annotation tools
-run_annovar: False       # Run ANNOVAR annotation (and downstream ETL processing)
-run_vep: True          # Run VEP annotation (Variant Effect Predictor)
+run_annovar: True       # Run ANNOVAR annotation (and downstream ETL processing)
+run_vep: True           # Run VEP annotation (Variant Effect Predictor)
 
 # Scatter-gather parallelization (10-50x speedup)
 use_scatter_gather: True       # Enable parallel GATK HaplotypeCaller (recommended)
 use_scatter_gather_bqsr: True  # Enable parallel BQSR (recommended, saves ~3 hours/sample)
-scatter_count: 12              # Number of scatter pieces (adjust based on cores)
+scatter_count: 16              # Number of scatter pieces (adjust based on cores)
 
 # Model type for Strelka and DeepVariant (if enabled)
-model_type: WES  # Options: WES, WGS
+# DeepVariant models: WES (whole exome), WGS (whole genome), PACBIO
+# Note: Case-insensitive - will be automatically converted to lowercase for DeepVariant
+model_type: WES  # Options: WES, WGS, PACBIO
+
+# Strelka error handling (for problematic BAMs)
+strelka_disable_seq_error_estimation: False   # Recommended: True for WES, fixes chrX depth errors
+strelka_disable_evs: False                    # Set True if getting assertion failures (less sensitive but more stable)
+strelka_max_indel_size: 49                    # Default: 49, reduce to 30-40 if getting complex indel assertion failures
 
 #-------------------------------------------------------------------------------
 # ALIGNMENT OPTIMIZATION
@@ -76,8 +82,13 @@ bwa_extra: "-M -Y"
 # Minimap2 extra parameters (only used if aligner: minimap2)
 # -Y: Use soft clipping for supplementary alignments
 # --MD: Add MD tag for mismatches (required by GATK)
-# --eqx: Use =/X CIGAR operators instead of M (more precise alignment representation)
-minimap2_extra: "-Y --MD --eqx"
+minimap2_extra: "-Y --MD"
+
+# Minimap2 --eqx flag control
+# --eqx: Use =/X CIGAR operators instead of M (more precise alignment, improves variant calling quality)
+# WARNING: --eqx is INCOMPATIBLE with Strelka (causes C++ assertion failures)
+# When use_strelka is True, --eqx will be automatically disabled regardless of this setting
+minimap2_use_eqx: True  # Default: True (recommended for GATK/DeepVariant-only workflows)
 
 #-------------------------------------------------------------------------------
 # MINIMAP2 CONFIGURATION
@@ -131,7 +142,7 @@ refgenome:
   ref: /home/operator/InterOmics/workflows/interomics_snakemake/reference/GRCh38_character_genome.fasta
 
   # Target regions (BED file for exome capture kit)
-  bed: /home/operator/InterOmics/workflows/interomics_snakemake/reference/hg38_no_alt.bed.gz
+  bed: /home/operator/InterOmics/workflows/interomics_snakemake/reference/hg38_no_alt.bed
 
   # Interval list (GATK format, derived from BED)
   interval: /home/operator/InterOmics/workflows/interomics_snakemake/reference/hg38_no_alt.interval_list
@@ -146,12 +157,6 @@ refgenome:
   known_var1: /home/operator/InterOmics/apps/gatk_resources/dbsnp_151.vcf.gz
   known_var2: /home/operator/InterOmics/apps/gatk_resources/1000G_phase1.snps.high_confidence.hg38.vcf.gz
   known_var3: /home/operator/InterOmics/apps/gatk_resources/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
-
-  # Common variants for contamination estimation (uses known_var if not specified)
-  contamination_variants: /home/operator/InterOmics/apps/gatk_resources/dbsnp_151.vcf.gz
-
-  # Funcotator data sources (for variant annotation)
-  data_source: /home/operator/InterOmics/workflows/interomics_snakemake/data_source/funcotator_germline
 
 #-------------------------------------------------------------------------------
 # TOOL-SPECIFIC PATHS
@@ -184,10 +189,10 @@ tools:
 #-------------------------------------------------------------------------------
 
 # Library/Capture kit name (for BAM read groups)
-library_name: SureSelectV7  # Will appear in @RG LB tag
+library_name: IlluminaTwist  # Will appear in @RG LB tag
 
 # Sequencing platform (for BAM read groups)
-platform: ILLUMINA  # Will appear in @RG PL tag
+platform: NEXTSEQ  # Will appear in @RG PL tag
 
 # Optional: PED file for family/phenotype information (for Peddy)
 ped_file: ""  # Leave empty if not available
@@ -201,9 +206,13 @@ ped_file: ""  # Leave empty if not available
 threads:
   others: 1          # Default for most tools
   fastp: 16          # fastp quality control and trimming
-  bwa: 12            # BWA-MEM alignment
-  minimap2: 12       # Minimap2 alignment (same as BWA by default)
-  deepvariant: 16    # DeepVariant (if enabled)
+  bwa: 16            # BWA-MEM alignment
+  minimap2: 16       # Minimap2 alignment (same as BWA by default)
+
+  # DeepVariant single-command workflow (if enabled)
+  # Adjust based on your workflow: single sample = higher threads, multi-sample = lower threads for parallelism
+  deepvariant: 40    # DeepVariant all steps (make_examples, call_variants, postprocess)
+
   strelka: 8         # Strelka variant calling
   recal_table: 8     # GATK BaseRecalibrator
   recal_apply: 8     # GATK ApplyBQSR
@@ -281,6 +290,29 @@ vep:
   extra_options: "--everything --check_existing --variant_class"
 
 #-------------------------------------------------------------------------------
+# VEP REANNOTATION PARAMETERS
+#-------------------------------------------------------------------------------
+
+# VEP reannotation - re-run VEP on previously annotated VCFs
+# Useful when a new VEP version is released or to add new plugins without re-running variant calling
+run_vep_reannotation: False
+
+vep_reannotation:
+  # Cache version for reannotation ('auto' = use latest, or specify version like '112')
+  # If different from original VEP version, will show what changed between versions
+  cache_version: auto
+
+  # Plugins for reannotation (can be different from original VEP annotation)
+  # Example: "LoF,CADD,/path/to/CADD.tsv.gz,dbNSFP,/path/to/dbNSFP.txt.gz,ALL"
+  plugins: ""
+
+  # Extra options for reannotation (can add new annotations)
+  extra_options: "--everything --check_existing --variant_class"
+
+  # Fields to compare between original and reannotated VCFs (comma-separated)
+  comparison_fields: "CSQ,Consequence,SYMBOL,Gene,Feature,BIOTYPE,IMPACT,Protein_position,Amino_acids,Codons,Existing_variation"
+
+#-------------------------------------------------------------------------------
 # QC PARAMETERS
 #-------------------------------------------------------------------------------
 
@@ -299,7 +331,7 @@ qc_vcf_metrics: True        # Collect variant calling metrics and bcftools stats
 use_shadow: True  # Recommended for network storage setups
 
 # Remove intermediate files after successful completion
-remove_intermediate_files: True  # Set to True to clean up intermediate files (saves disk space)
+remove_intermediate_files: False  # Set to True to clean up intermediate files (saves disk space)
 
 # Generate MD5 checksums for key output files
 generate_md5_checksums: True  # Create MD5 hashes for data integrity verification
