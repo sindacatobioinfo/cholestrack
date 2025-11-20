@@ -146,18 +146,16 @@
                             </td>
                             <td class="py-2 px-4 text-center">
                                 {% for file_type, file_data in patient.files.items %}
-                                    <form method="post" action="{% url 'files:download_file' file_location_id=file_data.id %}" style="display: inline-block; margin: 2px;">
-                                        {% csrf_token %}
-                                        <button type="submit"
-                                                title="Download {{ file_type }} file from Server {{ file_data.server }}"
-                                                class="btn btn-sm download-btn
-                                                    {% if file_type == 'VCF' %}bg-green-600 hover:bg-green-700
-                                                    {% elif file_type == 'BAM' %}bg-blue-600 hover:bg-blue-700
-                                                    {% else %}bg-gray-600 hover:bg-gray-700{% endif %}
-                                                    text-white font-bold py-1 px-3 rounded shadow transition duration-150 ease-in-out">
-                                            <i class="fas fa-download mr-1"></i> {{ file_type }}
-                                        </button>
-                                    </form>
+                                    <button type="button"
+                                            onclick="openDownloadModal('{{ file_type }}', {{ file_data.id }}, '{{ file_data.server }}')"
+                                            title="Download {{ file_type }} file from Server {{ file_data.server }}"
+                                            class="btn btn-sm download-btn
+                                                {% if file_type == 'VCF' %}bg-green-600 hover:bg-green-700
+                                                {% elif file_type == 'BAM' %}bg-blue-600 hover:bg-blue-700
+                                                {% else %}bg-gray-600 hover:bg-gray-700{% endif %}
+                                                text-white font-bold py-1 px-3 rounded shadow transition duration-150 ease-in-out">
+                                        <i class="fas fa-download mr-1"></i> {{ file_type }}
+                                    </button>
                                 {% empty %}
                                     <span class="text-gray-400 text-sm">No files available</span>
                                 {% endfor %}
@@ -244,6 +242,38 @@
                 <i class="fas fa-exclamation-triangle"></i> No patient data found.
             </div>
         {% endif %}
+    </div>
+
+    <!-- Download Modal -->
+    <div id="downloadModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Download Files</h3>
+                <span class="close" onclick="closeDownloadModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p id="modalDescription">Select which file to download:</p>
+                <div class="download-buttons-container">
+                    <form method="post" id="mainFileForm" action="" style="display: inline-block; width: 48%;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-download btn-main">
+                            <i class="fas fa-file-download mr-2"></i>
+                            <span id="mainFileLabel">Main File</span>
+                        </button>
+                    </form>
+                    <form method="post" id="pairedFileForm" action="" style="display: inline-block; width: 48%;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-download btn-paired">
+                            <i class="fas fa-file-download mr-2"></i>
+                            <span id="pairedFileLabel">Index File</span>
+                        </button>
+                    </form>
+                </div>
+                <p class="text-xs text-gray-500 mt-3">
+                    <i class="fas fa-server mr-1"></i> Server: <span id="serverInfo"></span>
+                </p>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -336,6 +366,113 @@
         border-color: #dee2e6;
         cursor: not-allowed;
     }
+    /* Modal Styles */
+    .modal {
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.6);
+        animation: fadeIn 0.2s;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .modal-content {
+        background-color: #fefefe;
+        margin: 10% auto;
+        padding: 0;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        width: 90%;
+        max-width: 500px;
+        animation: slideDown 0.3s;
+    }
+    @keyframes slideDown {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    .modal-header {
+        background: linear-gradient(135deg, #008080, #006666);
+        color: white;
+        padding: 20px 25px;
+        border-radius: 12px 12px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.4rem;
+        font-weight: 600;
+    }
+    .close {
+        color: white;
+        font-size: 32px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.2s;
+        line-height: 1;
+    }
+    .close:hover {
+        transform: scale(1.2);
+    }
+    .modal-body {
+        padding: 30px 25px;
+    }
+    .modal-body p {
+        margin-bottom: 20px;
+        color: #555;
+        font-size: 1rem;
+    }
+    .download-buttons-container {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+    }
+    .btn-download {
+        width: 100%;
+        padding: 15px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .btn-main {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+    }
+    .btn-main:hover {
+        background: linear-gradient(135deg, #0056b3, #003d82);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    }
+    .btn-paired {
+        background: linear-gradient(135deg, #28a745, #1e7e34);
+        color: white;
+    }
+    .btn-paired:hover {
+        background: linear-gradient(135deg, #1e7e34, #155724);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    }
     .filter-form input[type="text"],
     .filter-form select {
         width: 100%;
@@ -410,6 +547,63 @@ document.addEventListener('DOMContentLoaded', function() {
         const icon = document.getElementById('filter-toggle-icon');
         container.style.display = 'block';
         icon.innerHTML = '<i class="fas fa-chevron-up"></i>';
+    }
+});
+
+// Modal functions for file downloads
+function openDownloadModal(fileType, fileLocationId, server) {
+    const modal = document.getElementById('downloadModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const mainFileLabel = document.getElementById('mainFileLabel');
+    const pairedFileLabel = document.getElementById('pairedFileLabel');
+    const serverInfo = document.getElementById('serverInfo');
+    const mainFileForm = document.getElementById('mainFileForm');
+    const pairedFileForm = document.getElementById('pairedFileForm');
+
+    // Set modal title and server info
+    modalTitle.textContent = `Download ${fileType} Files`;
+    serverInfo.textContent = server;
+
+    // Set appropriate labels and actions based on file type
+    if (fileType === 'BAM') {
+        mainFileLabel.textContent = 'BAM File';
+        pairedFileLabel.textContent = 'BAI Index';
+    } else if (fileType === 'VCF') {
+        mainFileLabel.textContent = 'VCF File';
+        pairedFileLabel.textContent = 'TBI Index';
+    } else if (fileType === 'FASTQ') {
+        mainFileLabel.textContent = 'Read 1 (_1.fastq.gz)';
+        pairedFileLabel.textContent = 'Read 2 (_2.fastq.gz)';
+    } else {
+        mainFileLabel.textContent = 'Main File';
+        pairedFileLabel.textContent = 'Paired File';
+    }
+
+    // Set form actions
+    mainFileForm.action = `/files/download/${fileLocationId}/main/`;
+    pairedFileForm.action = `/files/download/${fileLocationId}/pair/`;
+
+    // Show modal
+    modal.style.display = 'block';
+}
+
+function closeDownloadModal() {
+    const modal = document.getElementById('downloadModal');
+    modal.style.display = 'none';
+}
+
+// Close modal when clicking outside of it
+window.onclick = function(event) {
+    const modal = document.getElementById('downloadModal');
+    if (event.target == modal) {
+        closeDownloadModal();
+    }
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeDownloadModal();
     }
 });
 </script>

@@ -262,6 +262,94 @@ def download_extracted_file(request, job_id):
 
 @login_required
 @role_confirmed_required
+def download_single_extracted_file(request, job_id, file_part='main'):
+    """
+    Download a single extracted file (BAM or BAI) separately.
+
+    Args:
+        job_id: The UUID of the extraction job
+        file_part: Either 'main' for BAM file or 'pair' for BAI index file
+    """
+    if request.method != 'POST':
+        return redirect('region_selection:job_detail', job_id=job_id)
+
+    job = get_object_or_404(RegionExtractionJob, job_id=job_id, user=request.user)
+
+    # Verify job is completed
+    if job.status != 'COMPLETED':
+        messages.error(request, 'This extraction job is not completed or has expired.')
+        return redirect('region_selection:job_detail', job_id=job.job_id)
+
+    # Verify file exists
+    if not job.output_file_path or not os.path.exists(job.output_file_path):
+        job.status = 'FAILED'
+        job.error_message = 'Output file not found.'
+        job.save()
+        messages.error(request, 'Output file not found.')
+        return redirect('region_selection:job_detail', job_id=job.job_id)
+
+    # Check if expired
+    if job.is_expired():
+        job.status = 'EXPIRED'
+        job.save()
+        cleanup_job_files(job)
+        messages.error(request, 'This file has expired and is no longer available for download.')
+        return redirect('region_selection:job_detail', job_id=job.job_id)
+
+    try:
+        # Determine which file to download
+        if file_part == 'pair':
+            # Download BAI index file
+            target_path = f"{job.output_file_path}.bai"
+            if job.gene_name:
+                filename = f"{job.sample_id}_{job.gene_name}_extracted.bam.bai"
+            else:
+                region_str = f"{job.chromosome}_{job.start_position}_{job.end_position}"
+                filename = f"{job.sample_id}_{region_str}_extracted.bam.bai"
+            content_type = 'application/octet-stream'
+        else:
+            # Download main BAM file
+            target_path = job.output_file_path
+            if job.gene_name:
+                filename = f"{job.sample_id}_{job.gene_name}_extracted.bam"
+            else:
+                region_str = f"{job.chromosome}_{job.start_position}_{job.end_position}"
+                filename = f"{job.sample_id}_{region_str}_extracted.bam"
+            content_type = 'application/octet-stream'
+
+        # Verify file exists
+        if not os.path.isfile(target_path):
+            raise FileNotFoundError(f"Requested file not found: {target_path}")
+
+        # Get file size
+        file_size = os.path.getsize(target_path)
+
+        # Open and stream the file
+        file_handle = open(target_path, 'rb')
+        response = FileResponse(
+            file_handle,
+            as_attachment=True,
+            filename=filename,
+            content_type=content_type
+        )
+        response['Content-Length'] = file_size
+
+        # Mark job as downloaded if downloading the main BAM file
+        if file_part == 'main':
+            job.mark_downloaded()
+
+        return response
+
+    except FileNotFoundError as e:
+        messages.error(request, f'File not found: {str(e)}')
+        return redirect('region_selection:job_detail', job_id=job.job_id)
+    except Exception as e:
+        messages.error(request, f'Error downloading file: {e}')
+        return redirect('region_selection:job_detail', job_id=job.job_id)
+
+
+@login_required
+@role_confirmed_required
 def job_list(request):
     """
     List the 20 most recent extraction jobs for the current user.
