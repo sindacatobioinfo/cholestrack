@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from users.decorators import role_required
 from .models import Patient
 from .forms import PatientForm
 from .filters import PatientSampleFilter
@@ -122,10 +123,13 @@ def sample_detail(request, patient_id):
 
 
 @login_required
+@role_required(['ADMIN', 'DATA_MANAGER', 'RESEARCHER'])
 def patient_create(request):
     """
     View for creating a new patient record.
     Handles both patient information and clinical data entry.
+
+    Permissions: ADMIN, DATA_MANAGER, RESEARCHER only
     """
     if request.method == 'POST':
         form = PatientForm(request.POST)
@@ -144,10 +148,13 @@ def patient_create(request):
 
 
 @login_required
+@role_required(['ADMIN', 'DATA_MANAGER', 'RESEARCHER'])
 def patient_edit(request, patient_id):
     """
     View for editing an existing patient record.
     Updates patient information and clinical data.
+
+    Permissions: ADMIN, DATA_MANAGER, RESEARCHER only
     """
     try:
         patient = Patient.objects.get(patient_id=patient_id)
@@ -173,10 +180,13 @@ def patient_edit(request, patient_id):
 
 
 @login_required
+@role_required(['ADMIN', 'DATA_MANAGER'])
 def patient_delete(request, patient_id):
     """
     View for deleting a patient record.
     Requires confirmation before deletion.
+
+    Permissions: ADMIN, DATA_MANAGER only (hard delete operation)
     """
     try:
         patient = Patient.objects.get(patient_id=patient_id)

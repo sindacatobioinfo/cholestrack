@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, Http404, FileResponse
 from django.contrib import messages
 from django.conf import settings
+from users.decorators import role_required
 from .models import AnalysisFileLocation
 from .forms import FileLocationForm
 import logging
@@ -268,11 +269,14 @@ def file_info(request, file_location_id):
 
 
 @login_required
+@role_required(['ADMIN', 'DATA_MANAGER', 'RESEARCHER'])
 def file_upload(request):
     """
     View for registering new analysis file locations in the system.
     This doesn't handle actual file uploads - files are managed separately on servers.
     This view only registers file metadata and locations.
+
+    Permissions: ADMIN, DATA_MANAGER, RESEARCHER only
     """
     if request.method == 'POST':
         form = FileLocationForm(request.POST, current_user=request.user)
@@ -294,10 +298,13 @@ def file_upload(request):
 
 
 @login_required
+@role_required(['ADMIN', 'DATA_MANAGER', 'RESEARCHER'])
 def file_edit(request, file_location_id):
     """
     View for editing file location metadata.
     Allows updating file information without changing the actual file.
+
+    Permissions: ADMIN, DATA_MANAGER, RESEARCHER only
     """
     try:
         file_location = AnalysisFileLocation.objects.select_related('patient').get(
@@ -326,10 +333,13 @@ def file_edit(request, file_location_id):
 
 
 @login_required
+@role_required(['ADMIN', 'DATA_MANAGER'])
 def file_delete(request, file_location_id):
     """
     View for soft-deleting a file location record.
     Sets is_active=False instead of permanently deleting.
+
+    Permissions: ADMIN, DATA_MANAGER only (delete operation)
     """
     try:
         file_location = AnalysisFileLocation.objects.select_related('patient').get(
