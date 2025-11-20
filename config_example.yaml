@@ -136,27 +136,27 @@ output: auto
 
 refgenome:
   # Reference genome directory
-  ref_dir: /home/operator/InterOmics/workflows/interomics_snakemake/reference/
+  ref_dir: /home/operator/InterOmics/workflows/interomics_snakemake/reference_genome/
 
   # Reference FASTA file (must be indexed with .fai and .dict)
-  ref: /home/operator/InterOmics/workflows/interomics_snakemake/reference/GRCh38_character_genome.fasta
+  ref: /home/operator/InterOmics/workflows/interomics_snakemake/reference_genome/GRCh38_character_genome.fasta
 
   # Target regions (BED file for exome capture kit)
-  bed: /home/operator/InterOmics/workflows/interomics_snakemake/reference/hg38_no_alt.bed
+  bed: /home/operator/InterOmics/workflows/interomics_snakemake/interval_files/hg38_no_alt.bed.gz
 
   # Interval list (GATK format, derived from BED)
-  interval: /home/operator/InterOmics/workflows/interomics_snakemake/reference/hg38_no_alt.interval_list
+  interval: /home/operator/InterOmics/workflows/interomics_snakemake/interval_files/hg38_no_alt.interval_list
 
   # CNV-specific intervals (optional, uses interval if not specified)
-  cnv_intervals: /home/operator/InterOmics/workflows/interomics_snakemake/reference/hg38_no_alt.interval_list
+  cnv_intervals: /home/operator/InterOmics/workflows/interomics_snakemake/interval_files/hg38_no_alt.interval_list
 
   # Sequence dictionary
-  dict: /home/operator/InterOmics/workflows/interomics_snakemake/reference/GRCh38_character_genome.dict
+  dict: /home/operator/InterOmics/workflows/interomics_snakemake/reference_genome/GRCh38_character_genome.dict
 
   # Known variants for BQSR (dbSNP)
-  known_var1: /home/operator/InterOmics/apps/gatk_resources/dbsnp_151.vcf.gz
-  known_var2: /home/operator/InterOmics/apps/gatk_resources/1000G_phase1.snps.high_confidence.hg38.vcf.gz
-  known_var3: /home/operator/InterOmics/apps/gatk_resources/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
+  known_var1: /home/operator/InterOmics/workflows/interomics_snakemake/resources/gatk_resources/dbsnp_151.vcf.gz
+  known_var2: /home/operator/InterOmics/workflows/interomics_snakemake/resources/gatk_resources/1000G_phase1.snps.high_confidence.hg38.vcf.gz
+  known_var3: /home/operator/InterOmics/workflows/interomics_snakemake/resources/gatk_resources/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
 
 #-------------------------------------------------------------------------------
 # TOOL-SPECIFIC PATHS
@@ -166,23 +166,23 @@ refgenome:
 
 tools:
   # GATK installation
-  gatk: /home/operator/InterOmics/apps/gatk-4.5.0.0/gatk
+  gatk: /home/operator/InterOmics/workflows/interomics_snakemake/resources/gatk-4.5.0.0/gatk
 
   # ANNOVAR installation and database
   annovar:
-    basedir: /home/operator/InterOmics/apps/annovar
-    humandb: /home/operator/InterOmics/apps/annovar/humandb
-    convert2annovar: /home/operator/InterOmics/apps/annovar/convert2annovar.pl
-    table_annovar: /home/operator/InterOmics/apps/annovar/table_annovar.pl
+    basedir: /home/operator/InterOmics/workflows/interomics_snakemake/resources/annovar
+    humandb: /home/operator/InterOmics/workflows/interomics_snakemake/resources/annovar/humandb
+    convert2annovar: /home/operator/InterOmics/workflows/interomics_snakemake/resources/annovar/convert2annovar.pl
+    table_annovar: /home/operator/InterOmics/workflows/interomics_snakemake/resources/annovar/table_annovar.pl
 
   # DeepVariant Singularity image
-  deepvariant_sif: /home/operator/InterOmics/workflows/interomics_snakemake/deepvariant_latest.sif
+  deepvariant_sif: /home/operator/InterOmics/workflows/interomics_snakemake/resources/deepvariant_latest.sif
 
   # VEP (Variant Effect Predictor) installation
   vep:
-    basedir: /home/operator/InterOmics/apps/ensembl-vep
-    vep: /home/operator/InterOmics/apps/ensembl-vep/vep
-    vep_install: /home/operator/InterOmics/apps/ensembl-vep/INSTALL.pl
+    basedir: /home/operator/InterOmics/workflows/interomics_snakemake/resources/ensembl-vep
+    vep: /home/operator/InterOmics/workflows/interomics_snakemake/resources/ensembl-vep/vep
+    vep_install: /home/operator/InterOmics/workflows/interomics_snakemake/resources/ensembl-vep/INSTALL.pl
 
 #-------------------------------------------------------------------------------
 # SAMPLE METADATA
@@ -278,7 +278,7 @@ vep:
   species: homo_sapiens
 
   # Cache version ('auto' = use latest available, or specify version like '112')
-  cache_version: auto
+  cache_version: 105
 
   # Optional VEP plugins (comma-separated, e.g., "LoF,CADD,dbNSFP")
   plugins: ""
@@ -295,12 +295,20 @@ vep:
 
 # VEP reannotation - re-run VEP on previously annotated VCFs
 # Useful when a new VEP version is released or to add new plugins without re-running variant calling
+# NOTE: VEP annotation rules are always included when reannotation is enabled
+#       If the original VEP files already exist, they won't be recreated
+#       Set run_vep: False to avoid recreating VEP files from scratch
 run_vep_reannotation: False
 
 vep_reannotation:
   # Cache version for reannotation ('auto' = use latest, or specify version like '112')
   # If different from original VEP version, will show what changed between versions
+  # NOTE: Only major versions can be specified (e.g., 115, not 115.2)
   cache_version: auto
+
+  # Skip reannotation if VEP version matches the original annotation
+  # Set to True to avoid unnecessary reannotation with same version (unless plugins differ)
+  skip_if_same_version: True
 
   # Plugins for reannotation (can be different from original VEP annotation)
   # Example: "LoF,CADD,/path/to/CADD.tsv.gz,dbNSFP,/path/to/dbNSFP.txt.gz,ALL"
