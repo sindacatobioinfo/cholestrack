@@ -261,7 +261,7 @@ class RoleChangeRequest(models.Model):
         <p>Please review this request in the admin panel:</p>
 
         <div style="text-align: center; margin: 30px 0;">
-            <a href="http://cholestrack.burlo.trieste.it/admin/users/rolechangerequest/{self.id}/change/"
+            <a href="{settings.SITE_DOMAIN}/admin/users/rolechangerequest/{self.id}/change/"
                style="background-color: #008080; color: white; padding: 14px 35px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; font-size: 16px;">
                 Review Request in Admin Panel
             </a>
