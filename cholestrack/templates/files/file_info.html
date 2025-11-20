@@ -430,22 +430,28 @@
             </div>
         </div>
 
-        <!-- Action Buttons -->
+        <!-- Action Buttons - Role-based display -->
         <div class="action-buttons">
+            {% if user.role.can_download_files %}
             <form method="post" action="{% url 'files:download_file' file_location_id=file_location.id %}" style="margin: 0;">
                 {% csrf_token %}
                 <button type="submit" class="btn-download">
                     <i class="fas fa-download"></i> Download File
                 </button>
             </form>
+            {% endif %}
 
+            {% if user.role.can_edit_file %}
             <a href="{% url 'files:file_edit' file_location_id=file_location.id %}" class="btn-edit">
                 <i class="fas fa-edit"></i> Edit Metadata
             </a>
+            {% endif %}
 
+            {% if user.role.can_delete_file %}
             <a href="{% url 'files:file_delete' file_location_id=file_location.id %}" class="btn-delete-file">
                 <i class="fas fa-trash-alt"></i> Remove File
             </a>
+            {% endif %}
 
             <a href="{% url 'samples:sample_detail' patient_id=file_location.patient.patient_id %}" class="btn-patient">
                 <i class="fas fa-user-injured"></i> View Patient Details

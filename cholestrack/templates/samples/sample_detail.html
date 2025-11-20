@@ -301,15 +301,21 @@
         <p>Complete clinical and genomic analysis information</p>
     </div>
 
-    <!-- Action Buttons -->
+    <!-- Action Buttons - Only shown to users with appropriate permissions -->
+    {% if user.role.can_edit_patient or user.role.can_delete_patient %}
     <div class="action-buttons">
+        {% if user.role.can_edit_patient %}
         <a href="{% url 'samples:patient_edit' patient_id=patient.patient_id %}" class="btn-edit">
             <i class="fas fa-edit"></i> Edit Patient
         </a>
+        {% endif %}
+        {% if user.role.can_delete_patient %}
         <a href="{% url 'samples:patient_delete' patient_id=patient.patient_id %}" class="btn-delete">
             <i class="fas fa-trash-alt"></i> Delete Patient
         </a>
+        {% endif %}
     </div>
+    {% endif %}
 
     <!-- Patient Information Card -->
     <div class="detail-card">
