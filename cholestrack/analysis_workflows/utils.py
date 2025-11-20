@@ -16,7 +16,7 @@ def generate_workflow_yaml(config_data):
         config_data: Dictionary containing user selections:
             - project_name: str
             - model_type: str ('WES' or 'WGS')
-            - aligner: str ('bwa', 'dragmap', or 'minimap2')
+            - aligner: str ('bwa' or 'minimap2')
             - minimap2_preset: str (if minimap2 selected)
             - use_gatk: bool
             - use_strelka: bool
@@ -129,7 +129,6 @@ def get_config_summary(config_data):
     summary = {
         'aligner': {
             'bwa': 'BWA-MEM',
-            'dragmap': 'DRAGEN DRAGMAP',
             'minimap2': 'Minimap2'
         }.get(aligner, aligner),
         'minimap2_preset': None,

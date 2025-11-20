@@ -1,6 +1,7 @@
 # profile/forms.py
 from django import forms
 from .models import UserProfile
+from users.models import UserRole, RoleChangeRequest
 
 class ProfileForm(forms.ModelForm):
     """
@@ -36,4 +37,31 @@ class ProfileForm(forms.ModelForm):
             'institutional_email': 'Institutional Email Address',
             'phone': 'Phone Number',
             'institution_id': 'Institution ID',
+        }
+
+
+class RoleChangeRequestForm(forms.ModelForm):
+    """
+    Form for users to request a role change.
+    Requires admin approval before role is updated.
+    """
+    class Meta:
+        model = RoleChangeRequest
+        fields = ['requested_role', 'reason']
+        widgets = {
+            'requested_role': forms.Select(attrs={
+                'class': 'form-control',
+            }),
+            'reason': forms.Textarea(attrs={
+                'class': 'form-control',
+                'placeholder': 'Please explain why you need this role change and how it will help your work.',
+                'rows': 5
+            }),
+        }
+        labels = {
+            'requested_role': 'Requested Role',
+            'reason': 'Reason for Role Change',
+        }
+        help_texts = {
+            'reason': 'Provide a clear justification for why you need access to this role.',
         }

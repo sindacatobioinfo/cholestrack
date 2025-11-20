@@ -34,21 +34,48 @@ cholestrack/
 
 ## Django Apps
 
-### 1. **users** - User Management
+### 1. **users** - User Management & RBAC
 - Custom user authentication and authorization
-- Role-based access control (Admin, Clinician, Researcher, etc.)
-- User approval workflow
+- **Role-Based Access Control (RBAC)** - Fully implemented and enforced
+- User approval workflow with email verification
 - Login/logout/registration views
 
 **Key Models:**
-- Custom User model (extends Django's AbstractUser)
-- User roles and permissions
+- `User` - Django's built-in User model
+- `EmailVerification` - Email confirmation tracking
+- `UserRole` - Role assignment and confirmation
+
+**User Roles (Hierarchy):**
+1. **Administrator** (`ADMIN`) - Full system access including Django admin
+2. **Data Manager** (`DATA_MANAGER`) - Create, edit, view, and delete data
+3. **Researcher** (`RESEARCHER`) - Create, edit, and view (no delete)
+4. **Clinician** (`CLINICIAN`) - View and download only (read-only)
+
+**RBAC Features:**
+- View-level enforcement via `@role_required` decorator
+- Template-level permission checks via `user.role.can_*()` methods
+- Automated test suite for permission verification (`users/test_rbac.py`)
+- Admin approval required for all role assignments
+
+**Permission Matrix:**
+| Action | ADMIN | DATA_MANAGER | RESEARCHER | CLINICIAN |
+|--------|:-----:|:------------:|:----------:|:---------:|
+| Create/Edit Patients | ✅ | ✅ | ✅ | ❌ |
+| Delete Patients | ✅ | ✅ | ❌ | ❌ |
+| Register/Edit Files | ✅ | ✅ | ✅ | ❌ |
+| Delete Files | ✅ | ✅ | ❌ | ❌ |
+| View/Download | ✅ | ✅ | ✅ | ✅ |
 
 **Important Commands:**
 ```bash
 python manage.py createsuperuser
 python manage.py approve_existing_users
+python manage.py test users.test_rbac  # Run RBAC tests
 ```
+
+**See Also:**
+- `RBAC_PERMISSIONS_DOCUMENTATION.md` - Complete RBAC reference
+- `RBAC_IMPLEMENTATION_FIXES.md` - Implementation guide
 
 ### 2. **profile** - User Profiles
 - Extended user information
@@ -328,10 +355,23 @@ python manage.py approve_existing_users
 
 ## Key Features
 
-### 1. Role-Based Access Control
-- User roles: Admin, Clinician, Researcher, Lab Technician
-- Role confirmation required for access
-- User approval workflow
+### 1. Role-Based Access Control (RBAC)
+**Status:** ✅ Fully Implemented and Enforced
+
+- **Four-tier user hierarchy:** Administrator, Data Manager, Researcher, Clinician
+- **Email verification:** Required before account activation
+- **Admin approval:** All role assignments must be confirmed by administrator
+- **View-level enforcement:** `@role_required` decorators protect sensitive operations
+- **Template-level checks:** UI adapts to user permissions
+- **Automated testing:** Comprehensive test suite verifies RBAC enforcement
+
+**Security:**
+- Clinicians have read-only access (view and download only)
+- Researchers can create and edit but cannot delete
+- Data Managers have full CRUD access
+- Administrators have complete system control
+
+**Documentation:** See `RBAC_PERMISSIONS_DOCUMENTATION.md` and `RBAC_IMPLEMENTATION_FIXES.md`
 
 ### 2. Sample Management
 - Track patient samples
