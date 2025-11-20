@@ -7,6 +7,7 @@ app_name = 'files'
 urlpatterns = [
     path('upload/', views.file_upload, name='file_upload'),
     path('download/<int:file_location_id>/', views.download_file, name='download_file'),
+    path('download/<int:file_location_id>/<str:file_part>/', views.download_single_file, name='download_single_file'),
     path('info/<int:file_location_id>/', views.file_info, name='file_info'),
     path('edit/<int:file_location_id>/', views.file_edit, name='file_edit'),
     path('delete/<int:file_location_id>/', views.file_delete, name='file_delete'),

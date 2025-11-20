@@ -16,6 +16,117 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 @login_required
+def download_single_file(request, file_location_id, file_part='main'):
+    """
+    Download a single file component (main file or paired file) separately.
+
+    Supports:
+    - BAM files: 'main' downloads .bam, 'pair' downloads .bai
+    - VCF files: 'main' downloads .vcf/.vcf.gz, 'pair' downloads .tbi
+    - FASTQ files: 'main' downloads _1.fastq.gz, 'pair' downloads _2.fastq.gz
+
+    Args:
+        request: HTTP request object
+        file_location_id: Primary key of AnalysisFileLocation
+        file_part: 'main' for primary file, 'pair' for paired file
+
+    Returns:
+        FileResponse with individual file or redirect on error
+    """
+    if request.method != 'POST':
+        messages.error(request, 'Invalid download request method.')
+        return redirect('samples:sample_list')
+
+    try:
+        file_location = AnalysisFileLocation.objects.select_related('patient').get(
+            id=file_location_id,
+            is_active=True
+        )
+
+        logger.info(
+            f"Single file download initiated: User={request.user.username}, "
+            f"Patient={file_location.patient.patient_id}, "
+            f"FileType={file_location.file_type}, Part={file_part}"
+        )
+
+        # Construct file path
+        remote_files_root = getattr(settings, 'REMOTE_FILES_ROOT', settings.MEDIA_ROOT / 'remote_files')
+        file_path_relative = file_location.file_path
+        full_file_path = Path(remote_files_root) / file_path_relative
+
+        # Security: Path validation
+        try:
+            full_file_path = full_file_path.resolve()
+            remote_files_root_resolved = Path(remote_files_root).resolve()
+
+            if not str(full_file_path).startswith(str(remote_files_root_resolved)):
+                logger.error(f"Security violation - Path traversal: User={request.user.username}")
+                messages.error(request, 'Invalid file path.')
+                return redirect('samples:sample_list')
+        except (ValueError, OSError) as e:
+            logger.error(f"Path resolution error: {str(e)}")
+            messages.error(request, 'Invalid file path.')
+            return redirect('samples:sample_list')
+
+        # Determine target file based on type and part
+        file_type_upper = file_location.file_type.upper()
+
+        if file_part == 'pair':
+            if file_type_upper == 'VCF':
+                target_path = Path(str(full_file_path) + '.tbi')
+            elif file_type_upper == 'BAM':
+                target_path = Path(str(full_file_path).replace('.bam', '.bai'))
+            elif file_type_upper == 'FASTQ':
+                if '_1.fastq.gz' in str(full_file_path):
+                    target_path = Path(str(full_file_path).replace('_1.fastq.gz', '_2.fastq.gz'))
+                else:
+                    messages.error(request, 'Paired FASTQ file not found.')
+                    return redirect('samples:sample_list')
+            else:
+                messages.error(request, f'Paired file not applicable for {file_type_upper}.')
+                return redirect('samples:sample_list')
+        else:
+            target_path = full_file_path
+
+        # Check file exists
+        if not target_path.exists() or not target_path.is_file():
+            logger.warning(f"File not found: {target_path}")
+            messages.error(request, 'The requested file could not be found on the server.')
+            return redirect('samples:sample_list')
+
+        # Determine content type
+        content_type_map = {
+            '.bai': 'application/octet-stream',
+            '.tbi': 'application/octet-stream',
+            '.vcf': 'text/plain',
+            '.vcf.gz': 'application/gzip',
+            '.bam': 'application/octet-stream',
+            '.fastq.gz': 'application/gzip',
+        }
+
+        file_ext = ''.join(target_path.suffixes)
+        content_type = content_type_map.get(file_ext.lower(), 'application/octet-stream')
+
+        # Stream file
+        file_handle = open(target_path, 'rb')
+        response = FileResponse(file_handle, content_type=content_type)
+        response['Content-Disposition'] = f'attachment; filename="{target_path.name}"'
+        response['Content-Length'] = target_path.stat().st_size
+
+        logger.info(f"File download successful: {target_path.name}, Size={target_path.stat().st_size}")
+        return response
+
+    except AnalysisFileLocation.DoesNotExist:
+        logger.warning(f"File location not found: ID={file_location_id}")
+        messages.error(request, 'File not found.')
+        return redirect('samples:sample_list')
+    except Exception as e:
+        logger.error(f"Download error: {str(e)}")
+        messages.error(request, 'Download error occurred.')
+        return redirect('samples:sample_list')
+
+
+@login_required
 def download_file(request, file_location_id):
     """
     Secure file download handler that serves genomic analysis files from mounted network storage.
