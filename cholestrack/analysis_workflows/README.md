@@ -9,7 +9,7 @@ This app provides a user-friendly interface to configure analysis workflow param
 ## Features
 
 - **Interactive Configuration Builder**: Card-based UI for selecting workflow parameters
-- **Aligner Selection**: Choose between BWA-MEM, DRAGEN DRAGMAP, or Minimap2
+- **Aligner Selection**: Choose between BWA-MEM or Minimap2
 - **Minimap2 Presets**: Select appropriate preset for different read types (Illumina, Nanopore, PacBio, etc.)
 - **Variant Callers**: Enable GATK HaplotypeCaller and/or Strelka2
 - **Annotation Tools**: Enable ANNOVAR and/or VEP
@@ -26,7 +26,7 @@ Navigate to `/workflows/` to access the workflow configuration builder.
 ### Creating a Configuration
 
 1. **Select Alignment Tool**:
-   - Click on BWA-MEM, DRAGMAP, or Minimap2 card
+   - Click on BWA-MEM or Minimap2 card
    - If Minimap2 is selected, choose the appropriate preset
 
 2. **Select Variant Callers**:
@@ -67,7 +67,7 @@ From the preview page:
 - Fields:
   - `user`: Foreign key to User
   - `name`: Configuration name
-  - `aligner`: Choice field (bwa, dragmap, minimap2)
+  - `aligner`: Choice field (bwa, minimap2)
   - `minimap2_preset`: Choice field for Minimap2 presets
   - `use_gatk`: Boolean for GATK HaplotypeCaller
   - `use_strelka`: Boolean for Strelka2
@@ -134,11 +134,6 @@ The app requires `config_example.yaml` to be present in the project root directo
 - Default recommended for short Illumina reads
 - Widely used and well-tested
 - Suitable for WES and WGS
-
-### DRAGEN DRAGMAP
-- Faster alternative to BWA
-- Illumina-optimized
-- Drop-in replacement for BWA-MEM
 
 ### Minimap2
 - Versatile aligner supporting multiple read types

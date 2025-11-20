@@ -13,7 +13,6 @@ class WorkflowConfiguration(models.Model):
     """
     ALIGNER_CHOICES = [
         ('bwa', 'BWA-MEM'),
-        ('dragmap', 'DRAGEN DRAGMAP'),
         ('minimap2', 'Minimap2'),
     ]
 

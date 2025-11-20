@@ -2,10 +2,12 @@
 
 ## Overview
 
-This document provides a comprehensive analysis of the Role-Based Access Control (RBAC) implementation in the CholesTrack Django application. It details what each user tier can actually do in the **current version** of the code, highlighting gaps between intended permissions and actual enforcement.
+This document provides a comprehensive analysis of the Role-Based Access Control (RBAC) implementation in the CholesTrack Django application. It details what each user tier can actually do in the **current version** of the code.
 
-**Document Status:** Analysis of current implementation as of 2025-11-20
-**Critical Finding:** RBAC permissions are defined but **not enforced** in several key areas.
+**Document Status:** Implementation completed as of 2025-11-20
+**Status:** ✅ **RBAC FULLY ENFORCED** - All critical security issues have been fixed.
+
+**Note:** This document originally identified security gaps. Those issues have been resolved. See `RBAC_IMPLEMENTATION_FIXES.md` for implementation details.
 
 ---
 
@@ -248,23 +250,23 @@ def create_extraction(request):
 
 ## Summary Table: What Each Role Can Actually Do
 
-### 🔴 Current Reality (Without Enforcement)
+### ✅ Current Implementation (ENFORCED)
 
 | Feature | ADMIN | DATA_MANAGER | RESEARCHER | CLINICIAN | Status |
 |---------|:-----:|:------------:|:----------:|:---------:|--------|
-| **View samples** | ✅ | ✅ | ✅ | ✅ | ⚠️ Any logged-in user |
-| **Create patients** | ✅ | ✅ | ✅ | ✅ | ⚠️ ANY logged-in user |
-| **Edit patients** | ✅ | ✅ | ✅ | ✅ | ⚠️ ANY logged-in user |
-| **Delete patients** | ✅ | ✅ | ✅ | ✅ | ⚠️ ANY logged-in user |
-| **Register files** | ✅ | ✅ | ✅ | ✅ | ⚠️ ANY logged-in user |
-| **Edit file metadata** | ✅ | ✅ | ✅ | ✅ | ⚠️ ANY logged-in user |
-| **Delete files** | ✅ | ✅ | ✅ | ✅ | ⚠️ ANY logged-in user |
-| **Download files** | ✅ | ✅ | ✅ | ✅ | ⚠️ Any logged-in user |
-| **BAM region extraction** | ✅ | ✅ | ✅ | ✅ | 🟢 Confirmed users only |
-| **HPO gene search** | ✅ | ✅ | ✅ | ✅ | 🟢 Confirmed users only |
-| **Workflow builder** | ✅ | ✅ | ✅ | ✅ | 🟢 Confirmed users only |
+| **View samples** | ✅ | ✅ | ✅ | ✅ | ✅ All confirmed users |
+| **Create patients** | ✅ | ✅ | ✅ | ❌ | ✅ Enforced via @role_required |
+| **Edit patients** | ✅ | ✅ | ✅ | ❌ | ✅ Enforced via @role_required |
+| **Delete patients** | ✅ | ✅ | ❌ | ❌ | ✅ Enforced via @role_required |
+| **Register files** | ✅ | ✅ | ✅ | ❌ | ✅ Enforced via @role_required |
+| **Edit file metadata** | ✅ | ✅ | ✅ | ❌ | ✅ Enforced via @role_required |
+| **Delete files** | ✅ | ✅ | ❌ | ❌ | ✅ Enforced via @role_required |
+| **Download files** | ✅ | ✅ | ✅ | ✅ | ✅ All confirmed users |
+| **BAM region extraction** | ✅ | ✅ | ✅ | ✅ | ✅ Confirmed users only |
+| **HPO gene search** | ✅ | ✅ | ✅ | ✅ | ✅ Confirmed users only |
+| **Workflow builder** | ✅ | ✅ | ✅ | ✅ | ✅ Confirmed users only |
 
-### ✅ Intended Design (Permission Methods)
+### ✅ Permission Methods Alignment
 
 | Feature | ADMIN | DATA_MANAGER | RESEARCHER | CLINICIAN |
 |---------|:-----:|:------------:|:----------:|:---------:|
@@ -359,105 +361,59 @@ Currently, templates show UI elements without checking user roles:
 
 ---
 
-## Critical Security Issues
+## Security Status
 
-### 🔴 Issue #1: No Role Enforcement in Samples App
-**Severity:** HIGH
-**Impact:** ANY authenticated user (including CLINICIAN) can create, edit, and delete patients
+### ✅ RESOLVED: Role Enforcement in Samples App
+**Status:** FIXED
+**Solution:** Added `@role_required` decorators to all patient CRUD views
 
-**Affected Views:**
-- `samples/views.py:125` - `patient_create()`
-- `samples/views.py:147` - `patient_edit()`
-- `samples/views.py:176` - `patient_delete()`
+**Fixed Views:**
+- `samples/views.py:126` - `patient_create()` - Requires ADMIN, DATA_MANAGER, RESEARCHER
+- `samples/views.py:151` - `patient_edit()` - Requires ADMIN, DATA_MANAGER, RESEARCHER
+- `samples/views.py:183` - `patient_delete()` - Requires ADMIN, DATA_MANAGER
 
-### 🔴 Issue #2: No Role Enforcement in Files App
-**Severity:** HIGH
-**Impact:** ANY authenticated user (including CLINICIAN) can register, edit, and delete file locations
+### ✅ RESOLVED: Role Enforcement in Files App
+**Status:** FIXED
+**Solution:** Added `@role_required` decorators to all file CRUD views
 
-**Affected Views:**
-- `files/views.py:271` - `file_upload()`
-- `files/views.py:297` - `file_edit()`
-- `files/views.py:329` - `file_delete()`
+**Fixed Views:**
+- `files/views.py:272` - `file_upload()` - Requires ADMIN, DATA_MANAGER, RESEARCHER
+- `files/views.py:301` - `file_edit()` - Requires ADMIN, DATA_MANAGER, RESEARCHER
+- `files/views.py:336` - `file_delete()` - Requires ADMIN, DATA_MANAGER
 
-### 🟡 Issue #3: UI Shows Actions User Cannot Perform
-**Severity:** MEDIUM
-**Impact:** Confusing UX - users see buttons they shouldn't use
+### ✅ RESOLVED: UI Permission Checks
+**Status:** FIXED
+**Solution:** Added template-level permission checks using `user.role.can_*()` methods
 
-**Affected Templates:**
-- `templates/samples/sample_list.html` - Shows "Add Patient" to all users
-- `templates/samples/sample_list.html` - Shows "Register File" to all users
+**Fixed Templates:**
+- `templates/samples/sample_list.html` - Buttons only shown to authorized users
+- `templates/samples/sample_detail.html` - Edit/delete buttons hidden from unauthorized users
+- `templates/files/file_info.html` - Action buttons based on permissions
 
-### 🟡 Issue #4: Missing Granular Download Permissions
-**Severity:** MEDIUM
-**Impact:** No per-patient access control - users can download any patient's files
-
-**Affected Views:**
-- `files/views.py:18` - `download_file()` has TODO comment acknowledging this
+### 🟡 FUTURE: Granular Download Permissions
+**Status:** Not yet implemented
+**Note:** Current implementation allows all confirmed users to download files
+**Future Enhancement:** Implement per-patient or per-project access control
 
 ---
 
-## Recommendations for Fixing RBAC
+## Implementation Summary
 
-### 1. Add Role Decorators to Sample Views
-```python
-# samples/views.py
-from users.decorators import role_required
+All critical RBAC recommendations have been implemented. See `RBAC_IMPLEMENTATION_FIXES.md` for complete details.
 
-@login_required
-@role_required(['ADMIN', 'DATA_MANAGER', 'RESEARCHER'])
-def patient_create(request):
-    # ...
+### ✅ Implemented Changes
 
-@login_required
-@role_required(['ADMIN', 'DATA_MANAGER', 'RESEARCHER'])
-def patient_edit(request, patient_id):
-    # ...
+1. **View-Level Protection:** Added `@role_required` decorators to all sensitive operations
+2. **Template-Level Protection:** Updated templates to conditionally show actions based on permissions
+3. **Automated Tests:** Created comprehensive test suite (`users/test_rbac.py`)
+4. **Documentation:** Created detailed implementation guide
 
-@login_required
-@role_required(['ADMIN', 'DATA_MANAGER'])
-def patient_delete(request, patient_id):
-    # ...
-```
+### 🟡 Future Enhancements
 
-### 2. Add Role Decorators to File Views
-```python
-# files/views.py
-from users.decorators import role_required
-
-@login_required
-@role_required(['ADMIN', 'DATA_MANAGER', 'RESEARCHER'])
-def file_upload(request):
-    # ...
-
-@login_required
-@role_required(['ADMIN', 'DATA_MANAGER', 'RESEARCHER'])
-def file_edit(request, file_location_id):
-    # ...
-
-@login_required
-@role_required(['ADMIN', 'DATA_MANAGER'])
-def file_delete(request, file_location_id):
-    # ...
-```
-
-### 3. Update Templates with Permission Checks
-```html
-<!-- templates/samples/sample_list.html -->
-{% if user.role.can_create_patient %}
-    <a href="{% url 'samples:patient_create' %}" class="btn btn-success">
-        <i class="fas fa-user-plus"></i> Add New Patient
-    </a>
-{% endif %}
-
-{% if user.role.can_create_file %}
-    <a href="{% url 'files:file_upload' %}" class="btn btn-info">
-        <i class="fas fa-file-upload"></i> Register File Location
-    </a>
-{% endif %}
-```
-
-### 4. Implement Granular Download Permissions
-Add project-level or patient-level access control to restrict which patients' data a user can access.
+1. **Granular Download Permissions:** Implement per-patient or per-project access control
+2. **Audit Logging:** Track all create/update/delete operations
+3. **Download Tracking:** Log file downloads for compliance
+4. **Two-Factor Authentication:** Add 2FA for administrator accounts
 
 ---
 
@@ -515,22 +471,29 @@ Add project-level or patient-level access control to restrict which patients' da
 
 ## Conclusion
 
-**Current Status:** The RBAC infrastructure is in place (roles, permission methods, decorators) but **enforcement is incomplete**.
+**Current Status:** ✅ **RBAC FULLY IMPLEMENTED AND ENFORCED**
 
-**Main Issues:**
-1. ❌ Samples app has no role-based restrictions
-2. ❌ Files app has no role-based restrictions
-3. ⚠️ Templates don't check permissions before showing actions
-4. ⚠️ No patient-level access control
+**Implemented:**
+1. ✅ Samples app has complete role-based restrictions
+2. ✅ Files app has complete role-based restrictions
+3. ✅ Templates check permissions before showing actions
+4. ✅ Automated tests verify enforcement
+5. ✅ Documentation complete
 
-**Next Steps:**
-1. Apply `@role_required` decorators to samples and files views
-2. Update templates to conditionally show UI elements
-3. Implement patient-level access control (optional, for multi-project scenarios)
-4. Add automated tests for RBAC enforcement
+**System Security:**
+- CLINICIAN users can only view and download (read-only)
+- RESEARCHER users can create/edit but not delete
+- DATA_MANAGER users have full CRUD access
+- ADMIN users have complete control
+
+**Future Enhancements:**
+- Patient-level access control for multi-project scenarios
+- Audit logging and download tracking
+- Two-factor authentication
 
 ---
 
-**Document Version:** 1.0
+**Document Version:** 2.0
 **Last Updated:** 2025-11-20
-**Author:** Claude (Automated Analysis)
+**Status:** Implementation Complete
+**See Also:** `RBAC_IMPLEMENTATION_FIXES.md` for implementation details
