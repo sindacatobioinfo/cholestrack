@@ -239,6 +239,78 @@
         background-color: #fff3cd;
         color: #856404;
     }
+
+    /* Role management section */
+    .role-management-section {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 25px;
+        border-left: 4px solid #008080;
+    }
+
+    .role-management-section h3 {
+        color: #008080;
+        font-size: 18px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .current-role-display {
+        background-color: white;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+
+    .current-role-display p {
+        margin: 0;
+        font-size: 14px;
+    }
+
+    .current-role-display strong {
+        color: #008080;
+        font-size: 16px;
+    }
+
+    .pending-request-box {
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+
+    .pending-request-box p {
+        margin: 0;
+        color: #856404;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .btn-request-role-change {
+        background-color: #008080;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-request-role-change:hover {
+        background-color: #006666;
+        color: white;
+        text-decoration: none;
+    }
 </style>
 
 <div class="profile-container">
@@ -271,6 +343,50 @@
             Your profile information is used for institutional access control and record-keeping.
             Changes to critical fields may require administrator approval.
         </p>
+    </div>
+
+    <!-- Role Management Section -->
+    <div class="role-management-section">
+        <h3>
+            <i class="fas fa-user-shield"></i> Role & Permissions Management
+        </h3>
+
+        <div class="current-role-display">
+            <p>
+                <strong>Current Role:</strong> {{ current_role }}
+                {% if role_confirmed %}
+                    <span style="color: #28a745; margin-left: 10px;">
+                        <i class="fas fa-check-circle"></i> Confirmed
+                    </span>
+                {% else %}
+                    <span style="color: #ffc107; margin-left: 10px;">
+                        <i class="fas fa-clock"></i> Pending Confirmation
+                    </span>
+                {% endif %}
+            </p>
+        </div>
+
+        {% if pending_requests %}
+            {% for request in pending_requests %}
+            <div class="pending-request-box">
+                <p>
+                    <strong><i class="fas fa-hourglass-half"></i> Pending Request:</strong>
+                    You requested to change your role to <strong>{{ request.get_requested_role_display }}</strong>.
+                    <br>
+                    <small>Submitted on: {{ request.created_at|date:"F j, Y, g:i a" }}</small>
+                    <br>
+                    <small><em>Status: Awaiting administrator review</em></small>
+                </p>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="margin-bottom: 15px; font-size: 14px; color: #6c757d;">
+                If you need a different role to access additional features, you can request a role change.
+            </p>
+            <a href="{% url 'profile:request_role_change' %}" class="btn-request-role-change">
+                <i class="fas fa-exchange-alt"></i> Request Role Change
+            </a>
+        {% endif %}
     </div>
 
     {# Display Django messages (success, error, etc.) #}

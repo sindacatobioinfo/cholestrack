@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Container for the role change request form */
+    .role-request-container {
+        max-width: 700px;
+        width: 90%;
+        margin: 60px auto;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        background-color: #ffffff;
+        font-family: Arial, sans-serif;
+        box-sizing: border-box;
+    }
+
+    /* Header styling */
+    .role-request-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #008080;
+    }
+
+    .role-request-header h2 {
+        color: #008080;
+        margin: 0;
+        font-size: 28px;
+        font-weight: 600;
+    }
+
+    .role-request-header p {
+        color: #6c757d;
+        font-size: 14px;
+        margin-top: 8px;
+    }
+
+    /* Current role display */
+    .current-role-box {
+        background-color: #e9f5ff;
+        border-left: 4px solid #008080;
+        padding: 15px;
+        margin-bottom: 25px;
+        border-radius: 5px;
+    }
+
+    .current-role-box p {
+        margin: 0;
+        color: #004080;
+        font-size: 14px;
+    }
+
+    .current-role-box strong {
+        color: #008080;
+        font-size: 16px;
+    }
+
+    /* Info message */
+    .info-message {
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 15px;
+        margin-bottom: 25px;
+        border-radius: 5px;
+    }
+
+    .info-message p {
+        margin: 0;
+        color: #856404;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .info-message ul {
+        margin: 10px 0 0 20px;
+        color: #856404;
+        font-size: 14px;
+    }
+
+    .info-message li {
+        margin-bottom: 5px;
+    }
+
+    /* Form field styling */
+    .role-request-container form p {
+        margin-bottom: 20px !important;
+        text-align: left;
+        display: block !important;
+    }
+
+    .role-request-container label {
+        display: block !important;
+        margin-bottom: 8px !important;
+        color: #333 !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+    }
+
+    /* Input fields styling */
+    .role-request-container select,
+    .role-request-container textarea {
+        width: 100% !important;
+        height: auto !important;
+        padding: 12px 15px !important;
+        border: 1px solid #ccc !important;
+        border-radius: 5px !important;
+        box-sizing: border-box !important;
+        font-size: 14px !important;
+        font-family: Arial, sans-serif !important;
+        background-color: #fff !important;
+        transition: border-color 0.3s !important;
+    }
+
+    .role-request-container select:focus,
+    .role-request-container textarea:focus {
+        outline: none !important;
+        border-color: #008080 !important;
+        box-shadow: 0 0 5px rgba(0, 128, 128, 0.3) !important;
+    }
+
+    .role-request-container textarea {
+        min-height: 120px !important;
+        resize: vertical !important;
+    }
+
+    /* Help text */
+    .role-request-container .helptext {
+        display: block !important;
+        font-size: 12px !important;
+        color: #6c757d !important;
+        margin-top: 5px !important;
+        font-style: italic !important;
+    }
+
+    /* Buttons */
+    .button-group {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 30px;
+        flex-wrap: wrap;
+    }
+
+    .btn-submit {
+        background-color: #008080;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-submit:hover {
+        background-color: #006666;
+    }
+
+    .btn-cancel {
+        background-color: #6c757d;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-cancel:hover {
+        background-color: #5a6268;
+        text-decoration: none;
+        color: white;
+    }
+
+    /* Error messages */
+    .errorlist {
+        list-style: none;
+        padding: 0;
+        margin: 5px 0 0 0;
+    }
+
+    .errorlist li {
+        color: #dc3545;
+        font-size: 13px;
+        margin-top: 5px;
+    }
+</style>
+
+<div class="role-request-container">
+    <div class="role-request-header">
+        <h2><i class="fas fa-user-shield"></i> Request Role Change</h2>
+        <p>Submit a request to change your access level</p>
+    </div>
+
+    <!-- Current Role Display -->
+    <div class="current-role-box">
+        <p><strong>Current Role:</strong> {{ current_role }}</p>
+    </div>
+
+    <!-- Info Message -->
+    <div class="info-message">
+        <p><strong><i class="fas fa-info-circle"></i> Important:</strong></p>
+        <ul>
+            <li>Your request will be reviewed by an administrator</li>
+            <li>You will receive an email notification when your request is processed</li>
+            <li>Please provide a clear justification for the role change</li>
+            <li>Role changes affect what actions you can perform in the system</li>
+        </ul>
+    </div>
+
+    <!-- Role Change Request Form -->
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <div class="button-group">
+            <button type="submit" class="btn-submit">
+                <i class="fas fa-paper-plane"></i> Submit Request
+            </button>
+            <a href="{% url 'profile:edit_profile' %}" class="btn-cancel">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
