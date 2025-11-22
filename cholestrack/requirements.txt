@@ -9,7 +9,7 @@ uuid==1.30
 datetime==5.5
 
 # AI Agent dependencies
-anthropic==0.21.3
+google-generativeai==0.8.3
 pandas==2.1.4
 numpy==1.26.3
 openpyxl==3.1.2

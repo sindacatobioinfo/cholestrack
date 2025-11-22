@@ -10,7 +10,7 @@ CholesTrack is a Django-based web application for managing genomic data, particu
 - **Web Server**: Gunicorn + Nginx (production)
 - **Python Version**: 3.11+
 - **External Tools**: Samtools (for BAM file manipulation)
-- **AI Services**: Anthropic Claude API (for AI genomic analysis agent)
+- **AI Services**: Google Gemini API (for AI genomic analysis agent)
 - **Task Queue**: Celery + Redis (for background processing)
 
 ## Project Structure
@@ -232,7 +232,7 @@ python manage.py fix_disease_database_field --dry-run
 5. User views paginated phenotypes and diseases
 
 ### 8. **ai_agent** - AI Genomic Analysis Agent
-AI-powered assistant for analyzing variant data using natural language with Claude API.
+AI-powered assistant for analyzing variant data using natural language with Google Gemini API.
 
 **Key Models:**
 - **ChatSession**: Conversation tracking with token usage
@@ -250,7 +250,7 @@ AI-powered assistant for analyzing variant data using natural language with Clau
 - **Custom Queries:** Ask questions about variant data in plain English
 - **Report Generation:** Create HTML, CSV, or Excel reports
 - **Background Processing:** Long-running analyses via Celery
-- **Data Privacy:** Automatic anonymization before sending to Claude API
+- **Data Privacy:** Automatic anonymization before sending to Gemini API
 
 **Data Anonymization:**
 - Sample IDs → Hashed (e.g., "SAMPLE_A7B8C9D0")
@@ -272,18 +272,19 @@ python manage.py migrate
 
 # Test import
 python manage.py shell
->>> from ai_agent.claude_client import ClaudeAnalysisClient
->>> client = ClaudeAnalysisClient()
+>>> from ai_agent.gemini_client import GeminiAnalysisClient
+>>> client = GeminiAnalysisClient()
 ```
 
 **Prerequisites:**
-- Anthropic API key (from https://console.anthropic.com/)
+- Google Gemini API key (free tier available at https://aistudio.google.com/app/apikey)
 - Redis server running (for Celery task queue)
 - Celery worker running (for background tasks)
 
 **Environment Variables:**
 ```bash
-export ANTHROPIC_API_KEY="sk-ant-api03-your-key-here"
+export GEMINI_API_KEY="your-gemini-api-key-here"
+export GEMINI_MODEL="gemini-1.5-flash"  # Optional, defaults to gemini-1.5-flash
 export CELERY_BROKER_URL="redis://localhost:6379/0"
 export CELERY_RESULT_BACKEND="redis://localhost:6379/0"
 ```
@@ -358,8 +359,8 @@ REGION_EXTRACTION_TEMP_DIR=/tmp/cholestrack_extractions
 GENE_DATABASE_PATH=/path/to/gene_database.json
 
 # AI Agent settings
-ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
-CLAUDE_MODEL=claude-3-5-sonnet-20241022
+GEMINI_API_KEY=your-gemini-api-key-here
+GEMINI_MODEL=gemini-1.5-flash
 
 # Celery settings (for AI Agent background tasks)
 CELERY_BROKER_URL=redis://localhost:6379/0
@@ -473,10 +474,10 @@ celery -A celery_app worker -l info
 pip install flower
 celery -A celery_app flower
 
-# Test Claude API connection
+# Test Gemini API connection
 python manage.py shell
->>> from ai_agent.claude_client import ClaudeAnalysisClient
->>> client = ClaudeAnalysisClient()
+>>> from ai_agent.gemini_client import GeminiAnalysisClient
+>>> client = GeminiAnalysisClient()
 >>> print("API key configured!" if client.api_key else "API key missing!")
 ```
 
@@ -525,7 +526,7 @@ python manage.py shell
 - File metadata and validation
 
 ### 6. AI Genomic Analysis Agent
-- Natural language interface powered by Claude API
+- Natural language interface powered by Google Gemini API
 - Statistical analysis of variant data (TSV files)
 - Genetic model filtering (AD, AR, compound heterozygous)
 - Comparative analysis across multiple samples
@@ -767,4 +768,4 @@ python manage.py test_gene_search --gene ATP8B1
 **Last Updated**: 2024-11-22
 **Django Version**: 5.2.8
 **Python Version**: 3.11+
-**AI Features**: Claude API + Celery Background Tasks
+**AI Features**: Google Gemini API + Celery Background Tasks

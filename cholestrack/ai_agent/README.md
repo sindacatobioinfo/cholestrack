@@ -1,6 +1,6 @@
 # AI Genomic Analysis Agent
 
-An AI-powered assistant for analyzing genomic variant data using Claude API with data anonymization.
+An AI-powered assistant for analyzing genomic variant data using Google Gemini API with data anonymization.
 
 ## Features
 
@@ -20,8 +20,8 @@ An AI-powered assistant for analyzing genomic variant data using Claude API with
    - Real-time messaging
    - Quick action buttons
 
-2. **Claude API Integration** (`claude_client.py`)
-   - Anthropic Claude API wrapper
+2. **Gemini API Integration** (`gemini_client.py`)
+   - Google Gemini API wrapper
    - Automatic data anonymization
    - Token usage tracking
    - Error handling
@@ -55,7 +55,7 @@ An AI-powered assistant for analyzing genomic variant data using Claude API with
 
 Add to `requirements.txt`:
 ```
-anthropic==0.21.3
+google-generativeai==0.8.3
 pandas==2.1.4
 numpy==1.26.3
 openpyxl==3.1.2
@@ -65,7 +65,7 @@ redis==5.0.1
 
 Install:
 ```bash
-pip install anthropic pandas numpy openpyxl celery redis
+pip install google-generativeai pandas numpy openpyxl celery redis
 ```
 
 ### 2. Configure Settings
@@ -80,8 +80,8 @@ INSTALLED_APPS = [
 ]
 
 # AI Agent Configuration
-ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
-CLAUDE_MODEL = 'claude-3-5-sonnet-20241022'  # or claude-3-opus-20240229
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash')  # or gemini-1.5-pro
 
 # Celery Configuration (if not already configured)
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
@@ -113,13 +113,16 @@ python manage.py migrate ai_agent
 
 ### 5. Set Environment Variable
 
+Get your API key from Google AI Studio: https://aistudio.google.com/app/apikey
+
 ```bash
-export ANTHROPIC_API_KEY="your-api-key-here"
+export GEMINI_API_KEY="your-gemini-api-key-here"
 ```
 
 Or add to `.env` file (if using python-decouple):
 ```
-ANTHROPIC_API_KEY=your-api-key-here
+GEMINI_API_KEY=your-gemini-api-key-here
+GEMINI_MODEL=gemini-1.5-flash  # Optional, defaults to gemini-1.5-flash
 ```
 
 ### 6. Start Celery Worker (for background tasks)
@@ -164,7 +167,7 @@ AI: Generates Excel file with comparative data
 ## Data Privacy & Security
 
 ### Anonymization Features
-- Sample IDs are hashed before sending to Claude API
+- Sample IDs are hashed before sending to Gemini API
 - Patient identifiers (emails, phone numbers, dates) are redacted
 - File paths are removed from data
 - Only variant data (non-PII) is included in API calls
@@ -207,7 +210,7 @@ Sent to API:    "SAMPLE_A7B8C9D0"
     │          │
     ▼          ▼
 ┌────────┐  ┌──────────┐
-│ Claude │  │  Celery  │
+│ Gemini │  │  Celery  │
 │  API   │  │  Tasks   │
 └────────┘  └─────┬────┘
                   │
@@ -229,8 +232,9 @@ The system expects TSV files (_rawdata.txt) with these columns:
 
 ### API Key Not Found
 ```
-Error: Anthropic API key not configured
-Solution: Set ANTHROPIC_API_KEY environment variable
+Error: Gemini API key not configured
+Solution: Set GEMINI_API_KEY environment variable
+Get your free API key from: https://aistudio.google.com/app/apikey
 ```
 
 ### Celery Not Running
