@@ -3,13 +3,10 @@ Celery configuration for cholestrack project.
 """
 
 import os
-import environ
 from celery import Celery
 
-env = environ.Env()
-
 # Set the default Django settings module for the 'celery' program.
-os.environ.get('DJANGO_SETTINGS_MODULE', 'project.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'project.settings')
 
 app = Celery('cholestrack')
 
