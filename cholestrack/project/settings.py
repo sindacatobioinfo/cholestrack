@@ -197,7 +197,7 @@ GENE_DATABASE_PATH = env('GENE_DATABASE_PATH')  # Optional: Path to gene annotat
 
 # Google Gemini API Configuration
 GEMINI_API_KEY = env('GEMINI_API_KEY', default='')
-GEMINI_MODEL = env('GEMINI_MODEL', default='gemini-1.5-flash')  # gemini-1.5-flash, gemini-1.5-pro, or gemini-2.5-flash
+GEMINI_MODEL = env('GEMINI_MODEL', default='gemini-2.5-flash')  # Current models: gemini-2.5-flash, gemini-2.5-pro, gemini-3-pro (gemini-1.5 retired Sept 2025)
 
 # Celery Configuration
 CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://localhost:6379/0')
