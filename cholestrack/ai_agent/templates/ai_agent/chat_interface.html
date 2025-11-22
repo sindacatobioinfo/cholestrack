@@ -607,7 +607,7 @@ function loadSession(sessionId) {
 }
 
 function checkJobStatus(jobId) {
-    fetch(`{% url "ai_agent:job_status" job_id="PLACEHOLDER" %}`.replace('PLACEHOLDER', jobId))
+    fetch(`/ai-agent/job-status/${jobId}/`)
         .then(response => response.json())
         .then(data => {
             const jobElement = document.getElementById(`job-${jobId}`);
