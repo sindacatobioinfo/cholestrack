@@ -110,30 +110,65 @@ sudo systemctl disable celerybeat
 
 ## Troubleshooting
 
-### Service Won't Start
+### Service Won't Start or Restart
 
-1. **Check service status:**
+**Common Error:** `Job for celery.service failed because the control process exited with error code.`
+
+**Automated Fix:**
+
+Run the automated fix script:
+```bash
+cd /home/burlo/cholestrack/deploy_management
+sudo ./fix_celery_restart.sh
+```
+
+**Manual Fix Steps:**
+
+1. **Check service status for detailed error:**
 ```bash
 sudo systemctl status celery -l
+sudo journalctl -xeu celery.service
 ```
 
-2. **Check logs:**
+2. **Clean up stale PID files:**
 ```bash
-sudo journalctl -u celery -n 50
+# Remove old PID file if it exists
+sudo rm -f /var/run/celery/worker.pid
 ```
 
-3. **Verify Redis is running:**
+3. **Verify and fix directory permissions:**
+```bash
+# Ensure directories exist with correct ownership
+sudo mkdir -p /var/log/celery /var/run/celery
+sudo chown -R burlo:burlo /var/log/celery /var/run/celery
+sudo chmod 755 /var/log/celery /var/run/celery
+```
+
+4. **Stop any running Celery workers manually:**
+```bash
+# Find and kill any orphaned Celery processes
+pkill -f 'celery.*worker'
+```
+
+5. **Reload systemd and restart:**
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart celery
+```
+
+6. **Verify Redis is running:**
 ```bash
 sudo systemctl status redis
 # or
 redis-cli ping
 ```
 
-4. **Test Celery manually:**
+7. **Test Celery manually:**
 ```bash
 cd /home/burlo/cholestrack/cholestrack
 source ../.venv/bin/activate
 celery -A celery_app worker -l info
+# Press Ctrl+C to stop
 ```
 
 ### Permission Issues
@@ -146,6 +181,30 @@ sudo chmod 755 /var/log/celery
 # Fix PID directory permissions
 sudo chown -R burlo:burlo /var/run/celery
 sudo chmod 755 /var/run/celery
+
+# Ensure the user can write to these locations
+sudo -u burlo touch /var/log/celery/test.log
+sudo -u burlo touch /var/run/celery/test.pid
+sudo rm /var/log/celery/test.log /var/run/celery/test.pid
+```
+
+### PID File Issues
+
+If Celery worker crashes or is killed improperly, the PID file may remain and prevent restart:
+
+```bash
+# Check if PID file exists
+ls -la /var/run/celery/worker.pid
+
+# Check if the process is actually running
+cat /var/run/celery/worker.pid
+ps aux | grep $(cat /var/run/celery/worker.pid 2>/dev/null)
+
+# If process is not running, remove stale PID file
+sudo rm /var/run/celery/worker.pid
+
+# Restart service
+sudo systemctl restart celery
 ```
 
 ### Update After Code Changes
