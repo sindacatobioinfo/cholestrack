@@ -1,0 +1,34 @@
+[Unit]
+Description=Celery Beat Service for CholesTrack (Periodic Tasks)
+After=network.target redis.service postgresql.service
+
+[Service]
+Type=simple
+User=burlo
+Group=burlo
+WorkingDirectory=/home/burlo/cholestrack/cholestrack
+
+# Path to virtual environment
+Environment="PATH=/home/burlo/cholestrack/.venv/bin"
+
+# Celery beat command
+ExecStart=/home/burlo/cholestrack/.venv/bin/celery -A celery_app beat \
+    --loglevel=info \
+    --logfile=/var/log/celery/beat.log \
+    --pidfile=/var/run/celery/beat.pid
+
+# Process management
+PIDFile=/var/run/celery/beat.pid
+Restart=always
+RestartSec=10
+
+# Recommended settings
+KillMode=mixed
+TimeoutStopSec=300
+
+# Security settings (optional but recommended)
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
