@@ -31,6 +31,7 @@ python manage.py runserver
 #After changing the site do this to restart the production
 sudo systemctl restart gunicorn 
 sudo systemctl restart nginx
+sudo systemctl restart celery
 
 #To inject data into the tables (samples and/or files)
 python manage.py import_data \
