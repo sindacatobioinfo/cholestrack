@@ -102,7 +102,13 @@ class GeminiAnalysisClient:
         genai.configure(api_key=self.api_key)
 
         self.anonymizer = DataAnonymizer()
-        self.model_name = getattr(settings, 'GEMINI_MODEL', 'gemini-1.5-flash')
+        base_model = getattr(settings, 'GEMINI_MODEL', 'gemini-1.5-flash')
+
+        # Ensure model name has 'models/' prefix required by the API
+        if not base_model.startswith('models/'):
+            self.model_name = f'models/{base_model}'
+        else:
+            self.model_name = base_model
 
         # Initialize model with safety settings for scientific content
         # Use BLOCK_NONE for medical/scientific content to prevent false positives
