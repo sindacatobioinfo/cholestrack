@@ -34,14 +34,17 @@ sudo cp celerybeat.service /etc/systemd/system/
 
 **Important:** Before enabling, verify these paths in the service files match your actual setup:
 
-- **User/Group**: Check if `burlo` is correct
-- **WorkingDirectory**: Should be `/home/burlo/cholestrack/cholestrack`
-- **Virtual Environment Path**: Should be `/home/burlo/cholestrack/.venv`
+- **User/Group**: Check if `burlo` is correct (should match your system user)
+- **WorkingDirectory**: Should point to the inner cholestrack directory (e.g., `/home/burlo/cholestrack/cholestrack`)
+- **Virtual Environment Path**: Should point to your virtualenv (e.g., `/home/burlo/cholestrack/.venv`)
 - **Redis**: Ensure Redis is installed and running
+
+**Note:** The celery service uses lowercase 'cholestrack' to match the Celery app name in `celery_app.py`.
 
 Edit if needed:
 ```bash
 sudo nano /etc/systemd/system/celery.service
+# Update paths to match your installation directory
 ```
 
 ### 3. Reload Systemd

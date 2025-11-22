@@ -1,7 +1,7 @@
 #this file goes at /etc/systemd/system/
 
 [Unit]
-Description=Celery Worker Service for CholesTrack
+Description=Celery Worker Service for cholestrack
 After=network.target redis.service postgresql.service
 
 [Service]

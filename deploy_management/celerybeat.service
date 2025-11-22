@@ -1,5 +1,5 @@
 [Unit]
-Description=Celery Beat Service for CholesTrack (Periodic Tasks)
+Description=Celery Beat Service for cholestrack (Periodic Tasks)
 After=network.target redis.service postgresql.service
 
 [Service]
