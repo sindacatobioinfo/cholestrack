@@ -1,0 +1,657 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="chat-sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-robot"></i> AI Agent</h3>
+            <button onclick="newSession()" class="btn btn-new-chat">
+                <i class="fas fa-plus"></i> New Chat
+            </button>
+        </div>
+
+        <div class="session-list">
+            <h4>Recent Conversations</h4>
+            {% for sess in recent_sessions %}
+            <div class="session-item {% if sess.session_id == active_session.session_id %}active{% endif %}"
+                 onclick="loadSession('{{ sess.session_id }}')">
+                <div class="session-title">{{ sess.title }}</div>
+                <div class="session-date">{{ sess.updated_at|date:"M d, Y" }}</div>
+            </div>
+            {% empty %}
+            <p class="no-sessions">No conversations yet</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="chat-main">
+        <div class="chat-header">
+            <h2>{{ active_session.title }}</h2>
+            <div class="header-info">
+                <span class="token-count">
+                    <i class="fas fa-coins"></i> Tokens: {{ active_session.total_tokens_used|default:0 }}
+                </span>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            {% if not messages %}
+            <div class="welcome-message">
+                <div class="welcome-icon"><i class="fas fa-dna fa-3x"></i></div>
+                <h3>Welcome to the AI Genomic Analysis Agent</h3>
+                <p>I can help you analyze variant data, apply genetic models, and generate reports.</p>
+                <div class="quick-actions">
+                    <h4>Try asking:</h4>
+                    <button class="quick-action" onclick="quickQuestion('What samples are available for analysis?')">
+                        📊 What samples are available?
+                    </button>
+                    <button class="quick-action" onclick="quickQuestion('Show me statistical summary of sample data')">
+                        📈 Get statistical summary
+                    </button>
+                    <button class="quick-action" onclick="quickQuestion('Filter variants for autosomal dominant inheritance')">
+                        🧬 Filter by genetic model
+                    </button>
+                </div>
+            </div>
+            {% else %}
+            {% for msg in messages %}
+            <div class="message message-{{ msg.role }}">
+                <div class="message-avatar">
+                    {% if msg.role == 'user' %}
+                    <i class="fas fa-user"></i>
+                    {% elif msg.role == 'assistant' %}
+                    <i class="fas fa-robot"></i>
+                    {% else %}
+                    <i class="fas fa-info-circle"></i>
+                    {% endif %}
+                </div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="message-role">
+                            {% if msg.role == 'user' %}You
+                            {% elif msg.role == 'assistant' %}AI Agent
+                            {% else %}System
+                            {% endif %}
+                        </span>
+                        <span class="message-time">{{ msg.created_at|date:"H:i" }}</span>
+                    </div>
+                    <div class="message-text">{{ msg.content|linebreaks }}</div>
+                    {% if msg.has_analysis_job and msg.metadata %}
+                    <div class="job-status" id="job-{{ msg.metadata.job_id }}">
+                        <i class="fas fa-spinner fa-spin"></i> Analysis job running...
+                        <button onclick="checkJobStatus('{{ msg.metadata.job_id }}')" class="btn-check-status">
+                            Check Status
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <div id="typingIndicator" class="typing-indicator" style="display: none;">
+                <div class="message-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="typing-dots">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input-container">
+            <form id="chatForm" onsubmit="sendMessage(event)">
+                <textarea
+                    id="messageInput"
+                    placeholder="Ask me to analyze your genomic data..."
+                    rows="2"
+                    required
+                ></textarea>
+                <button type="submit" id="sendButton" class="btn-send">
+                    <i class="fas fa-paper-plane"></i> Send
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-container {
+    display: flex;
+    height: calc(100vh - 100px);
+    max-height: 900px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.chat-sidebar {
+    width: 280px;
+    background: #f8f9fa;
+    border-right: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.sidebar-header h3 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+    font-size: 1.3rem;
+}
+
+.btn-new-chat {
+    width: 100%;
+    padding: 10px;
+    background: #008080;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.btn-new-chat:hover {
+    background: #006666;
+}
+
+.session-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+.session-list h4 {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.session-item {
+    padding: 12px;
+    margin-bottom: 8px;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+}
+
+.session-item:hover {
+    background: #e8f4f8;
+    transform: translateX(4px);
+}
+
+.session-item.active {
+    border-color: #008080;
+    background: #e8f4f8;
+}
+
+.session-title {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.session-date {
+    font-size: 0.75rem;
+    color: #95a5a6;
+}
+
+.no-sessions {
+    text-align: center;
+    color: #95a5a6;
+    font-size: 0.9rem;
+    margin-top: 20px;
+}
+
+.chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-header {
+    padding: 20px 30px;
+    border-bottom: 1px solid #e0e0e0;
+    background: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chat-header h2 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.3rem;
+}
+
+.header-info {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.token-count {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 30px;
+    background: #f8f9fa;
+}
+
+.welcome-message {
+    text-align: center;
+    padding: 60px 20px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.welcome-icon {
+    color: #008080;
+    margin-bottom: 20px;
+}
+
+.welcome-message h3 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+}
+
+.welcome-message p {
+    color: #7f8c8d;
+    margin-bottom: 30px;
+    font-size: 1.1rem;
+}
+
+.quick-actions {
+    margin-top: 30px;
+}
+
+.quick-actions h4 {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+
+.quick-action {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin-bottom: 10px;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+.quick-action:hover {
+    border-color: #008080;
+    background: #e8f4f8;
+    transform: translateY(-2px);
+}
+
+.message {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.message-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.message-user .message-avatar {
+    background: #3498db;
+    color: white;
+}
+
+.message-assistant .message-avatar {
+    background: #008080;
+    color: white;
+}
+
+.message-system .message-avatar {
+    background: #95a5a6;
+    color: white;
+}
+
+.message-content {
+    flex: 1;
+    max-width: 80%;
+}
+
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.message-role {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.9rem;
+}
+
+.message-time {
+    font-size: 0.8rem;
+    color: #95a5a6;
+}
+
+.message-text {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    line-height: 1.6;
+    color: #2c3e50;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.message-user .message-text {
+    background: #e8f4f8;
+}
+
+.typing-indicator {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.typing-dots {
+    background: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    display: flex;
+    gap: 5px;
+}
+
+.typing-dots span {
+    width: 8px;
+    height: 8px;
+    background: #95a5a6;
+    border-radius: 50%;
+    animation: typing 1.4s infinite;
+}
+
+.typing-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+    30% { opacity: 1; transform: translateY(-10px); }
+}
+
+.job-status {
+    margin-top: 10px;
+    padding: 12px;
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.btn-check-status {
+    margin-left: 10px;
+    padding: 5px 12px;
+    background: #ffc107;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.chat-input-container {
+    padding: 20px 30px;
+    background: white;
+    border-top: 1px solid #e0e0e0;
+}
+
+#chatForm {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+#messageInput {
+    flex: 1;
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    resize: none;
+    transition: border-color 0.2s;
+}
+
+#messageInput:focus {
+    outline: none;
+    border-color: #008080;
+}
+
+.btn-send {
+    padding: 12px 24px;
+    background: #008080;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.btn-send:hover {
+    background: #006666;
+}
+
+.btn-send:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+}
+</style>
+
+<script>
+const sessionId = '{{ active_session.session_id }}';
+
+function sendMessage(event) {
+    event.preventDefault();
+
+    const messageInput = document.getElementById('messageInput');
+    const message = messageInput.value.trim();
+
+    if (!message) return;
+
+    // Add user message to UI immediately
+    addMessageToUI('user', message);
+
+    // Clear input
+    messageInput.value = '';
+
+    // Show typing indicator
+    showTypingIndicator();
+
+    // Send to server
+    fetch('{% url "ai_agent:send_message" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            session_id: sessionId,
+            message: message
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideTypingIndicator();
+
+        if (data.success) {
+            addMessageToUI('assistant', data.content);
+        } else {
+            addMessageToUI('system', 'Error: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        hideTypingIndicator();
+        addMessageToUI('system', 'Error connecting to AI agent');
+        console.error('Error:', error);
+    });
+}
+
+function addMessageToUI(role, content) {
+    const messagesContainer = document.getElementById('chatMessages');
+    const now = new Date();
+    const timeStr = now.getHours().toString().padStart(2, '0') + ':' +
+                    now.getMinutes().toString().padStart(2, '0');
+
+    const roleLabels = {
+        'user': 'You',
+        'assistant': 'AI Agent',
+        'system': 'System'
+    };
+
+    const icons = {
+        'user': 'fa-user',
+        'assistant': 'fa-robot',
+        'system': 'fa-info-circle'
+    };
+
+    const messageHTML = `
+        <div class="message message-${role}">
+            <div class="message-avatar">
+                <i class="fas ${icons[role]}"></i>
+            </div>
+            <div class="message-content">
+                <div class="message-header">
+                    <span class="message-role">${roleLabels[role]}</span>
+                    <span class="message-time">${timeStr}</span>
+                </div>
+                <div class="message-text">${content.replace(/\n/g, '<br>')}</div>
+            </div>
+        </div>
+    `;
+
+    // Remove welcome message if exists
+    const welcomeMsg = messagesContainer.querySelector('.welcome-message');
+    if (welcomeMsg) {
+        welcomeMsg.remove();
+    }
+
+    // Insert before typing indicator
+    const typingIndicator = document.getElementById('typingIndicator');
+    typingIndicator.insertAdjacentHTML('beforebegin', messageHTML);
+
+    // Scroll to bottom
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function showTypingIndicator() {
+    document.getElementById('typingIndicator').style.display = 'flex';
+    const messagesContainer = document.getElementById('chatMessages');
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function hideTypingIndicator() {
+    document.getElementById('typingIndicator').style.display = 'none';
+}
+
+function quickQuestion(question) {
+    document.getElementById('messageInput').value = question;
+    document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+}
+
+function newSession() {
+    window.location.href = '{% url "ai_agent:new_session" %}';
+}
+
+function loadSession(sessionId) {
+    window.location.href = `/ai-agent/session/${sessionId}/`;
+}
+
+function checkJobStatus(jobId) {
+    fetch(`{% url "ai_agent:job_status" job_id="PLACEHOLDER" %}`.replace('PLACEHOLDER', jobId))
+        .then(response => response.json())
+        .then(data => {
+            const jobElement = document.getElementById(`job-${jobId}`);
+            if (data.status === 'COMPLETED') {
+                jobElement.innerHTML = `
+                    <i class="fas fa-check-circle" style="color: green;"></i> Analysis complete!
+                    ${data.has_report ? `<a href="${data.download_url}" class="btn-check-status">Download Report</a>` : ''}
+                `;
+            } else if (data.status === 'FAILED') {
+                jobElement.innerHTML = `<i class="fas fa-times-circle" style="color: red;"></i> Analysis failed: ${data.error_message}`;
+            } else {
+                jobElement.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Status: ${data.status}`;
+            }
+        })
+        .catch(error => console.error('Error checking job status:', error));
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Auto-resize textarea
+document.getElementById('messageInput').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+});
+
+// Submit on Enter (but Shift+Enter for new line)
+document.getElementById('messageInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+    }
+});
+</script>
+{% endblock %}
