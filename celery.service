@@ -1,0 +1,39 @@
+[Unit]
+Description=Celery Worker Service for CholesTrack
+After=network.target redis.service postgresql.service
+
+[Service]
+Type=forking
+User=burlo
+Group=burlo
+WorkingDirectory=/home/burlo/cholestrack/cholestrack
+
+# Path to virtual environment
+Environment="PATH=/home/burlo/cholestrack/.venv/bin"
+
+# Celery worker command
+ExecStart=/home/burlo/cholestrack/.venv/bin/celery -A celery_app worker \
+    --detach \
+    --loglevel=info \
+    --logfile=/var/log/celery/worker.log \
+    --pidfile=/var/run/celery/worker.pid
+
+# Celery stop command
+ExecStop=/home/burlo/cholestrack/.venv/bin/celery -A celery_app control shutdown
+
+# Process management
+PIDFile=/var/run/celery/worker.pid
+Restart=always
+RestartSec=10
+
+# Recommended settings
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=300
+
+# Security settings (optional but recommended)
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
