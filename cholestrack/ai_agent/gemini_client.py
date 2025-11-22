@@ -104,9 +104,10 @@ class GeminiAnalysisClient:
         self.anonymizer = DataAnonymizer()
         base_model = getattr(settings, 'GEMINI_MODEL', 'gemini-1.5-flash')
 
-        # Ensure model name has 'models/' prefix required by the API
-        if not base_model.startswith('models/'):
-            self.model_name = f'models/{base_model}'
+        # Remove 'models/' prefix if present - google-generativeai 0.8.3 expects simple model name
+        # The library automatically adds the prefix when making API calls
+        if base_model.startswith('models/'):
+            self.model_name = base_model.replace('models/', '', 1)
         else:
             self.model_name = base_model
 
