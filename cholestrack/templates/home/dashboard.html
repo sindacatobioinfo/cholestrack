@@ -70,7 +70,7 @@
             </div>
         </div>
 
-        <!-- Second Row: Workflow Configuration -->
+        <!-- Second Row: Workflow Configuration & AI Agent -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
             <!-- Workflow Configuration Card -->
             <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
@@ -82,6 +82,19 @@
                 </p>
                 <a href="{% url 'analysis_workflows:config_builder' %}" class="btn btn-orange">
                     Create Workflow
+                </a>
+            </div>
+
+            <!-- AI Genomic Analysis Agent Card -->
+            <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+                <h3 class="text-xl font-semibold text-gray-800 mb-3">
+                    <i class="fas fa-robot text-cyan-600 mr-2"></i> AI Analysis Agent
+                </h3>
+                <p class="text-gray-600 mb-4">
+                    Chat with AI to analyze variant data, apply genetic models, and generate reports.
+                </p>
+                <a href="{% url 'ai_agent:chat_interface' %}" class="btn btn-cyan">
+                    Open AI Agent
                 </a>
             </div>
         </div>
@@ -151,6 +164,15 @@
 
     .btn-orange:hover {
         background-color: #ea580c;
+    }
+
+    .btn-cyan {
+        background-color: #06b6d4;
+        color: white;
+    }
+
+    .btn-cyan:hover {
+        background-color: #0891b2;
     }
 </style>
 {% endblock %}
