@@ -8,12 +8,14 @@ Before installing the service files, you need to:
 ```bash
 sudo mkdir -p /var/log/celery
 sudo chown burlo:burlo /var/log/celery
+sudo chmod 755 /var/log/celery
 ```
 
 2. **Create PID directory:**
 ```bash
 sudo mkdir -p /var/run/celery
 sudo chown burlo:burlo /var/run/celery
+sudo chmod 755 /var/run/celery
 ```
 
 ## Installation Steps
@@ -139,9 +141,11 @@ celery -A celery_app worker -l info
 ```bash
 # Fix log directory permissions
 sudo chown -R burlo:burlo /var/log/celery
+sudo chmod 755 /var/log/celery
 
 # Fix PID directory permissions
 sudo chown -R burlo:burlo /var/run/celery
+sudo chmod 755 /var/run/celery
 ```
 
 ### Update After Code Changes
