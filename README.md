@@ -10,6 +10,8 @@ CholesTrack is a Django-based web application for managing genomic data, particu
 - **Web Server**: Gunicorn + Nginx (production)
 - **Python Version**: 3.11+
 - **External Tools**: Samtools (for BAM file manipulation)
+- **AI Services**: Anthropic Claude API (for AI genomic analysis agent)
+- **Task Queue**: Celery + Redis (for background processing)
 
 ## Project Structure
 
@@ -24,9 +26,11 @@ cholestrack/
 │   ├── home/                 # Homepage and dashboard
 │   ├── region_selection/     # BAM region extraction tool
 │   ├── smart_search/         # HPO gene/phenotype/disease search
+│   ├── ai_agent/             # AI genomic analysis agent
 │   ├── templates/            # Shared HTML templates
 │   ├── staticfiles/          # Collected static files
 │   ├── manage.py             # Django management script
+│   ├── celery_app.py         # Celery configuration for background tasks
 │   └── requirements.txt      # Python dependencies
 ├── create_run_commands.sh    # Setup and management commands
 └── .gitignore               # Git ignore rules
@@ -199,6 +203,36 @@ python manage.py fix_disease_database_field --dry-run
 3. System queries local database
 4. Results cached for 7 days
 5. User views paginated phenotypes and diseases
+
+### 8. **ai_agent** - AI Genomic Analysis Agent
+AI-powered assistant for analyzing variant data using natural language.
+
+**Key Features:**
+- Natural language chat interface powered by Claude API
+- Statistical analysis of TSV variant data
+- Genetic model filtering (autosomal dominant, recessive, compound heterozygous)
+- Comparative analysis across multiple samples
+- Automated report generation (HTML, CSV, Excel)
+- Background job processing with Celery
+- Automatic data anonymization for privacy
+
+**Prerequisites:**
+- Anthropic API key
+- Redis server running
+- Celery worker running
+
+**Important Commands:**
+```bash
+# Run Celery worker
+cd /home/burlo/cholestrack/cholestrack
+celery -A celery_app worker -l info
+
+# Run migrations
+python manage.py makemigrations ai_agent
+python manage.py migrate
+```
+
+**See Also:** `/cholestrack/ai_agent/README.md` and `INSTALLATION.md`
 
 ## Setup Instructions
 
@@ -559,6 +593,8 @@ python manage.py test_gene_search --gene ATP8B1
 ### App-Specific READMEs
 - `/cholestrack/smart_search/README.md` - HPO search detailed docs
 - `/cholestrack/region_selection/README.md` - Region extraction detailed docs
+- `/cholestrack/ai_agent/README.md` - AI Agent detailed documentation
+- `/cholestrack/ai_agent/INSTALLATION.md` - AI Agent installation guide
 
 ### External Resources
 - Django Documentation: https://docs.djangoproject.com/
@@ -571,6 +607,6 @@ python manage.py test_gene_search --gene ATP8B1
 
 ---
 
-**Last Updated**: 2025-11-15
+**Last Updated**: 2024-11-22
 **Django Version**: 5.2.8
 **Python Version**: 3.11+

@@ -10,6 +10,8 @@ CholesTrack is a Django-based web application for managing genomic data, particu
 - **Web Server**: Gunicorn + Nginx (production)
 - **Python Version**: 3.11+
 - **External Tools**: Samtools (for BAM file manipulation)
+- **AI Services**: Anthropic Claude API (for AI genomic analysis agent)
+- **Task Queue**: Celery + Redis (for background processing)
 
 ## Project Structure
 
@@ -24,9 +26,11 @@ cholestrack/
 │   ├── home/                 # Homepage and dashboard
 │   ├── region_selection/     # BAM region extraction tool
 │   ├── smart_search/         # HPO gene/phenotype/disease search
+│   ├── ai_agent/             # AI genomic analysis agent
 │   ├── templates/            # Shared HTML templates
 │   ├── staticfiles/          # Collected static files
 │   ├── manage.py             # Django management script
+│   ├── celery_app.py         # Celery configuration for background tasks
 │   └── requirements.txt      # Python dependencies
 ├── create_run_commands.sh    # Setup and management commands
 └── .gitignore               # Git ignore rules
@@ -227,6 +231,89 @@ python manage.py fix_disease_database_field --dry-run
 4. Results cached for 7 days
 5. User views paginated phenotypes and diseases
 
+### 8. **ai_agent** - AI Genomic Analysis Agent
+AI-powered assistant for analyzing variant data using natural language with Claude API.
+
+**Key Models:**
+- **ChatSession**: Conversation tracking with token usage
+- **ChatMessage**: Individual messages (user/assistant/system)
+- **AnalysisJob**: Background analysis tasks with results
+
+**Features:**
+- **Natural Language Interface:** Chat with AI to analyze genomic data
+- **Statistical Analysis:** Variant counts, quality metrics, impact distribution
+- **Genetic Model Filtering:**
+  - Autosomal dominant (heterozygous, rare variants)
+  - Autosomal recessive (homozygous alternate)
+  - Compound heterozygous (multiple hits per gene)
+- **Comparative Analysis:** Compare variants across multiple samples
+- **Custom Queries:** Ask questions about variant data in plain English
+- **Report Generation:** Create HTML, CSV, or Excel reports
+- **Background Processing:** Long-running analyses via Celery
+- **Data Privacy:** Automatic anonymization before sending to Claude API
+
+**Data Anonymization:**
+- Sample IDs → Hashed (e.g., "SAMPLE_A7B8C9D0")
+- Email addresses → `[EMAIL_REDACTED]`
+- Phone numbers → `[PHONE_REDACTED]`
+- Dates → `[DATE_REDACTED]`
+- File paths removed
+- Only variant data (non-PII) sent to API
+
+**Important Commands:**
+```bash
+# Run Celery worker (required for background tasks)
+cd /home/burlo/cholestrack/cholestrack
+celery -A celery_app worker -l info
+
+# Run migrations
+python manage.py makemigrations ai_agent
+python manage.py migrate
+
+# Test import
+python manage.py shell
+>>> from ai_agent.claude_client import ClaudeAnalysisClient
+>>> client = ClaudeAnalysisClient()
+```
+
+**Prerequisites:**
+- Anthropic API key (from https://console.anthropic.com/)
+- Redis server running (for Celery task queue)
+- Celery worker running (for background tasks)
+
+**Environment Variables:**
+```bash
+export ANTHROPIC_API_KEY="sk-ant-api03-your-key-here"
+export CELERY_BROKER_URL="redis://localhost:6379/0"
+export CELERY_RESULT_BACKEND="redis://localhost:6379/0"
+```
+
+**Typical Workflow:**
+1. User opens AI Agent from dashboard
+2. User asks question: "Show me statistical summary for sample XYZ"
+3. AI Agent queries variant data (TSV files)
+4. For quick queries: Immediate response
+5. For complex analysis: Background Celery job created
+6. User receives results with option to download reports
+7. All patient data anonymized before API calls
+
+**Analysis Types:**
+- **Statistical:** Summary statistics, variant counts, quality metrics
+- **Genetic Model:** Filter by inheritance pattern (AD/AR/Compound Het)
+- **Comparative:** Find shared/unique variants across samples
+- **Variant Interpretation:** Explain significance of specific variants
+
+**API Endpoints:**
+- `/ai-agent/` - Chat interface
+- `/ai-agent/send-message/` - Send message to AI (AJAX)
+- `/ai-agent/start-job/` - Start background analysis job
+- `/ai-agent/job-status/<uuid>/` - Check job status
+- `/ai-agent/download-report/<uuid>/` - Download generated report
+
+**See Also:**
+- `/cholestrack/ai_agent/README.md` - Detailed documentation
+- `/cholestrack/ai_agent/INSTALLATION.md` - Setup guide
+
 ## Setup Instructions
 
 ### 1. Initial Setup
@@ -269,6 +356,14 @@ POSTGRES_PORT=5432
 # Optional: Region extraction settings
 REGION_EXTRACTION_TEMP_DIR=/tmp/cholestrack_extractions
 GENE_DATABASE_PATH=/path/to/gene_database.json
+
+# AI Agent settings
+ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
+CLAUDE_MODEL=claude-3-5-sonnet-20241022
+
+# Celery settings (for AI Agent background tasks)
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/0
 ```
 
 ### 3. Collect Static Files
@@ -279,6 +374,21 @@ python manage.py collectstatic --noinput
 
 ### 4. Run Development Server
 
+**For AI Agent features, you need 3 processes running:**
+
+```bash
+# Terminal 1: Redis (if not running as service)
+redis-server
+
+# Terminal 2: Celery Worker
+cd /home/burlo/cholestrack/cholestrack
+celery -A celery_app worker -l info
+
+# Terminal 3: Django Development Server
+python manage.py runserver
+```
+
+**Without AI Agent (basic setup):**
 ```bash
 python manage.py runserver
 ```
@@ -353,6 +463,23 @@ python manage.py createsuperuser
 python manage.py approve_existing_users
 ```
 
+### Celery & AI Agent
+```bash
+# Start Celery worker (required for AI Agent)
+cd /home/burlo/cholestrack/cholestrack
+celery -A celery_app worker -l info
+
+# Monitor Celery tasks (optional - requires flower)
+pip install flower
+celery -A celery_app flower
+
+# Test Claude API connection
+python manage.py shell
+>>> from ai_agent.claude_client import ClaudeAnalysisClient
+>>> client = ClaudeAnalysisClient()
+>>> print("API key configured!" if client.api_key else "API key missing!")
+```
+
 ## Key Features
 
 ### 1. Role-Based Access Control (RBAC)
@@ -397,6 +524,16 @@ python manage.py approve_existing_users
 - Link files to samples
 - File metadata and validation
 
+### 6. AI Genomic Analysis Agent
+- Natural language interface powered by Claude API
+- Statistical analysis of variant data (TSV files)
+- Genetic model filtering (AD, AR, compound heterozygous)
+- Comparative analysis across multiple samples
+- Automated report generation (HTML, CSV, Excel)
+- Background job processing with Celery
+- Data privacy through automatic anonymization
+- Real-time chat interface with conversation history
+
 ## Database Schema Highlights
 
 ### Core Entities
@@ -414,6 +551,11 @@ python manage.py approve_existing_users
 
 ### Region Extraction
 - **RegionExtractionJob**: Extraction job tracking
+
+### AI Agent (ai_agent)
+- **ChatSession**: Conversation tracking with token usage
+- **ChatMessage**: Individual messages (user/assistant/system)
+- **AnalysisJob**: Background analysis tasks with results
 
 ## API Endpoints
 
@@ -439,6 +581,15 @@ python manage.py approve_existing_users
 - `/smart-search/` - Search home
 - `/smart-search/result/<id>/` - Search results (with pagination)
 - `/smart-search/history/` - Search history
+
+### AI Agent
+- `/ai-agent/` - Chat interface
+- `/ai-agent/send-message/` - Send message to AI (AJAX)
+- `/ai-agent/new-session/` - Create new chat session
+- `/ai-agent/session/<uuid>/` - Load specific session
+- `/ai-agent/start-job/` - Start background analysis job (AJAX)
+- `/ai-agent/job-status/<uuid>/` - Check job status (AJAX)
+- `/ai-agent/download-report/<uuid>/` - Download generated report
 
 ## Important Notes
 
@@ -599,6 +750,8 @@ python manage.py test_gene_search --gene ATP8B1
 ### App-Specific READMEs
 - `/cholestrack/smart_search/README.md` - HPO search detailed docs
 - `/cholestrack/region_selection/README.md` - Region extraction detailed docs
+- `/cholestrack/ai_agent/README.md` - AI Agent detailed documentation
+- `/cholestrack/ai_agent/INSTALLATION.md` - AI Agent installation guide
 
 ### External Resources
 - Django Documentation: https://docs.djangoproject.com/
@@ -611,6 +764,7 @@ python manage.py test_gene_search --gene ATP8B1
 
 ---
 
-**Last Updated**: 2025-11-15
+**Last Updated**: 2024-11-22
 **Django Version**: 5.2.8
 **Python Version**: 3.11+
+**AI Features**: Claude API + Celery Background Tasks
