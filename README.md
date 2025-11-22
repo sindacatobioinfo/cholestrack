@@ -10,7 +10,7 @@ CholesTrack is a Django-based web application for managing genomic data, particu
 - **Web Server**: Gunicorn + Nginx (production)
 - **Python Version**: 3.11+
 - **External Tools**: Samtools (for BAM file manipulation)
-- **AI Services**: Anthropic Claude API (for AI genomic analysis agent)
+- **AI Services**: Google Gemini API (for AI genomic analysis agent)
 - **Task Queue**: Celery + Redis (for background processing)
 
 ## Project Structure
@@ -208,7 +208,7 @@ python manage.py fix_disease_database_field --dry-run
 AI-powered assistant for analyzing variant data using natural language.
 
 **Key Features:**
-- Natural language chat interface powered by Claude API
+- Natural language chat interface powered by Google Gemini API
 - Statistical analysis of TSV variant data
 - Genetic model filtering (autosomal dominant, recessive, compound heterozygous)
 - Comparative analysis across multiple samples
@@ -217,7 +217,7 @@ AI-powered assistant for analyzing variant data using natural language.
 - Automatic data anonymization for privacy
 
 **Prerequisites:**
-- Anthropic API key
+- Google Gemini API key (free tier available)
 - Redis server running
 - Celery worker running
 

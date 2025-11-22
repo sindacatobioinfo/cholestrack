@@ -195,9 +195,9 @@ ALLOWED_EMAIL_DOMAINS = [
 REGION_EXTRACTION_TEMP_DIR = env('REGION_EXTRACTION_TEMP_DIR')
 GENE_DATABASE_PATH = env('GENE_DATABASE_PATH')  # Optional: Path to gene annotation JSON file
 
-# Anthropic Claude API
-ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
-CLAUDE_MODEL = 'claude-3-5-sonnet-20241022'
+# Google Gemini API Configuration
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash')  # gemini-1.5-flash or gemini-1.5-pro
 
 # Celery Configuration
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')

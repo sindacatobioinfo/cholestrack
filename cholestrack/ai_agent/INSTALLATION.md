@@ -35,11 +35,13 @@ Add to `cholestrack/settings.py` (at the end of the file):
 # AI AGENT CONFIGURATION
 # =============================================================================
 
-# Anthropic Claude API
-ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
+# Google Gemini API
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
-# Claude model to use (options: claude-3-5-sonnet-20241022, claude-3-opus-20240229, claude-3-haiku-20240307)
-CLAUDE_MODEL = 'claude-3-5-sonnet-20241022'
+# Gemini model to use (options: gemini-1.5-flash, gemini-1.5-pro)
+# gemini-1.5-flash: Fast, free tier: 15 req/min, 1M tokens/day
+# gemini-1.5-pro: Higher quality, free tier: 2 req/min, 50 req/day
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash')
 
 # Celery configuration for background tasks
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
@@ -120,7 +122,7 @@ Create/update `requirements.txt`:
 # Existing dependencies...
 
 # AI Agent dependencies
-anthropic==0.21.3
+google-generativeai==0.8.3
 pandas==2.1.4
 numpy==1.26.3
 openpyxl==3.1.2
@@ -131,7 +133,7 @@ redis==5.0.1
 Install dependencies:
 
 ```bash
-pip install anthropic pandas numpy openpyxl celery redis
+pip install google-generativeai pandas numpy openpyxl celery redis
 ```
 
 ### Step 6: Install and Start Redis
@@ -160,9 +162,12 @@ redis-cli ping
 
 Create `.env` file in project root (or export in shell):
 
+Get your free API key from Google AI Studio: https://aistudio.google.com/app/apikey
+
 ```bash
 # .env file
-ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
+GEMINI_API_KEY=your-gemini-api-key-here
+GEMINI_MODEL=gemini-1.5-flash  # Optional, defaults to gemini-1.5-flash
 CELERY_BROKER_URL=redis://localhost:6379/0
 CELERY_RESULT_BACKEND=redis://localhost:6379/0
 ```
@@ -178,7 +183,8 @@ And update `settings.py`:
 ```python
 from decouple import config
 
-ANTHROPIC_API_KEY = config('ANTHROPIC_API_KEY', default='')
+GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
+GEMINI_MODEL = config('GEMINI_MODEL', default='gemini-1.5-flash')
 ```
 
 ### Step 8: Run Migrations
@@ -294,11 +300,12 @@ Should show Celery keys if tasks are running.
 
 ## Troubleshooting
 
-### Issue: "Anthropic API key not configured"
-**Solution:** Set `ANTHROPIC_API_KEY` environment variable
+### Issue: "Gemini API key not configured"
+**Solution:** Set `GEMINI_API_KEY` environment variable
+Get your free API key from: https://aistudio.google.com/app/apikey
 
-### Issue: "No module named 'anthropic'"
-**Solution:** `pip install anthropic`
+### Issue: "No module named 'google.generativeai'"
+**Solution:** `pip install google-generativeai`
 
 ### Issue: "Connection refused" (Redis)
 **Solution:** Start Redis: `sudo systemctl start redis` or `brew services start redis`
@@ -332,7 +339,7 @@ Once installed:
 
 1. Configure user permissions (RBAC integration)
 2. Test with real variant data
-3. Customize system prompts in `claude_client.py`
+3. Customize system prompts in `gemini_client.py`
 4. Add custom analysis types in `tasks.py`
 5. Create custom report templates in `report_generator.py`
 

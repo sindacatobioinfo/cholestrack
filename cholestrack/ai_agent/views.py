@@ -13,7 +13,7 @@ from pathlib import Path
 
 from users.decorators import role_confirmed_required
 from .models import ChatSession, ChatMessage, AnalysisJob
-from .claude_client import ClaudeAnalysisClient, DataAnonymizer
+from .gemini_client import GeminiAnalysisClient, DataAnonymizer
 from .tasks import run_statistical_analysis, run_genetic_model_analysis, run_comparative_analysis
 from files.models import AnalysisFileLocation
 
@@ -113,10 +113,10 @@ def send_message(request):
             anon_id = sample_id_map[sample_id]
             variant_data_summary += f"- {anon_id}\n"
 
-        # Call Claude API
+        # Call Gemini API
         try:
-            claude_client = ClaudeAnalysisClient()
-            response = claude_client.analyze_variant_question(
+            gemini_client = GeminiAnalysisClient()
+            response = gemini_client.analyze_variant_question(
                 question=message_content,
                 variant_data_summary=variant_data_summary,
                 conversation_history=conversation_history[:-1],  # Exclude current message
