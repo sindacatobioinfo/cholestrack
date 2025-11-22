@@ -182,21 +182,23 @@ class GeminiAnalysisClient:
                     'parts': [msg['content']]
                 })
 
+            # Prepare the current message (last message to send)
+            current_message = anonymized_messages[-1]['content']
+
             # Prepend system prompt to first user message if provided
             if system_prompt and gemini_history:
+                # System prompt goes into the first history message
                 gemini_history[0]['parts'][0] = f"{system_prompt}\n\n{gemini_history[0]['parts'][0]}"
             elif system_prompt and not gemini_history:
-                # If no history, add system prompt to the current message
-                current_message = f"{system_prompt}\n\n{anonymized_messages[-1]['content']}"
-            else:
-                current_message = anonymized_messages[-1]['content']
+                # No history, so add system prompt to current message
+                current_message = f"{system_prompt}\n\n{current_message}"
 
             # Create chat session with history
             chat = self.model.start_chat(history=gemini_history)
 
             # Send the latest message
             response = chat.send_message(
-                current_message if not gemini_history or system_prompt else anonymized_messages[-1]['content'],
+                current_message,
                 generation_config=genai.types.GenerationConfig(
                     max_output_tokens=max_tokens,
                     temperature=temperature,
