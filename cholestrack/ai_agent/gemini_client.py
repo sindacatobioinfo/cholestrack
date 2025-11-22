@@ -105,14 +105,27 @@ class GeminiAnalysisClient:
         self.model_name = getattr(settings, 'GEMINI_MODEL', 'gemini-1.5-flash')
 
         # Initialize model with safety settings for scientific content
+        # Use BLOCK_NONE for medical/scientific content to prevent false positives
         self.model = genai.GenerativeModel(
             model_name=self.model_name,
-            safety_settings={
-                'HARASSMENT': 'BLOCK_NONE',
-                'HATE_SPEECH': 'BLOCK_NONE',
-                'SEXUALLY_EXPLICIT': 'BLOCK_NONE',
-                'DANGEROUS_CONTENT': 'BLOCK_NONE',
-            }
+            safety_settings=[
+                {
+                    "category": "HARM_CATEGORY_HARASSMENT",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_HATE_SPEECH",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                    "threshold": "BLOCK_NONE"
+                }
+            ]
         )
 
     def create_chat_completion(
