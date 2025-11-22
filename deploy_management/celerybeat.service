@@ -1,3 +1,5 @@
+#this file goes at /etc/systemd/system/
+
 [Unit]
 Description=Celery Beat Service for cholestrack (Periodic Tasks)
 After=network.target redis.service postgresql.service
@@ -9,10 +11,10 @@ Group=burlo
 WorkingDirectory=/home/burlo/cholestrack/cholestrack
 
 # Path to virtual environment
-Environment="PATH=/home/burlo/cholestrack/.venv/bin"
+Environment="PATH=/home/burlo/cholestrack/cholestrack/.venv/bin"
 
 # Celery beat command
-ExecStart=/home/burlo/cholestrack/.venv/bin/celery -A celery_app beat \
+ExecStart=/home/burlo/cholestrack/cholestrack/.venv/bin/celery -A celery_app beat \
     --loglevel=info \
     --logfile=/var/log/celery/beat.log \
     --pidfile=/var/run/celery/beat.pid
