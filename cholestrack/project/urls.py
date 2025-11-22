@@ -14,4 +14,5 @@ urlpatterns = [
     path('smart-search/', include('smart_search.urls')),
     path('workflows/', include('analysis_workflows.urls')),
     path('', lambda request: redirect('users:login') if not request.user.is_authenticated else redirect('home:dashboard'), name='root_redirect'),
+    path('ai-agent/', include('ai_agent.urls')),
 ]

@@ -165,9 +165,6 @@ refgenome:
 # (Previously hard-coded, now configurable)
 
 tools:
-  # GATK installation
-  gatk: /home/operator/InterOmics/workflows/interomics_snakemake/resources/gatk-4.5.0.0/gatk
-
   # ANNOVAR installation and database
   annovar:
     basedir: /home/operator/InterOmics/workflows/interomics_snakemake/resources/annovar
@@ -177,12 +174,6 @@ tools:
 
   # DeepVariant Singularity image
   deepvariant_sif: /home/operator/InterOmics/workflows/interomics_snakemake/resources/deepvariant_latest.sif
-
-  # VEP (Variant Effect Predictor) installation
-  vep:
-    basedir: /home/operator/InterOmics/workflows/interomics_snakemake/resources/ensembl-vep
-    vep: /home/operator/InterOmics/workflows/interomics_snakemake/resources/ensembl-vep/vep
-    vep_install: /home/operator/InterOmics/workflows/interomics_snakemake/resources/ensembl-vep/INSTALL.pl
 
 #-------------------------------------------------------------------------------
 # SAMPLE METADATA
@@ -228,7 +219,6 @@ ram_memory:
   markduplicates: 102400  # 100 GB for MarkDuplicates
   recal_table: 102400     # 100 GB for BaseRecalibrator
   bwa: ""                 # Auto-configured
-  gatk: ""                # Auto-configured
 
 #-------------------------------------------------------------------------------
 # VARIANT FILTERING PARAMETERS
@@ -268,8 +258,11 @@ annovar:
 #-------------------------------------------------------------------------------
 
 vep:
+  # VEP Singularity image file path
+  vep_sif: /home/operator/InterOmics/workflows/interomics_snakemake/resources/vep.sif
+
   # VEP cache directory (relative to workflow directory, auto-downloaded on first run)
-  cache_dir: /home/operator/InterOmics/workflows/interomics_snakemake/reference/vep_cache
+  cache_dir: /home/operator/InterOmics/workflows/interomics_snakemake/resources/vep_cache
 
   # Genome assembly (GRCh37 or GRCh38)
   assembly: GRCh38
@@ -278,7 +271,7 @@ vep:
   species: homo_sapiens
 
   # Cache version ('auto' = use latest available, or specify version like '112')
-  cache_version: 105
+  cache_version: auto
 
   # Optional VEP plugins (comma-separated, e.g., "LoF,CADD,dbNSFP")
   plugins: ""

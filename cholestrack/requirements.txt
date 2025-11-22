@@ -7,3 +7,14 @@ certbot==5.1.0
 certbot-nginx==5.1.0
 uuid==1.30
 datetime==5.5
+
+# AI Agent dependencies
+anthropic==0.21.3
+pandas==2.1.4
+numpy==1.26.3
+openpyxl==3.1.2
+celery==5.3.6
+redis==5.0.1
+
+#celery
+python-decouple
