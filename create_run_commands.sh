@@ -42,3 +42,6 @@ python manage.py import_data \
 python manage.py load_hpo_data --clear #recreate the database
 python manage.py clear_search_cache --all #clear all cache
 python manage.py test_gene_search --gene BRCA1 #test gene search
+
+#start celery worker (hit the command in a separate terminal in the same folder where celery_app.py is located)
+celery -A celery_app worker -l info
