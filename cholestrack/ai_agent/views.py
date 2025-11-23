@@ -86,9 +86,15 @@ def send_message(request):
         if session.messages.count() == 1:
             session.update_title_from_first_message()
 
-        # Build conversation history
+        # Build conversation history (limit to last 10 messages for context window)
+        # This prevents infinite history growth and API token limits
         conversation_history = []
-        for msg in session.messages.filter(role__in=['user', 'assistant']).order_by('created_at'):
+        recent_messages = session.messages.filter(
+            role__in=['user', 'assistant']
+        ).order_by('-created_at')[:10]  # Get last 10 messages
+
+        # Reverse to maintain chronological order
+        for msg in reversed(recent_messages):
             conversation_history.append({
                 'role': msg.role,
                 'content': msg.content
@@ -100,18 +106,17 @@ def send_message(request):
             is_active=True
         ).values_list('sample_id', flat=True).distinct()
 
-        # Create sample ID anonymization map
-        anonymizer = DataAnonymizer()
-        sample_id_map = {
-            sample_id: anonymizer.anonymize_sample_id(sample_id)
-            for sample_id in available_samples
-        }
+        # No need to anonymize - sample_id in database is already anonymized
+        # Use sample IDs directly so AI can reference them consistently
+        sample_id_map = {}  # Keep empty map for compatibility with existing code
 
-        # Prepare variant data summary
+        # Prepare variant data summary with actual sample IDs
         variant_data_summary = f"Available samples for analysis ({len(available_samples)} total):\n"
-        for sample_id in list(available_samples)[:10]:  # Show first 10
-            anon_id = sample_id_map[sample_id]
-            variant_data_summary += f"- {anon_id}\n"
+        for sample_id in list(available_samples)[:20]:  # Show first 20 for better context
+            variant_data_summary += f"- {sample_id}\n"
+
+        if len(available_samples) > 20:
+            variant_data_summary += f"\n... and {len(available_samples) - 20} more samples\n"
 
         # Call Gemini API
         try:
