@@ -140,9 +140,9 @@ def send_message(request):
                 # Get file path for this sample
                 sample_file = next((s for s in sample_list if s['sample_id'] == sample_id), None)
                 if sample_file:
-                    # Construct full file path - files are in /media/remote_files/
+                    # Construct full file path - files are in project's media/remote_files/
                     relative_path = sample_file['file_path']
-                    file_path = f"/media/remote_files/{relative_path}"
+                    file_path = f"{settings.BASE_DIR}/media/remote_files/{relative_path}"
 
                     # Load preview of the TSV file
                     df, error = load_tsv_preview(file_path, num_rows=5)
