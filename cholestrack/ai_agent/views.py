@@ -15,6 +15,7 @@ from users.decorators import role_confirmed_required
 from .models import ChatSession, ChatMessage, AnalysisJob
 from .gemini_client import GeminiAnalysisClient, DataAnonymizer
 from .tasks import run_statistical_analysis, run_genetic_model_analysis, run_comparative_analysis
+from .tsv_loader import load_tsv_preview, format_dataframe_for_ai
 from files.models import AnalysisFileLocation
 
 
@@ -100,23 +101,59 @@ def send_message(request):
                 'content': msg.content
             })
 
-        # Get available samples for context
-        available_samples = AnalysisFileLocation.objects.filter(
+        # Get available samples with file locations
+        # No limit - show ALL samples so AI can reference any of them
+        available_samples_qs = AnalysisFileLocation.objects.filter(
             file_type='TSV',
             is_active=True
-        ).values_list('sample_id', flat=True).distinct()
+        ).values('sample_id', 'file_path', 'data_type').distinct()
 
         # No need to anonymize - sample_id in database is already anonymized
-        # Use sample IDs directly so AI can reference them consistently
         sample_id_map = {}  # Keep empty map for compatibility with existing code
 
-        # Prepare variant data summary with actual sample IDs
-        variant_data_summary = f"Available samples for analysis ({len(available_samples)} total):\n"
-        for sample_id in list(available_samples)[:20]:  # Show first 20 for better context
-            variant_data_summary += f"- {sample_id}\n"
+        # Build sample list with file information
+        sample_list = list(available_samples_qs)
+        sample_ids = [s['sample_id'] for s in sample_list]
 
-        if len(available_samples) > 20:
-            variant_data_summary += f"\n... and {len(available_samples) - 20} more samples\n"
+        # Prepare variant data summary with ALL samples
+        variant_data_summary = f"Available samples for analysis ({len(sample_ids)} total):\n\n"
+        for sample in sample_list:
+            variant_data_summary += f"- {sample['sample_id']} ({sample['data_type']})\n"
+
+        variant_data_summary += "\nYou can query any of these samples. When a user asks about a specific sample, "
+        variant_data_summary += "I will load the variant data from the corresponding TSV file for analysis.\n"
+
+        # Check if user mentions specific sample IDs in their message
+        # If so, load preview data from those TSV files
+        mentioned_samples = []
+        for sample_id in sample_ids:
+            if sample_id.lower() in message_content.lower():
+                mentioned_samples.append(sample_id)
+
+        # Load data previews for mentioned samples
+        if mentioned_samples:
+            variant_data_summary += "\n" + "="*60 + "\n"
+            variant_data_summary += "VARIANT DATA PREVIEWS (first 5 rows):\n"
+            variant_data_summary += "="*60 + "\n\n"
+
+            for sample_id in mentioned_samples[:3]:  # Limit to 3 samples to avoid overwhelming context
+                # Get file path for this sample
+                sample_file = next((s for s in sample_list if s['sample_id'] == sample_id), None)
+                if sample_file:
+                    file_path = sample_file['file_path']
+
+                    # Load preview of the TSV file
+                    df, error = load_tsv_preview(file_path, num_rows=5)
+
+                    if df is not None:
+                        variant_data_summary += f"Sample: {sample_id}\n"
+                        variant_data_summary += f"File: {Path(file_path).name}\n"
+                        variant_data_summary += f"Total columns: {len(df.columns)}\n\n"
+                        variant_data_summary += format_dataframe_for_ai(df, max_cols=40)
+                        variant_data_summary += "\n\n" + "-"*60 + "\n\n"
+                    else:
+                        variant_data_summary += f"Sample: {sample_id}\n"
+                        variant_data_summary += f"Error loading data: {error}\n\n"
 
         # Call Gemini API
         try:
