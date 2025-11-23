@@ -115,6 +115,38 @@ def query_gene_variants(file_path: str, gene_name: str, max_rows: int = 100) -> 
         return None, f"Error querying gene: {str(e)}"
 
 
+def count_gene_variants(file_path: str, gene_name: str) -> Tuple[Optional[int], Optional[str]]:
+    """
+    Count total variants for a specific gene without loading all data into memory.
+
+    Args:
+        file_path: Full path to the TSV file
+        gene_name: Gene symbol to search for
+
+    Returns:
+        Tuple of (total count, error message if failed)
+    """
+    try:
+        file_path_obj = Path(file_path)
+        if not file_path_obj.exists():
+            return None, f"File not found: {file_path}"
+
+        # Count matching rows across chunks
+        total_count = 0
+        chunk_size = 10000
+
+        for chunk in pd.read_csv(file_path, sep='\t', chunksize=chunk_size, low_memory=False):
+            if 'gene_ref_gene' in chunk.columns:
+                # Count matches (case-insensitive)
+                matches = chunk['gene_ref_gene'].str.upper() == gene_name.upper()
+                total_count += matches.sum()
+
+        return total_count, None
+
+    except Exception as e:
+        return None, f"Error counting gene variants: {str(e)}"
+
+
 def format_dataframe_for_ai(df: pd.DataFrame, max_cols: int = 50) -> str:
     """
     Format DataFrame for AI consumption - shows structure and sample data.

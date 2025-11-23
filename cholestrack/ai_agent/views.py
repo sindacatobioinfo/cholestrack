@@ -15,7 +15,7 @@ from users.decorators import role_confirmed_required
 from .models import ChatSession, ChatMessage, AnalysisJob
 from .gemini_client import GeminiAnalysisClient, DataAnonymizer
 from .tasks import run_statistical_analysis, run_genetic_model_analysis, run_comparative_analysis
-from .tsv_loader import load_tsv_preview, format_dataframe_for_ai, get_file_stats
+from .tsv_loader import load_tsv_preview, format_dataframe_for_ai, get_file_stats, count_gene_variants
 from files.models import AnalysisFileLocation
 
 
@@ -130,6 +130,20 @@ def send_message(request):
             if sample_id.lower() in message_content.lower():
                 mentioned_samples.append(sample_id)
 
+        # Extract potential gene names from user's message
+        # Gene names are typically uppercase words (e.g., BRCA1, LDLR, TP53, ATP8B1)
+        import re
+        words = message_content.split()
+        potential_genes = []
+        for word in words:
+            # Remove punctuation and check if it's an uppercase word 2-10 chars
+            clean_word = re.sub(r'[^\w]', '', word)
+            if clean_word.isupper() and 2 <= len(clean_word) <= 10 and clean_word.isalnum():
+                potential_genes.append(clean_word)
+
+        # Remove duplicates while preserving order
+        mentioned_genes = list(dict.fromkeys(potential_genes))
+
         # Load data previews for mentioned samples
         if mentioned_samples:
             variant_data_summary += "\n" + "="*60 + "\n"
@@ -162,7 +176,16 @@ def send_message(request):
                             variant_data_summary += f"Data preview (FIRST 5 ROWS ONLY - do not extrapolate counts from this):\n"
                             variant_data_summary += format_dataframe_for_ai(df, max_cols=40)
                             variant_data_summary += f"\n\nNOTE: This is only a 5-row preview. The actual file has {stats['total_rows']:,} rows total.\n"
-                            variant_data_summary += "For gene-specific counts, you must indicate you need the full file analyzed.\n"
+
+                            # If specific genes were mentioned, query them automatically
+                            if mentioned_genes:
+                                variant_data_summary += f"\n**GENE-SPECIFIC VARIANT COUNTS (queried from full file):**\n"
+                                for gene_name in mentioned_genes[:5]:  # Limit to 5 genes to avoid overwhelming
+                                    gene_count, gene_error = count_gene_variants(file_path, gene_name)
+                                    if gene_count is not None:
+                                        variant_data_summary += f"  - {gene_name}: {gene_count:,} variants found\n"
+                                    # If error, skip silently (might not be a real gene name)
+                                variant_data_summary += "\n"
                         else:
                             variant_data_summary += f"Preview error: {preview_error}\n"
 
