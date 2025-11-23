@@ -15,7 +15,7 @@ from users.decorators import role_confirmed_required
 from .models import ChatSession, ChatMessage, AnalysisJob
 from .gemini_client import GeminiAnalysisClient, DataAnonymizer
 from .tasks import run_statistical_analysis, run_genetic_model_analysis, run_comparative_analysis
-from .tsv_loader import load_tsv_preview, format_dataframe_for_ai
+from .tsv_loader import load_tsv_preview, format_dataframe_for_ai, get_file_stats
 from files.models import AnalysisFileLocation
 
 
@@ -144,18 +144,32 @@ def send_message(request):
                     relative_path = sample_file['file_path']
                     file_path = f"{settings.BASE_DIR}/media/remote_files/{relative_path}"
 
-                    # Load preview of the TSV file
-                    df, error = load_tsv_preview(file_path, num_rows=5)
+                    # Get file statistics first (total rows, etc.)
+                    stats, stats_error = get_file_stats(file_path)
 
-                    if df is not None:
+                    if stats:
                         variant_data_summary += f"Sample: {sample_id}\n"
                         variant_data_summary += f"File: {Path(file_path).name}\n"
-                        variant_data_summary += f"Total columns: {len(df.columns)}\n\n"
-                        variant_data_summary += format_dataframe_for_ai(df, max_cols=40)
-                        variant_data_summary += "\n\n" + "-"*60 + "\n\n"
+                        variant_data_summary += f"**IMPORTANT - ACTUAL FILE STATISTICS:**\n"
+                        variant_data_summary += f"  - Total rows (variants): {stats['total_rows']:,}\n"
+                        variant_data_summary += f"  - Total columns: {stats['total_columns']}\n"
+                        variant_data_summary += f"  - File size: {stats['file_size_mb']:.2f} MB\n\n"
+
+                        # Load preview of the TSV file
+                        df, preview_error = load_tsv_preview(file_path, num_rows=5)
+
+                        if df is not None:
+                            variant_data_summary += f"Data preview (FIRST 5 ROWS ONLY - do not extrapolate counts from this):\n"
+                            variant_data_summary += format_dataframe_for_ai(df, max_cols=40)
+                            variant_data_summary += f"\n\nNOTE: This is only a 5-row preview. The actual file has {stats['total_rows']:,} rows total.\n"
+                            variant_data_summary += "For gene-specific counts, you must indicate you need the full file analyzed.\n"
+                        else:
+                            variant_data_summary += f"Preview error: {preview_error}\n"
+
+                        variant_data_summary += "\n" + "-"*60 + "\n\n"
                     else:
                         variant_data_summary += f"Sample: {sample_id}\n"
-                        variant_data_summary += f"Error loading data: {error}\n\n"
+                        variant_data_summary += f"Error loading file: {stats_error}\n\n"
 
         # Call Gemini API
         try:

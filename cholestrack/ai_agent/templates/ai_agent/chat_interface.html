@@ -78,7 +78,7 @@
                         </span>
                         <span class="message-time">{{ msg.created_at|date:"H:i" }}</span>
                     </div>
-                    <div class="message-text">{{ msg.content|linebreaks }}</div>
+                    <div class="message-text markdown-content">{{ msg.content|linebreaks }}</div>
                     {% if msg.has_analysis_job and msg.metadata %}
                     <div class="job-status" id="job-{{ msg.metadata.job_id }}">
                         <i class="fas fa-spinner fa-spin"></i> Analysis job running...
@@ -384,6 +384,48 @@
     background: #e8f4f8;
 }
 
+/* Markdown rendering styles */
+.markdown-content strong {
+    font-weight: 700;
+    color: #1a202c;
+}
+
+.markdown-content em {
+    font-style: italic;
+}
+
+.markdown-content code {
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+.markdown-content pre {
+    background: #f1f5f9;
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 10px 0;
+}
+
+.markdown-content ul, .markdown-content ol {
+    margin-left: 20px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.markdown-content li {
+    margin-bottom: 4px;
+}
+
+.markdown-content h3, .markdown-content h4 {
+    margin-top: 12px;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
 .typing-indicator {
     display: flex;
     gap: 15px;
@@ -487,8 +529,26 @@
 }
 </style>
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
 const sessionId = '{{ active_session.session_id }}';
+
+// Configure marked for inline parsing
+marked.setOptions({
+    breaks: true,
+    gfm: true
+});
+
+// Convert existing messages to markdown on page load
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.markdown-content').forEach(function(element) {
+        if (element.dataset.rendered !== 'true') {
+            const text = element.textContent.trim();
+            element.innerHTML = marked.parse(text);
+            element.dataset.rendered = 'true';
+        }
+    });
+});
 
 function sendMessage(event) {
     event.preventDefault();
@@ -564,7 +624,7 @@ function addMessageToUI(role, content) {
                     <span class="message-role">${roleLabels[role]}</span>
                     <span class="message-time">${timeStr}</span>
                 </div>
-                <div class="message-text">${content.replace(/\n/g, '<br>')}</div>
+                <div class="message-text markdown-content">${marked.parse(content)}</div>
             </div>
         </div>
     `;

@@ -7,6 +7,41 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 
+def get_file_stats(file_path: str) -> Tuple[Optional[Dict], Optional[str]]:
+    """
+    Get basic statistics about a TSV file without loading all data.
+
+    Args:
+        file_path: Full path to the TSV file
+
+    Returns:
+        Tuple of (stats dict, error message if failed)
+    """
+    try:
+        file_path_obj = Path(file_path)
+        if not file_path_obj.exists():
+            return None, f"File not found: {file_path}"
+
+        # Count total lines (faster than loading full file)
+        with open(file_path, 'r') as f:
+            total_lines = sum(1 for _ in f)
+
+        # Read just the header to get column names
+        df_header = pd.read_csv(file_path, sep='\t', nrows=0)
+
+        stats = {
+            'total_rows': total_lines - 1,  # Exclude header
+            'total_columns': len(df_header.columns),
+            'column_names': list(df_header.columns),
+            'file_size_mb': file_path_obj.stat().st_size / (1024 * 1024)
+        }
+
+        return stats, None
+
+    except Exception as e:
+        return None, f"Error reading file stats: {str(e)}"
+
+
 def load_tsv_preview(file_path: str, num_rows: int = 5) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
     """
     Load a preview of TSV file data.
@@ -35,6 +70,49 @@ def load_tsv_preview(file_path: str, num_rows: int = 5) -> Tuple[Optional[pd.Dat
 
     except Exception as e:
         return None, f"Error reading file: {str(e)}"
+
+
+def query_gene_variants(file_path: str, gene_name: str, max_rows: int = 100) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
+    """
+    Query variants for a specific gene from TSV file.
+
+    Args:
+        file_path: Full path to the TSV file
+        gene_name: Gene symbol to search for
+        max_rows: Maximum rows to return (default: 100)
+
+    Returns:
+        Tuple of (DataFrame with matching variants, error message if failed)
+    """
+    try:
+        file_path_obj = Path(file_path)
+        if not file_path_obj.exists():
+            return None, f"File not found: {file_path}"
+
+        # Read file and filter for gene
+        # Use chunksize to handle large files efficiently
+        matching_rows = []
+        chunk_size = 10000
+
+        for chunk in pd.read_csv(file_path, sep='\t', chunksize=chunk_size, low_memory=False):
+            if 'gene_ref_gene' in chunk.columns:
+                # Filter for gene (case-insensitive)
+                gene_matches = chunk[chunk['gene_ref_gene'].str.upper() == gene_name.upper()]
+                if len(gene_matches) > 0:
+                    matching_rows.append(gene_matches)
+
+                # Stop if we have enough
+                if sum(len(df) for df in matching_rows) >= max_rows:
+                    break
+
+        if matching_rows:
+            result = pd.concat(matching_rows, ignore_index=True)
+            return result.head(max_rows), None
+        else:
+            return pd.DataFrame(), None  # Empty dataframe, no error
+
+    except Exception as e:
+        return None, f"Error querying gene: {str(e)}"
 
 
 def format_dataframe_for_ai(df: pd.DataFrame, max_cols: int = 50) -> str:
