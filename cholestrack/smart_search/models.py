@@ -24,10 +24,23 @@ class GeneSearchQuery(models.Model):
         verbose_name="User"
     )
 
+    SEARCH_TYPE_CHOICES = [
+        ('gene', 'Gene'),
+        ('phenotype', 'Phenotype'),
+    ]
+
+    search_type = models.CharField(
+        max_length=20,
+        choices=SEARCH_TYPE_CHOICES,
+        default='gene',
+        verbose_name="Search Type",
+        help_text="Type of search: gene or phenotype"
+    )
+
     search_term = models.CharField(
         max_length=200,
         verbose_name="Search Term",
-        help_text="Gene symbol (e.g., ATP8B1, BRCA1)"
+        help_text="Gene symbol (e.g., ATP8B1, BRCA1) or phenotype name"
     )
 
     # Cached results (stored as JSON)

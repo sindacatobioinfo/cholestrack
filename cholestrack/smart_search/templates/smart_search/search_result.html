@@ -13,7 +13,7 @@
                     Results for <span class="text-purple-600">{{ query.search_term }}</span>
                 </h1>
                 <p class="text-gray-600">
-                    Gene Symbol | Searched: {{ query.created_at|date:"Y-m-d H:i" }}
+                    {% if query.search_type == 'phenotype' %}Phenotype Search{% else %}Gene Search{% endif %} | Searched: {{ query.created_at|date:"Y-m-d H:i" }}
                 </p>
             </div>
             <div class="flex space-x-3">
@@ -60,19 +60,36 @@
     </div>
     {% else %}
 
-    <!-- Gene Info -->
+    <!-- Gene/Phenotype Info -->
     {% if query.gene_info %}
     <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
         <div class="flex">
             <div class="flex-shrink-0">
+                {% if query.search_type == 'phenotype' %}
+                <i class="fas fa-heartbeat text-blue-400 text-xl"></i>
+                {% else %}
                 <i class="fas fa-dna text-blue-400 text-xl"></i>
+                {% endif %}
             </div>
             <div class="ml-3">
+                {% if query.search_type == 'phenotype' %}
+                <h3 class="text-sm font-medium text-blue-800">Phenotype Information</h3>
+                <p class="mt-2 text-sm text-blue-700">
+                    <strong>HPO ID:</strong> {{ query.gene_info.hpo_id }} |
+                    <strong>Name:</strong> {{ query.gene_info.name }}
+                </p>
+                {% if query.gene_info.definition %}
+                <p class="mt-1 text-sm text-blue-700">
+                    <strong>Definition:</strong> {{ query.gene_info.definition }}
+                </p>
+                {% endif %}
+                {% else %}
                 <h3 class="text-sm font-medium text-blue-800">Gene Information</h3>
                 <p class="mt-2 text-sm text-blue-700">
                     <strong>Gene Symbol:</strong> {{ query.gene_info.gene_symbol }} |
                     <strong>Entrez ID:</strong> {{ query.gene_info.entrez_id }}
                 </p>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -80,14 +97,22 @@
 
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <!-- HPO Phenotypes Card -->
-        <a href="#phenotypes-section" class="block bg-white rounded-lg shadow-md p-6 border-t-4 border-red-500 hover:shadow-lg transition-shadow cursor-pointer">
+        <!-- HPO Phenotypes/Genes Card -->
+        <a href="#phenotypes-section" class="block bg-white rounded-lg shadow-md p-6 border-t-4 {% if query.search_type == 'phenotype' %}border-purple-500{% else %}border-red-500{% endif %} hover:shadow-lg transition-shadow cursor-pointer">
             <div class="flex items-center justify-between mb-2">
-                <h3 class="text-lg font-semibold text-gray-800">HPO Phenotypes</h3>
+                <h3 class="text-lg font-semibold text-gray-800">
+                    {% if query.search_type == 'phenotype' %}Associated Genes{% else %}HPO Phenotypes{% endif %}
+                </h3>
+                {% if query.search_type == 'phenotype' %}
+                <i class="fas fa-dna text-purple-500 text-2xl"></i>
+                {% else %}
                 <i class="fas fa-heartbeat text-red-500 text-2xl"></i>
+                {% endif %}
             </div>
             <p class="text-3xl font-bold text-gray-900">{{ phenotypes_total_count }}</p>
-            <p class="text-sm text-gray-600 mt-1">Phenotype terms</p>
+            <p class="text-sm text-gray-600 mt-1">
+                {% if query.search_type == 'phenotype' %}Genes{% else %}Phenotype terms{% endif %}
+            </p>
         </a>
 
         <!-- Associated Diseases Card -->
@@ -101,29 +126,58 @@
         </a>
     </div>
 
-    <!-- HPO Phenotypes Results -->
+    <!-- HPO Phenotypes/Associated Genes Results -->
     {% if query.phenotypes %}
     <div id="phenotypes-section" class="bg-white rounded-lg shadow-md p-6 mb-8 scroll-mt-8">
         <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">
+            {% if query.search_type == 'phenotype' %}
+            <i class="fas fa-dna text-purple-500 mr-2"></i>
+            Associated Genes
+            {% else %}
             <i class="fas fa-heartbeat text-red-500 mr-2"></i>
             HPO Phenotypes
+            {% endif %}
         </h2>
         <p class="text-sm text-gray-600 mb-4">
+            {% if query.search_type == 'phenotype' %}
+            Genes associated with phenotype "{{ query.search_term }}"
+            {% else %}
             Phenotype terms from the Human Phenotype Ontology (HPO) associated with {{ query.search_term }}
+            {% endif %}
             <span class="font-semibold">({{ phenotypes_total_count }} total)</span>
         </p>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
+                    {% if query.search_type == 'phenotype' %}
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gene Symbol</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entrez ID</th>
+                    </tr>
+                    {% else %}
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HPO ID</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phenotype Name</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Definition</th>
                     </tr>
+                    {% endif %}
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for phenotype in phenotypes_page_obj %}
                     <tr class="hover:bg-gray-50">
+                        {% if query.search_type == 'phenotype' %}
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ phenotype.gene_symbol }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="https://www.ncbi.nlm.nih.gov/gene/{{ phenotype.entrez_id }}"
+                               target="_blank"
+                               class="text-blue-600 hover:text-blue-900 text-sm">
+                                {{ phenotype.entrez_id }}
+                                <i class="fas fa-external-link-alt text-xs ml-1"></i>
+                            </a>
+                        </td>
+                        {% else %}
                         <td class="px-6 py-4 whitespace-nowrap">
                             <a href="https://hpo.jax.org/app/browse/term/{{ phenotype.hpo_id }}"
                                target="_blank"
@@ -138,6 +192,7 @@
                         <td class="px-6 py-4">
                             <div class="text-sm text-gray-500">{{ phenotype.definition }}</div>
                         </td>
+                        {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>

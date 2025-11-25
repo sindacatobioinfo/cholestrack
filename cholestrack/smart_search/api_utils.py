@@ -253,3 +253,82 @@ def get_hpo_database_stats() -> Dict:
     """
     hpo_client = HPOLocalClient()
     return hpo_client.get_database_stats()
+
+
+def fetch_phenotype_data(phenotype_search_term: str) -> Dict:
+    """
+    Fetch all data for a phenotype including associated genes and diseases from local database.
+
+    Args:
+        phenotype_search_term: Phenotype name or HPO ID (e.g., 'Abnormal heart morphology' or 'HP:0001627')
+
+    Returns:
+        Dictionary with genes, diseases, and phenotype_info
+    """
+    try:
+        # Search for HPO term by ID or name
+        hpo_term = None
+
+        # Check if it's an HPO ID
+        if phenotype_search_term.startswith('HP:'):
+            hpo_term = HPOTerm.objects.filter(hpo_id=phenotype_search_term).first()
+        else:
+            # Search by name (case-insensitive partial match)
+            hpo_term = HPOTerm.objects.filter(
+                name__icontains=phenotype_search_term
+            ).first()
+
+        if not hpo_term:
+            return {
+                'genes': [],
+                'diseases': [],
+                'phenotype_info': None,
+                'error': f'Phenotype "{phenotype_search_term}" not found in local HPO database. '
+                         'Try searching with at least 5 characters or use autocomplete.'
+            }
+
+        # Get associated genes
+        genes = []
+        gene_associations = GenePhenotypeAssociation.objects.filter(
+            hpo_term=hpo_term
+        ).select_related('gene')
+
+        for assoc in gene_associations:
+            genes.append({
+                'gene_symbol': assoc.gene.gene_symbol,
+                'entrez_id': assoc.gene.entrez_id
+            })
+
+        # Get associated diseases with frequency information
+        diseases = []
+        disease_associations = DiseasePhenotypeAssociation.objects.filter(
+            hpo_term=hpo_term
+        ).select_related('disease')
+
+        for assoc in disease_associations:
+            diseases.append({
+                'disease_id': assoc.disease.database_id,
+                'disease_name': assoc.disease.disease_name,
+                'database': assoc.disease.database,
+                'frequency': assoc.frequency or 'Not specified'
+            })
+
+        # Return results
+        return {
+            'genes': genes,
+            'diseases': diseases,
+            'phenotype_info': {
+                'hpo_id': hpo_term.hpo_id,
+                'name': hpo_term.name,
+                'definition': hpo_term.definition or 'No definition available'
+            }
+        }
+
+    except Exception as e:
+        print(f"Error searching local HPO database for phenotype {phenotype_search_term}: {e}")
+        return {
+            'genes': [],
+            'diseases': [],
+            'phenotype_info': None,
+            'error': f'Database error: {str(e)}'
+        }
