@@ -158,7 +158,11 @@ box-sizing: border-box;
             Entrar
         </button>
     </form>
-    
+
+    <div class="register-link">
+        <a href="{% url 'users:password_reset' %}" style="color: #6c757d; text-decoration: none; font-size: 13px;">Forgot your password?</a>
+    </div>
+
     <div class="register-link">
         Don't have an account? <a href="{% url 'users:register' %}" style="color: #007bff; text-decoration: none; font-weight: 600;">Create an account</a>
     </div>
