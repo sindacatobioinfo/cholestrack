@@ -2,13 +2,13 @@
 from django.urls import path
 from django.contrib.auth.views import (
     LogoutView,
-    PasswordResetView,
     PasswordResetDoneView,
     PasswordResetConfirmView,
     PasswordResetCompleteView
 )
 from .views import (
     CholestrackLoginView,
+    CholestrackPasswordResetView,
     register,
     verify_email,
     resend_verification,
@@ -34,12 +34,7 @@ urlpatterns = [
 
     # Password Reset
     path('password-reset/',
-         PasswordResetView.as_view(
-             template_name='users/password_reset_form.html',
-             email_template_name='users/password_reset_email.html',
-             subject_template_name='users/password_reset_subject.txt',
-             success_url='/password-reset/done/'
-         ),
+         CholestrackPasswordResetView.as_view(),
          name='password_reset'),
 
     path('password-reset/done/',
