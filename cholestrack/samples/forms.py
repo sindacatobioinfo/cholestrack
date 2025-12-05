@@ -47,12 +47,20 @@ class PatientForm(forms.ModelForm):
         help_text='Other relevant clinical details'
     )
 
+    # Hidden field for signs and symptoms (managed by JavaScript)
+    signs_and_symptoms_json = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(),
+        label='Signs and Symptoms (HPO)'
+    )
+
     class Meta:
         model = Patient
         fields = [
             'patient_id',
             'name',
             'birth_date',
+            'signs_and_symptoms',
             'main_exome_result',
             'analysis_status',
             'responsible_user',
@@ -117,6 +125,11 @@ class PatientForm(forms.ModelForm):
                 self.fields['phenotype'].initial = clinical_data.get('fenótipo', '')
                 self.fields['additional_clinical_info'].initial = clinical_data.get('info_adicional', '')
 
+        # Populate signs_and_symptoms_json field
+        if self.instance and self.instance.pk:
+            if self.instance.signs_and_symptoms:
+                self.fields['signs_and_symptoms_json'].initial = json.dumps(self.instance.signs_and_symptoms)
+
     def save(self, commit=True):
         instance = super().save(commit=False)
 
@@ -133,6 +146,16 @@ class PatientForm(forms.ModelForm):
             clinical_info['info_adicional'] = self.cleaned_data['additional_clinical_info']
 
         instance.clinical_info_json = clinical_info
+
+        # Handle signs_and_symptoms from hidden JSON field
+        signs_json = self.cleaned_data.get('signs_and_symptoms_json', '')
+        if signs_json:
+            try:
+                instance.signs_and_symptoms = json.loads(signs_json)
+            except (json.JSONDecodeError, TypeError):
+                instance.signs_and_symptoms = []
+        else:
+            instance.signs_and_symptoms = []
 
         if commit:
             instance.save()
