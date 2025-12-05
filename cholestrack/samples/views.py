@@ -48,11 +48,20 @@ def sample_list(request):
             file_metadata['sample_id'] = getattr(first_location, 'sample_id', 'N/D')
             file_metadata['data_type'] = getattr(first_location, 'data_type', 'N/D').upper()
 
+            # First pass: collect all files
             for location in locations:
                 available_files[location.file_type] = {
                     'id': location.id,
                     'server': location.server_name
                 }
+
+            # Second pass: attach BAI to BAM if both exist
+            if 'BAM' in available_files and 'BAI' in available_files:
+                # Attach BAI information to BAM entry
+                available_files['BAM']['bai_id'] = available_files['BAI']['id']
+                available_files['BAM']['bai_server'] = available_files['BAI']['server']
+                # Remove BAI from available_files so it doesn't show as a separate button
+                del available_files['BAI']
 
         # Safely handle clinical_info_json which might be a dict, string, or None
         clinical_info = patient.clinical_info_json
