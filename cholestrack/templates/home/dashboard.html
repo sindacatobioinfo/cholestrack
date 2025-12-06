@@ -97,6 +97,21 @@
                     Chat with Billy
                 </a>
             </div>
+
+            <!-- Admin Center Card (Only visible to admins) -->
+            {% if user.role.role == 'ADMIN' %}
+            <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+                <h3 class="text-xl font-semibold text-gray-800 mb-3">
+                    <i class="fas fa-user-shield text-red-600 mr-2"></i> Admin Center
+                </h3>
+                <p class="text-gray-600 mb-4">
+                    Manage users, roles, permissions, and system settings.
+                </p>
+                <a href="{% url 'home:admin_center' %}" class="btn btn-danger">
+                    Admin Center
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -173,6 +188,15 @@
 
     .btn-cyan:hover {
         background-color: #0891b2;
+    }
+
+    .btn-danger {
+        background-color: #dc2626;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background-color: #b91c1c;
     }
 </style>
 {% endblock %}
