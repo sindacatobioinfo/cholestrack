@@ -15,4 +15,5 @@ urlpatterns = [
     path('refresh/<int:query_id>/', views.refresh_search, name='refresh_search'),
     path('history/', views.search_history, name='search_history'),
     path('autocomplete/', views.autocomplete_phenotypes, name='autocomplete_phenotypes'),
+    path('autocomplete-diseases/', views.autocomplete_diseases, name='autocomplete_diseases'),
 ]

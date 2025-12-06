@@ -27,6 +27,7 @@ class GeneSearchQuery(models.Model):
     SEARCH_TYPE_CHOICES = [
         ('gene', 'Gene'),
         ('phenotype', 'Phenotype'),
+        ('disease', 'Disease'),
     ]
 
     search_type = models.CharField(

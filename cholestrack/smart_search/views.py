@@ -9,9 +9,9 @@ from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import JsonResponse
 from users.decorators import role_confirmed_required
-from .models import GeneSearchQuery, HPOTerm
+from .models import GeneSearchQuery, HPOTerm, Disease
 from .forms import GeneSearchForm
-from .api_utils import fetch_gene_data, fetch_phenotype_data
+from .api_utils import fetch_gene_data, fetch_phenotype_data, fetch_disease_data
 
 
 @login_required
@@ -84,6 +84,8 @@ def process_search(request, query_id):
             results = fetch_gene_data(query.search_term)
         elif query.search_type == 'phenotype':
             results = fetch_phenotype_data(query.search_term)
+        elif query.search_type == 'disease':
+            results = fetch_disease_data(query.search_term)
         else:
             # Default to gene search for backward compatibility
             results = fetch_gene_data(query.search_term)
@@ -103,12 +105,18 @@ def process_search(request, query_id):
             query.gene_info = results['gene_info']
             success_msg = (f'Found {len(results["phenotypes"])} HPO phenotype terms and '
                           f'{len(results["diseases"])} associated diseases for gene {query.search_term}.')
-        else:  # phenotype search
+        elif query.search_type == 'phenotype':
             query.phenotypes = results['genes']  # Store genes in phenotypes field for phenotype searches
             query.diseases = results['diseases']
             query.gene_info = results['phenotype_info']  # Store phenotype info in gene_info field
             success_msg = (f'Found {len(results["genes"])} associated genes and '
                           f'{len(results["diseases"])} associated diseases for phenotype "{query.search_term}".')
+        else:  # disease search
+            query.phenotypes = results['phenotypes']  # Store phenotypes for disease
+            query.diseases = results['genes']  # Store genes in diseases field for disease searches
+            query.gene_info = results['disease_info']  # Store disease info in gene_info field
+            success_msg = (f'Found {len(results["phenotypes"])} associated phenotypes and '
+                          f'{len(results["genes"])} associated genes for disease "{query.search_term}".')
 
         query.success = True
 
@@ -232,6 +240,40 @@ def autocomplete_phenotypes(request):
                 'display': f"{phenotype.name} ({phenotype.hpo_id})"
             }
             for phenotype in phenotypes
+        ]
+
+        return JsonResponse({'results': results})
+
+    except Exception as e:
+        return JsonResponse({'results': [], 'error': str(e)})
+
+
+@login_required
+@role_confirmed_required
+def autocomplete_diseases(request):
+    """
+    AJAX endpoint for disease autocomplete.
+    Returns matching Disease terms based on partial input (minimum 5 characters).
+    """
+    query = request.GET.get('q', '').strip()
+
+    # Minimum 5 characters to trigger autocomplete
+    if len(query) < 5:
+        return JsonResponse({'results': []})
+
+    try:
+        # Case-insensitive search in Disease name field
+        diseases = Disease.objects.filter(
+            disease_name__icontains=query
+        ).order_by('disease_name')[:10]  # Limit to 10 results
+
+        results = [
+            {
+                'disease_id': disease.database_id,
+                'name': disease.disease_name,
+                'display': f"{disease.disease_name} ({disease.database_id})"
+            }
+            for disease in diseases
         ]
 
         return JsonResponse({'results': results})
