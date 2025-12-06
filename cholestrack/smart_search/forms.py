@@ -8,12 +8,13 @@ from django import forms
 
 class GeneSearchForm(forms.Form):
     """
-    Form for searching genes or phenotypes in HPO database.
+    Form for searching genes, phenotypes, or diseases in HPO database.
     """
 
     SEARCH_TYPE_CHOICES = [
         ('gene', 'Search by Gene'),
         ('phenotype', 'Search by Phenotype'),
+        ('disease', 'Search by Disease'),
     ]
 
     search_type = forms.ChoiceField(
@@ -29,12 +30,12 @@ class GeneSearchForm(forms.Form):
         max_length=200,
         widget=forms.TextInput(attrs={
             'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-            'placeholder': 'Enter gene symbol (e.g., ATP8B1, BRCA1) or phenotype name...',
+            'placeholder': 'Enter gene symbol, phenotype, or disease name...',
             'autofocus': True,
             'id': 'search-term-input'
         }),
         label='Search Term',
-        help_text='Enter a gene symbol or phenotype name (min 5 characters for autocomplete)'
+        help_text='Enter a gene symbol, phenotype, or disease name (min 5 characters for autocomplete)'
     )
 
     def clean_search_term(self):
@@ -50,9 +51,13 @@ class GeneSearchForm(forms.Form):
             search_term = search_term.upper()
             if len(search_term) < 2:
                 raise forms.ValidationError("Gene symbol must be at least 2 characters long")
-        else:
+        elif search_type == 'phenotype':
             # For phenotype searches, keep original case but validate length
             if len(search_term) < 3:
                 raise forms.ValidationError("Phenotype search term must be at least 3 characters long")
+        else:  # disease
+            # For disease searches, keep original case but validate length
+            if len(search_term) < 3:
+                raise forms.ValidationError("Disease search term must be at least 3 characters long")
 
         return search_term
