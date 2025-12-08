@@ -265,8 +265,19 @@
                 {% if query.clinpgx_variant_data.success %}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="bg-white rounded-lg p-4 shadow-sm">
-                        <p class="text-sm text-gray-600 mb-1">Accession ID</p>
-                        <p class="text-md font-semibold text-gray-900">{{ query.clinpgx_variant_data.accessionId }}</p>
+                        <p class="text-sm text-gray-600 mb-1">Variant ID</p>
+                        <p class="text-md font-semibold text-gray-900">{{ query.clinpgx_variant_data.variantId }}</p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Gene Symbol</p>
+                        <p class="text-md font-semibold text-gray-900">
+                            {% if query.clinpgx_variant_data.geneSymbol %}
+                                {{ query.clinpgx_variant_data.geneSymbol }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </p>
                     </div>
 
                     <div class="bg-white rounded-lg p-4 shadow-sm">
