@@ -253,6 +253,13 @@
             <div class="ml-4 flex-1">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-green-800">ClinPGx Pharmacogenomic Annotation</h3>
+                    {% if query.clinpgx_variant_data.success and query.clinpgx_variant_data.accessionId != 'N/A' %}
+                    <a href="https://www.clinpgx.org/variant/{{ query.clinpgx_variant_data.accessionId }}"
+                       target="_blank"
+                       class="text-sm text-green-600 hover:text-green-800 font-medium whitespace-nowrap">
+                        View on ClinPGx <i class="fas fa-external-link-alt ml-1"></i>
+                    </a>
+                    {% endif %}
                 </div>
 
                 {% if query.clinpgx_variant_data.success %}

@@ -256,6 +256,23 @@ def fetch_clinpgx_data(gene_symbol: str) -> Dict:
         if response.status_code == 200:
             data = response.json()
 
+            # API returns an array, take the first element if available
+            if isinstance(data, list):
+                if len(data) > 0:
+                    data = data[0]
+                else:
+                    # Empty array means no results
+                    return {
+                        'id': None,
+                        'cpicGene': False,
+                        'hasNonStandardHaplotypes': False,
+                        'hideHaplotypes': False,
+                        'pharmVarGene': False,
+                        'vipTier': None,
+                        'success': False,
+                        'error': f'Gene "{gene_symbol}" not found in ClinPGx database'
+                    }
+
             # Extract relevant fields
             return {
                 'id': data.get('id', None),  # ClinPGx gene ID (e.g., PA116)
@@ -351,6 +368,23 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
 
         if response.status_code == 200:
             data = response.json()
+
+            # API returns an array, take the first element if available
+            if isinstance(data, list):
+                if len(data) > 0:
+                    data = data[0]
+                else:
+                    # Empty array means no results
+                    return {
+                        'accessionId': 'N/A',
+                        'alleleGenotype': 'N/A',
+                        'comparison': 'N/A',
+                        'isAssociated': False,
+                        'isPlural': False,
+                        'relatedChemicals': [],
+                        'success': False,
+                        'error': f'No variant annotation found for "{variant_id}"'
+                    }
 
             # Extract relevant fields
             return {
