@@ -399,6 +399,7 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
                     # Empty data array
                     return {
                         'accessionId': 'N/A',
+                        'variantPageId': None,
                         'alleleGenotype': 'N/A',
                         'comparison': 'N/A',
                         'isAssociated': False,
@@ -412,8 +413,17 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
                 data = response_data
 
             # Extract relevant fields
+            # Get variant page ID from linkedObjects
+            variant_page_id = None
+            if 'linkedObjects' in data and data['linkedObjects']:
+                for obj in data['linkedObjects']:
+                    if obj.get('objCls') == 'Variant':
+                        variant_page_id = obj.get('id')
+                        break
+
             return {
                 'accessionId': data.get('accessionId', 'N/A'),
+                'variantPageId': variant_page_id,  # ID for variant page link
                 'alleleGenotype': data.get('alleleGenotype', 'N/A'),
                 'comparison': data.get('comparison', 'N/A'),
                 'isAssociated': data.get('isAssociated', False),
@@ -425,6 +435,7 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
             # Variant annotation not found in ClinPGx
             return {
                 'accessionId': 'N/A',
+                'variantPageId': None,
                 'alleleGenotype': 'N/A',
                 'comparison': 'N/A',
                 'isAssociated': False,
@@ -437,6 +448,7 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
             # Other error
             return {
                 'accessionId': 'N/A',
+                'variantPageId': None,
                 'alleleGenotype': 'N/A',
                 'comparison': 'N/A',
                 'isAssociated': False,
@@ -449,6 +461,7 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
     except requests.exceptions.Timeout:
         return {
             'accessionId': 'N/A',
+            'variantPageId': None,
             'alleleGenotype': 'N/A',
             'comparison': 'N/A',
             'isAssociated': False,
@@ -460,6 +473,7 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
     except requests.exceptions.RequestException as e:
         return {
             'accessionId': 'N/A',
+            'variantPageId': None,
             'alleleGenotype': 'N/A',
             'comparison': 'N/A',
             'isAssociated': False,
@@ -471,6 +485,7 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
     except Exception as e:
         return {
             'accessionId': 'N/A',
+            'variantPageId': None,
             'alleleGenotype': 'N/A',
             'comparison': 'N/A',
             'isAssociated': False,
