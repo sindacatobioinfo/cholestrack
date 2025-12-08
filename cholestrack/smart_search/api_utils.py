@@ -269,6 +269,7 @@ def fetch_clinpgx_data(gene_symbol: str) -> Dict:
         elif response.status_code == 404:
             # Gene not found in ClinPGx
             return {
+                'id': None,
                 'cpicGene': False,
                 'hasNonStandardHaplotypes': False,
                 'hideHaplotypes': False,
@@ -280,6 +281,7 @@ def fetch_clinpgx_data(gene_symbol: str) -> Dict:
         else:
             # Other error
             return {
+                'id': None,
                 'cpicGene': False,
                 'hasNonStandardHaplotypes': False,
                 'hideHaplotypes': False,
@@ -291,6 +293,7 @@ def fetch_clinpgx_data(gene_symbol: str) -> Dict:
 
     except requests.exceptions.Timeout:
         return {
+            'id': None,
             'cpicGene': False,
             'hasNonStandardHaplotypes': False,
             'hideHaplotypes': False,
@@ -301,6 +304,7 @@ def fetch_clinpgx_data(gene_symbol: str) -> Dict:
         }
     except requests.exceptions.RequestException as e:
         return {
+            'id': None,
             'cpicGene': False,
             'hasNonStandardHaplotypes': False,
             'hideHaplotypes': False,
@@ -311,6 +315,7 @@ def fetch_clinpgx_data(gene_symbol: str) -> Dict:
         }
     except Exception as e:
         return {
+            'id': None,
             'cpicGene': False,
             'hasNonStandardHaplotypes': False,
             'hideHaplotypes': False,
@@ -462,13 +467,33 @@ def fetch_variant_data(variant_id: str) -> Dict:
             elif 'minor_allele_freq' in data:
                 maf = data['minor_allele_freq']
 
-            # Extract relevant fields
+            # Filter mappings to find chromosome mapping
+            chromosome_mapping = None
+            if 'mappings' in data and data['mappings']:
+                for mapping in data['mappings']:
+                    if mapping.get('coord_system') == 'chromosome':
+                        chromosome_mapping = mapping
+                        break
+
+            # Extract relevant fields from chromosome mapping
+            if chromosome_mapping:
+                assembly_name = chromosome_mapping.get('assembly_name', 'N/A')
+                location = chromosome_mapping.get('location', 'N/A')
+                allele_string = chromosome_mapping.get('allele_string', 'N/A')
+                ancestral_allele = chromosome_mapping.get('ancestral_allele', 'N/A')
+            else:
+                # Fallback if no chromosome mapping found
+                assembly_name = 'N/A'
+                location = 'N/A'
+                allele_string = 'N/A'
+                ancestral_allele = 'N/A'
+
             return {
                 'name': data.get('name', variant_id),
-                'assembly_name': data.get('assembly_name', 'N/A'),
-                'location': f"{data.get('mappings', [{}])[0].get('location', 'N/A')}" if data.get('mappings') else 'N/A',
-                'allele_string': data.get('mappings', [{}])[0].get('allele_string', 'N/A') if data.get('mappings') else 'N/A',
-                'ancestral_allele': data.get('ancestral_allele', 'N/A'),
+                'assembly_name': assembly_name,
+                'location': location,
+                'allele_string': allele_string,
+                'ancestral_allele': ancestral_allele,
                 'MAF': maf if maf else 'N/A',
                 'most_severe_consequence': data.get('most_severe_consequence', 'N/A'),
                 'success': True

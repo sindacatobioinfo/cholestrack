@@ -243,7 +243,8 @@
     </div>
     {% endif %}
 
-    <!-- Summary Cards -->
+    <!-- Summary Cards (Hidden for Variant Search) -->
+    {% if query.search_type != 'variant' %}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <!-- HPO Phenotypes/Genes Card -->
         <a href="#phenotypes-section" class="block bg-white rounded-lg shadow-md p-6 border-t-4 {% if query.search_type == 'phenotype' %}border-purple-500{% elif query.search_type == 'disease' %}border-red-500{% else %}border-red-500{% endif %} hover:shadow-lg transition-shadow cursor-pointer">
@@ -283,9 +284,10 @@
             </p>
         </a>
     </div>
+    {% endif %}
 
-    <!-- HPO Phenotypes/Associated Genes Results -->
-    {% if query.phenotypes %}
+    <!-- HPO Phenotypes/Associated Genes Results (Hidden for Variant Search) -->
+    {% if query.phenotypes and query.search_type != 'variant' %}
     <div id="phenotypes-section" class="bg-white rounded-lg shadow-md p-6 mb-8 scroll-mt-8">
         <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">
             {% if query.search_type == 'phenotype' %}
@@ -455,8 +457,8 @@
     </div>
     {% endif %}
 
-    <!-- Associated Diseases/Genes Results -->
-    {% if query.diseases %}
+    <!-- Associated Diseases/Genes Results (Hidden for Variant Search) -->
+    {% if query.diseases and query.search_type != 'variant' %}
     <div id="diseases-section" class="bg-white rounded-lg shadow-md p-6 mb-8 scroll-mt-8">
         <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">
             {% if query.search_type == 'disease' %}
