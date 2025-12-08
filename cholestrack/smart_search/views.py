@@ -11,7 +11,7 @@ from django.http import JsonResponse
 from users.decorators import role_confirmed_required
 from .models import GeneSearchQuery, HPOTerm, Disease
 from .forms import GeneSearchForm
-from .api_utils import fetch_gene_data, fetch_phenotype_data, fetch_disease_data, fetch_variant_data
+from .api_utils import fetch_gene_data, fetch_phenotype_data, fetch_disease_data, fetch_variant_data, fetch_clinpgx_variant_data
 
 
 @login_required
@@ -122,6 +122,11 @@ def process_search(request, query_id):
                           f'{len(results["genes"])} associated genes for disease "{query.search_term}".')
         else:  # variant search
             query.variant_data = results  # Store variant data
+
+            # Fetch ClinPGx variant annotation data
+            clinpgx_variant_results = fetch_clinpgx_variant_data(query.search_term)
+            query.clinpgx_variant_data = clinpgx_variant_results  # Store ClinPGx variant data
+
             success_msg = f'Retrieved variant information for "{query.search_term}".'
 
         query.success = True

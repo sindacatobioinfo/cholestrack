@@ -326,6 +326,102 @@ def fetch_clinpgx_data(gene_symbol: str) -> Dict:
         }
 
 
+def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
+    """
+    Fetch variant annotation data from ClinPGx API.
+
+    Args:
+        variant_id: Variant identifier (e.g., 'rs333')
+
+    Returns:
+        Dictionary with ClinPGx variant annotation data or error information
+    """
+    try:
+        url = f"https://api.clinpgx.org/v1/data/variantAnnotation"
+        params = {
+            'location.fingerprint': variant_id,
+            'view': 'base'
+        }
+        headers = {
+            'accept': 'application/json'
+        }
+
+        # Make request with timeout
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+
+        if response.status_code == 200:
+            data = response.json()
+
+            # Extract relevant fields
+            return {
+                'accessionId': data.get('accessionId', 'N/A'),
+                'alleleGenotype': data.get('alleleGenotype', 'N/A'),
+                'comparison': data.get('comparison', 'N/A'),
+                'isAssociated': data.get('isAssociated', False),
+                'isPlural': data.get('isPlural', False),
+                'relatedChemicals': data.get('relatedChemicals', []),
+                'success': True
+            }
+        elif response.status_code == 404:
+            # Variant annotation not found in ClinPGx
+            return {
+                'accessionId': 'N/A',
+                'alleleGenotype': 'N/A',
+                'comparison': 'N/A',
+                'isAssociated': False,
+                'isPlural': False,
+                'relatedChemicals': [],
+                'success': False,
+                'error': f'Variant annotation for "{variant_id}" not found in ClinPGx database'
+            }
+        else:
+            # Other error
+            return {
+                'accessionId': 'N/A',
+                'alleleGenotype': 'N/A',
+                'comparison': 'N/A',
+                'isAssociated': False,
+                'isPlural': False,
+                'relatedChemicals': [],
+                'success': False,
+                'error': f'ClinPGx API error: HTTP {response.status_code}'
+            }
+
+    except requests.exceptions.Timeout:
+        return {
+            'accessionId': 'N/A',
+            'alleleGenotype': 'N/A',
+            'comparison': 'N/A',
+            'isAssociated': False,
+            'isPlural': False,
+            'relatedChemicals': [],
+            'success': False,
+            'error': 'ClinPGx API request timeout'
+        }
+    except requests.exceptions.RequestException as e:
+        return {
+            'accessionId': 'N/A',
+            'alleleGenotype': 'N/A',
+            'comparison': 'N/A',
+            'isAssociated': False,
+            'isPlural': False,
+            'relatedChemicals': [],
+            'success': False,
+            'error': f'ClinPGx API request failed: {str(e)}'
+        }
+    except Exception as e:
+        return {
+            'accessionId': 'N/A',
+            'alleleGenotype': 'N/A',
+            'comparison': 'N/A',
+            'isAssociated': False,
+            'isPlural': False,
+            'relatedChemicals': [],
+            'success': False,
+            'error': f'Error fetching ClinPGx variant data: {str(e)}'
+        }
+
+
 def fetch_gene_data(gene_symbol: str) -> Dict:
     """
     Fetch all HPO data for a gene including phenotypes and diseases from local database,

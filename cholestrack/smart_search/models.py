@@ -81,6 +81,13 @@ class GeneSearchQuery(models.Model):
         help_text="Variant information from Ensembl API"
     )
 
+    clinpgx_variant_data = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name="ClinPGx Variant Data",
+        help_text="Variant annotation data from ClinPGx API"
+    )
+
     # Metadata
     created_at = models.DateTimeField(
         auto_now_add=True,
