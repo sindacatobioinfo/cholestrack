@@ -66,6 +66,13 @@ class GeneSearchQuery(models.Model):
         help_text="Gene metadata from HPO"
     )
 
+    clinpgx_data = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name="ClinPGx Data",
+        help_text="Pharmacogenomic data from ClinPGx API"
+    )
+
     # Metadata
     created_at = models.DateTimeField(
         auto_now_add=True,

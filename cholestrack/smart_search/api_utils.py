@@ -2,10 +2,12 @@
 """
 Local database utilities for HPO (Human Phenotype Ontology).
 Fetches gene-phenotype-disease relationships from the local HPO database.
+Also integrates with ClinPGx API for pharmacogenomic information.
 """
 
 from typing import Dict, List
 from django.db.models import Q
+import requests
 from .models import (
     HPOTerm, Gene, Disease,
     GenePhenotypeAssociation,
@@ -228,18 +230,113 @@ class HPOLocalClient:
             }
 
 
+def fetch_clinpgx_data(gene_symbol: str) -> Dict:
+    """
+    Fetch pharmacogenomic data from ClinPGx API.
+
+    Args:
+        gene_symbol: Gene symbol (e.g., 'ABCC2')
+
+    Returns:
+        Dictionary with ClinPGx data or error information
+    """
+    try:
+        url = f"https://api.clinpgx.org/v1/data/gene"
+        params = {
+            'symbol': gene_symbol.upper(),
+            'view': 'base'
+        }
+        headers = {
+            'accept': 'application/json'
+        }
+
+        # Make request with timeout
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+
+        if response.status_code == 200:
+            data = response.json()
+
+            # Extract relevant fields
+            return {
+                'cpicGene': data.get('cpicGene', False),
+                'hasNonStandardHaplotypes': data.get('hasNonStandardHaplotypes', False),
+                'hideHaplotypes': data.get('hideHaplotypes', False),
+                'pharmVarGene': data.get('pharmVarGene', False),
+                'vipTier': data.get('vipTier', None),
+                'success': True
+            }
+        elif response.status_code == 404:
+            # Gene not found in ClinPGx
+            return {
+                'cpicGene': False,
+                'hasNonStandardHaplotypes': False,
+                'hideHaplotypes': False,
+                'pharmVarGene': False,
+                'vipTier': None,
+                'success': False,
+                'error': f'Gene "{gene_symbol}" not found in ClinPGx database'
+            }
+        else:
+            # Other error
+            return {
+                'cpicGene': False,
+                'hasNonStandardHaplotypes': False,
+                'hideHaplotypes': False,
+                'pharmVarGene': False,
+                'vipTier': None,
+                'success': False,
+                'error': f'ClinPGx API error: HTTP {response.status_code}'
+            }
+
+    except requests.exceptions.Timeout:
+        return {
+            'cpicGene': False,
+            'hasNonStandardHaplotypes': False,
+            'hideHaplotypes': False,
+            'pharmVarGene': False,
+            'vipTier': None,
+            'success': False,
+            'error': 'ClinPGx API request timeout'
+        }
+    except requests.exceptions.RequestException as e:
+        return {
+            'cpicGene': False,
+            'hasNonStandardHaplotypes': False,
+            'hideHaplotypes': False,
+            'pharmVarGene': False,
+            'vipTier': None,
+            'success': False,
+            'error': f'ClinPGx API request failed: {str(e)}'
+        }
+    except Exception as e:
+        return {
+            'cpicGene': False,
+            'hasNonStandardHaplotypes': False,
+            'hideHaplotypes': False,
+            'pharmVarGene': False,
+            'vipTier': None,
+            'success': False,
+            'error': f'Error fetching ClinPGx data: {str(e)}'
+        }
+
+
 def fetch_gene_data(gene_symbol: str) -> Dict:
     """
-    Fetch all HPO data for a gene including phenotypes and diseases from local database.
+    Fetch all HPO data for a gene including phenotypes and diseases from local database,
+    plus pharmacogenomic data from ClinPGx API.
 
     Args:
         gene_symbol: Gene symbol (e.g., 'ATP8B1')
 
     Returns:
-        Dictionary with phenotypes, diseases, and gene_info
+        Dictionary with phenotypes, diseases, gene_info, and clinpgx_data
     """
     hpo_client = HPOLocalClient()
     results = hpo_client.search_gene(gene_symbol)
+
+    # Add ClinPGx data
+    clinpgx_data = fetch_clinpgx_data(gene_symbol)
+    results['clinpgx_data'] = clinpgx_data
 
     return results
 
