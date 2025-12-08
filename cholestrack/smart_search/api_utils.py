@@ -8,6 +8,9 @@ Also integrates with ClinPGx API for pharmacogenomic information.
 from typing import Dict, List
 from django.db.models import Q
 import requests
+import logging
+
+logger = logging.getLogger(__name__)
 from .models import (
     HPOTerm, Gene, Disease,
     GenePhenotypeAssociation,
@@ -254,9 +257,9 @@ def fetch_clinpgx_data(gene_symbol: str) -> Dict:
         response = requests.get(url, params=params, headers=headers, timeout=10)
 
         # Debug: Log the actual URL and response
-        print(f"ClinPGx Gene API - URL: {response.url}")
-        print(f"ClinPGx Gene API - Status: {response.status_code}")
-        print(f"ClinPGx Gene API - Response: {response.text[:500]}")
+        logger.info(f"ClinPGx Gene API - URL: {response.url}")
+        logger.info(f"ClinPGx Gene API - Status: {response.status_code}")
+        logger.info(f"ClinPGx Gene API - Response: {response.text[:500]}")
 
         if response.status_code == 200:
             data = response.json()
@@ -372,9 +375,9 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
         response = requests.get(url, params=params, headers=headers, timeout=10)
 
         # Debug: Log the actual URL and response
-        print(f"ClinPGx Variant API - URL: {response.url}")
-        print(f"ClinPGx Variant API - Status: {response.status_code}")
-        print(f"ClinPGx Variant API - Response: {response.text[:500]}")
+        logger.info(f"ClinPGx Variant API - URL: {response.url}")
+        logger.info(f"ClinPGx Variant API - Status: {response.status_code}")
+        logger.info(f"ClinPGx Variant API - Response: {response.text[:500]}")
 
         if response.status_code == 200:
             data = response.json()
