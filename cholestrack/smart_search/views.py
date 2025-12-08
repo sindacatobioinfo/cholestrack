@@ -87,7 +87,26 @@ def process_search(request, query_id):
         elif query.search_type == 'disease':
             results = fetch_disease_data(query.search_term)
         elif query.search_type == 'variant':
-            results = fetch_variant_data(query.search_term)
+            # For variant, we fetch both and tolerate partial failure
+            variant_results = fetch_variant_data(query.search_term)
+            clinpgx_results = fetch_clinpgx_variant_data(query.search_term)
+            
+            # Check if at least one succeeded
+            if variant_results.get('success', False) or clinpgx_results.get('success', False):
+                # Construct a "results" object that passes the error check
+                results = {
+                    'variant_data': variant_results,
+                    'clinpgx_variant_data': clinpgx_results
+                }
+            else:
+                # Both failed, return an error result
+                error_msg = []
+                if 'error' in variant_results:
+                    error_msg.append(f"Ensembl: {variant_results['error']}")
+                if 'error' in clinpgx_results:
+                    error_msg.append(f"ClinPGx: {clinpgx_results['error']}")
+                
+                results = {'error': "; ".join(error_msg)}
         else:
             # Default to gene search for backward compatibility
             results = fetch_gene_data(query.search_term)
@@ -121,13 +140,18 @@ def process_search(request, query_id):
             success_msg = (f'Found {len(results["phenotypes"])} associated phenotypes and '
                           f'{len(results["genes"])} associated genes for disease "{query.search_term}".')
         else:  # variant search
-            query.variant_data = results  # Store variant data
+            query.variant_data = results['variant_data']
+            query.clinpgx_variant_data = results['clinpgx_variant_data']
 
-            # Fetch ClinPGx variant annotation data
-            clinpgx_variant_results = fetch_clinpgx_variant_data(query.search_term)
-            query.clinpgx_variant_data = clinpgx_variant_results  # Store ClinPGx variant data
+            ensembl_success = query.variant_data.get('success', False)
+            clinpgx_success = query.clinpgx_variant_data.get('success', False)
 
-            success_msg = f'Retrieved variant information for "{query.search_term}".'
+            if ensembl_success and clinpgx_success:
+                success_msg = f'Retrieved variant information for "{query.search_term}".'
+            elif ensembl_success:
+                success_msg = f'Retrieved Ensembl data for "{query.search_term}". ClinPGx data unavailable.'
+            else:
+                success_msg = f'Retrieved ClinPGx data for "{query.search_term}". Ensembl data unavailable.'
 
         query.success = True
 
