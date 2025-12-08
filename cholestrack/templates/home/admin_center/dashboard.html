@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Center - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">
+            <i class="fas fa-user-shield text-red-600 mr-2"></i> Admin Center
+        </h1>
+        <p class="text-gray-600">System administration and user management</p>
+    </div>
+
+    <!-- Quick Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <!-- Total Users -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 uppercase">Total Users</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ total_users }}</p>
+                </div>
+                <div class="bg-blue-100 rounded-full p-3">
+                    <i class="fas fa-users text-blue-600 text-2xl"></i>
+                </div>
+            </div>
+            <div class="mt-4 text-sm text-gray-500">
+                <span class="text-green-600 font-semibold">{{ active_users }}</span> active
+            </div>
+        </div>
+
+        <!-- Pending Role Confirmations -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-orange-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 uppercase">Pending Roles</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ pending_role_confirmations }}</p>
+                </div>
+                <div class="bg-orange-100 rounded-full p-3">
+                    <i class="fas fa-user-clock text-orange-600 text-2xl"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="{% url 'home:admin_users' %}?status=pending_role" class="text-orange-600 hover:text-orange-700 text-sm font-medium">
+                    Review Now →
+                </a>
+            </div>
+        </div>
+
+        <!-- Pending Role Changes -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 uppercase">Role Requests</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ pending_role_changes }}</p>
+                </div>
+                <div class="bg-purple-100 rounded-full p-3">
+                    <i class="fas fa-exchange-alt text-purple-600 text-2xl"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="{% url 'home:admin_role_requests' %}" class="text-purple-600 hover:text-purple-700 text-sm font-medium">
+                    View Requests →
+                </a>
+            </div>
+        </div>
+
+        <!-- Total Patients -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-teal-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600 uppercase">Total Patients</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ total_patients }}</p>
+                </div>
+                <div class="bg-teal-100 rounded-full p-3">
+                    <i class="fas fa-hospital-user text-teal-600 text-2xl"></i>
+                </div>
+            </div>
+            <div class="mt-4 text-sm text-gray-500">
+                <span class="text-green-600 font-semibold">{{ recent_registrations }}</span> new users (30 days)
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- User Management -->
+        <a href="{% url 'home:admin_users' %}" class="block bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition border-t-4 border-blue-500">
+            <div class="flex items-center mb-4">
+                <div class="bg-blue-100 rounded-full p-3 mr-4">
+                    <i class="fas fa-users-cog text-blue-600 text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-900">User Management</h3>
+                    <p class="text-gray-600 text-sm">Manage users, roles, and permissions</p>
+                </div>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-500">{{ total_users }} total users</span>
+                <i class="fas fa-arrow-right text-blue-600"></i>
+            </div>
+        </a>
+
+        <!-- Role Change Requests -->
+        <a href="{% url 'home:admin_role_requests' %}" class="block bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition border-t-4 border-purple-500">
+            <div class="flex items-center mb-4">
+                <div class="bg-purple-100 rounded-full p-3 mr-4">
+                    <i class="fas fa-clipboard-list text-purple-600 text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-900">Role Requests</h3>
+                    <p class="text-gray-600 text-sm">Review and approve role changes</p>
+                </div>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-500">{{ pending_role_changes }} pending</span>
+                <i class="fas fa-arrow-right text-purple-600"></i>
+            </div>
+        </a>
+    </div>
+
+    <!-- Role Distribution -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">
+            <i class="fas fa-chart-pie text-gray-600 mr-2"></i> Role Distribution
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {% for role_stat in role_distribution %}
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <p class="text-sm text-gray-600 uppercase mb-1">{{ role_stat.role }}</p>
+                <p class="text-2xl font-bold text-gray-900">{{ role_stat.count }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recent Users -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">
+            <i class="fas fa-user-plus text-gray-600 mr-2"></i> Recent Registrations
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registered</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for user in recent_users %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ user.username }}</div>
+                            <div class="text-sm text-gray-500">{{ user.first_name }} {{ user.last_name }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ user.email }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                {{ user.role.get_role_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if user.role.confirmed_by_admin %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                <i class="fas fa-check mr-1"></i> Confirmed
+                            </span>
+                            {% else %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                <i class="fas fa-clock mr-1"></i> Pending
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ user.date_joined|date:"Y-m-d H:i" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">No recent registrations</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -197,8 +197,9 @@ ped_file: ""  # Leave empty if not available
 threads:
   others: 1          # Default for most tools
   fastp: 16          # fastp quality control and trimming
-  bwa: 16            # BWA-MEM alignment
-  minimap2: 16       # Minimap2 alignment (same as BWA by default)
+  bwa: 12            # BWA-MEM alignment
+  minimap2: 12       # Minimap2 alignment (same as BWA by default)
+  samtools_sort: 4   # Samtools sort threads (used in alignment pipelines)
 
   # DeepVariant single-command workflow (if enabled)
   # Adjust based on your workflow: single sample = higher threads, multi-sample = lower threads for parallelism

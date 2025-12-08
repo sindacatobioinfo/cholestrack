@@ -24,10 +24,25 @@ class GeneSearchQuery(models.Model):
         verbose_name="User"
     )
 
+    SEARCH_TYPE_CHOICES = [
+        ('gene', 'Gene'),
+        ('phenotype', 'Phenotype'),
+        ('disease', 'Disease'),
+        ('variant', 'Variant'),
+    ]
+
+    search_type = models.CharField(
+        max_length=20,
+        choices=SEARCH_TYPE_CHOICES,
+        default='gene',
+        verbose_name="Search Type",
+        help_text="Type of search: gene or phenotype"
+    )
+
     search_term = models.CharField(
         max_length=200,
         verbose_name="Search Term",
-        help_text="Gene symbol (e.g., ATP8B1, BRCA1)"
+        help_text="Gene symbol (e.g., ATP8B1, BRCA1) or phenotype name"
     )
 
     # Cached results (stored as JSON)
@@ -50,6 +65,27 @@ class GeneSearchQuery(models.Model):
         blank=True,
         verbose_name="Gene Information",
         help_text="Gene metadata from HPO"
+    )
+
+    clinpgx_data = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name="ClinPGx Data",
+        help_text="Pharmacogenomic data from ClinPGx API"
+    )
+
+    variant_data = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name="Variant Data",
+        help_text="Variant information from Ensembl API"
+    )
+
+    clinpgx_variant_data = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name="ClinPGx Variant Data",
+        help_text="Variant annotation data from ClinPGx API"
     )
 
     # Metadata

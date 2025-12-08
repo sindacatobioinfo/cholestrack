@@ -13,7 +13,7 @@
                     Results for <span class="text-purple-600">{{ query.search_term }}</span>
                 </h1>
                 <p class="text-gray-600">
-                    Gene Symbol | Searched: {{ query.created_at|date:"Y-m-d H:i" }}
+                    {% if query.search_type == 'phenotype' %}Phenotype Search{% elif query.search_type == 'disease' %}Disease Search{% elif query.search_type == 'variant' %}Variant Search{% else %}Gene Search{% endif %} | Searched: {{ query.created_at|date:"Y-m-d H:i" }}
                 </p>
             </div>
             <div class="flex space-x-3">
@@ -60,70 +60,403 @@
     </div>
     {% else %}
 
-    <!-- Gene Info -->
+    <!-- Gene/Phenotype/Disease Info -->
     {% if query.gene_info %}
-    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
-        <div class="flex">
-            <div class="flex-shrink-0">
-                <i class="fas fa-dna text-blue-400 text-xl"></i>
+    <div class="grid grid-cols-1 {% if query.search_type == 'gene' and query.clinpgx_data %}md:grid-cols-2{% endif %} gap-6 mb-6">
+        <!-- Gene/Phenotype/Disease Information Card -->
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-4">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    {% if query.search_type == 'phenotype' %}
+                    <i class="fas fa-heartbeat text-blue-400 text-xl"></i>
+                    {% elif query.search_type == 'disease' %}
+                    <i class="fas fa-disease text-blue-400 text-xl"></i>
+                    {% else %}
+                    <i class="fas fa-dna text-blue-400 text-xl"></i>
+                    {% endif %}
+                </div>
+                <div class="ml-3">
+                    {% if query.search_type == 'phenotype' %}
+                    <h3 class="text-sm font-medium text-blue-800">Phenotype Information</h3>
+                    <p class="mt-2 text-sm text-blue-700">
+                        <strong>HPO ID:</strong> {{ query.gene_info.hpo_id }} |
+                        <strong>Name:</strong> {{ query.gene_info.name }}
+                    </p>
+                    {% if query.gene_info.definition %}
+                    <p class="mt-1 text-sm text-blue-700">
+                        <strong>Definition:</strong> {{ query.gene_info.definition }}
+                    </p>
+                    {% endif %}
+                    {% elif query.search_type == 'disease' %}
+                    <h3 class="text-sm font-medium text-blue-800">Disease Information</h3>
+                    <p class="mt-2 text-sm text-blue-700">
+                        <strong>Disease ID:</strong> {{ query.gene_info.disease_id }} |
+                        <strong>Name:</strong> {{ query.gene_info.disease_name }}
+                    </p>
+                    {% if query.gene_info.database %}
+                    <p class="mt-1 text-sm text-blue-700">
+                        <strong>Database:</strong> {{ query.gene_info.database }}
+                    </p>
+                    {% endif %}
+                    {% else %}
+                    <h3 class="text-sm font-medium text-blue-800">Gene Information</h3>
+                    <p class="mt-2 text-sm text-blue-700">
+                        <strong>Gene Symbol:</strong> {{ query.gene_info.gene_symbol }} |
+                        <strong>Entrez ID:</strong> {{ query.gene_info.entrez_id }}
+                    </p>
+                    {% endif %}
+                </div>
             </div>
-            <div class="ml-3">
-                <h3 class="text-sm font-medium text-blue-800">Gene Information</h3>
-                <p class="mt-2 text-sm text-blue-700">
-                    <strong>Gene Symbol:</strong> {{ query.gene_info.gene_symbol }} |
-                    <strong>Entrez ID:</strong> {{ query.gene_info.entrez_id }}
-                </p>
+        </div>
+
+        <!-- ClinPGx Pharmacogenomic Information Card (Gene Search Only) -->
+        {% if query.search_type == 'gene' and query.clinpgx_data %}
+        <div class="bg-green-50 border-l-4 border-green-400 p-4">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-pills text-green-400 text-xl"></i>
+                </div>
+                <div class="ml-3 w-full">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-medium text-green-800">ClinPGx Pharmacogenomics</h3>
+                        {% if query.clinpgx_data.id %}
+                        <a href="https://www.clinpgx.org/gene/{{ query.clinpgx_data.id }}"
+                           target="_blank"
+                           class="text-sm text-green-600 hover:text-green-800 font-medium whitespace-nowrap">
+                            View on ClinPGx <i class="fas fa-external-link-alt ml-1"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+
+                    {% if query.clinpgx_data.success %}
+                    <div class="mt-2 space-y-2">
+                        <div class="flex items-center text-sm text-green-700">
+                            <i class="fas {% if query.clinpgx_data.cpicGene %}fa-check-circle text-green-600{% else %}fa-times-circle text-gray-400{% endif %} mr-2"></i>
+                            <span><strong>CPIC Gene:</strong> {% if query.clinpgx_data.cpicGene %}Yes{% else %}No{% endif %}</span>
+                        </div>
+
+                        <div class="flex items-center text-sm text-green-700">
+                            <i class="fas {% if query.clinpgx_data.pharmVarGene %}fa-check-circle text-green-600{% else %}fa-times-circle text-gray-400{% endif %} mr-2"></i>
+                            <span><strong>PharmVar Gene:</strong> {% if query.clinpgx_data.pharmVarGene %}Yes{% else %}No{% endif %}</span>
+                        </div>
+
+                        {% if query.clinpgx_data.vipTier %}
+                        <div class="flex items-center text-sm text-green-700">
+                            <i class="fas fa-star text-green-600 mr-2"></i>
+                            <span><strong>VIP Tier:</strong> {{ query.clinpgx_data.vipTier }}</span>
+                        </div>
+                        {% endif %}
+
+                        <div class="flex items-center text-sm text-green-700">
+                            <i class="fas {% if query.clinpgx_data.hasNonStandardHaplotypes %}fa-info-circle text-blue-600{% else %}fa-minus-circle text-gray-400{% endif %} mr-2"></i>
+                            <span><strong>Non-Standard Haplotypes:</strong> {% if query.clinpgx_data.hasNonStandardHaplotypes %}Yes{% else %}No{% endif %}</span>
+                        </div>
+
+                        <div class="flex items-center text-sm text-green-700">
+                            <i class="fas {% if query.clinpgx_data.hideHaplotypes %}fa-eye-slash text-gray-600{% else %}fa-eye text-green-600{% endif %} mr-2"></i>
+                            <span><strong>Haplotypes Visible:</strong> {% if query.clinpgx_data.hideHaplotypes %}No{% else %}Yes{% endif %}</span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="mt-2 text-sm text-gray-600">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        {% if query.clinpgx_data.error %}{{ query.clinpgx_data.error }}{% else %}No pharmacogenomic data available{% endif %}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Variant Information Card (Variant Search Only) -->
+    {% if query.search_type == 'variant' and query.variant_data %}
+    <div class="bg-purple-50 border-l-4 border-purple-400 p-6 mb-6">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <i class="fas fa-dna text-purple-400 text-2xl"></i>
+            </div>
+            <div class="ml-4 flex-1">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-purple-800">Variant Information</h3>
+                    {% if query.variant_data.name %}
+                    <a href="https://www.ensembl.org/Homo_sapiens/Variation/Explore?v={{ query.variant_data.name }}"
+                       target="_blank"
+                       class="text-sm text-purple-600 hover:text-purple-800 font-medium whitespace-nowrap">
+                        View on Ensembl <i class="fas fa-external-link-alt ml-1"></i>
+                    </a>
+                    {% endif %}
+                </div>
+
+                {% if query.variant_data.success %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Name</p>
+                        <p class="text-md font-semibold text-gray-900">{{ query.variant_data.name }}</p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Assembly</p>
+                        <p class="text-md font-semibold text-gray-900">{{ query.variant_data.assembly_name }}</p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Location</p>
+                        <p class="text-md font-semibold text-gray-900 font-mono text-sm">{{ query.variant_data.location }}</p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Allele String</p>
+                        <p class="text-md font-semibold text-gray-900">{{ query.variant_data.allele_string }}</p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Ancestral Allele</p>
+                        <p class="text-md font-semibold text-gray-900">{{ query.variant_data.ancestral_allele }}</p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Minor Allele Frequency (MAF)</p>
+                        <p class="text-md font-semibold text-gray-900">{{ query.variant_data.MAF }}</p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 shadow-sm col-span-1 md:col-span-2">
+                        <p class="text-sm text-gray-600 mb-1">Most Severe Consequence</p>
+                        <p class="text-md font-semibold text-gray-900">
+                            <span class="px-3 py-1 rounded-full bg-purple-100 text-purple-800 text-sm">
+                                {{ query.variant_data.most_severe_consequence }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                {% else %}
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p class="text-sm text-red-700">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        {% if query.variant_data.error %}{{ query.variant_data.error }}{% else %}No variant data available{% endif %}
+                    </p>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
     {% endif %}
 
-    <!-- Summary Cards -->
+    <!-- ClinPGx Variant Annotation Card (Variant Search Only) -->
+    {% if query.search_type == 'variant' and query.clinpgx_variant_data %}
+    <div class="bg-green-50 border-l-4 border-green-400 p-6 mb-6">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <i class="fas fa-pills text-green-400 text-2xl"></i>
+            </div>
+            <div class="ml-4 flex-1">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-green-800">ClinPGx Pharmacogenomic Annotation</h3>
+                    {% if query.clinpgx_variant_data.success and query.clinpgx_variant_data.variantPageId %}
+                    <a href="https://www.clinpgx.org/variant/{{ query.clinpgx_variant_data.variantPageId }}"
+                       target="_blank"
+                       class="text-sm text-green-600 hover:text-green-800 font-medium whitespace-nowrap">
+                        View on ClinPGx <i class="fas fa-external-link-alt ml-1"></i>
+                    </a>
+                    {% endif %}
+                </div>
+
+                {% if query.clinpgx_variant_data.success %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Accession ID</p>
+                        <p class="text-md font-semibold text-gray-900">{{ query.clinpgx_variant_data.accessionId }}</p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Allele Genotype</p>
+                        <p class="text-md font-semibold text-gray-900">{{ query.clinpgx_variant_data.alleleGenotype }}</p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Comparison</p>
+                        <p class="text-md font-semibold text-gray-900">{{ query.clinpgx_variant_data.comparison }}</p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Is Associated</p>
+                        <p class="text-md font-semibold text-gray-900">
+                            {% if query.clinpgx_variant_data.isAssociated %}
+                                <i class="fas fa-check-circle text-green-600 mr-1"></i>Yes
+                            {% else %}
+                                <i class="fas fa-times-circle text-gray-400 mr-1"></i>No
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Is Plural</p>
+                        <p class="text-md font-semibold text-gray-900">
+                            {% if query.clinpgx_variant_data.isPlural %}
+                                <i class="fas fa-check-circle text-green-600 mr-1"></i>Yes
+                            {% else %}
+                                <i class="fas fa-times-circle text-gray-400 mr-1"></i>No
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 shadow-sm col-span-1 md:col-span-2">
+                        <p class="text-sm text-gray-600 mb-3">Related Chemicals</p>
+                        {% if query.clinpgx_variant_data.relatedChemicals %}
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-green-50">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Chemical Name</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Type</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        {% for chemical in query.clinpgx_variant_data.relatedChemicals %}
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                                                {% if chemical.name %}{{ chemical.name }}{% else %}{{ chemical }}{% endif %}
+                                            </td>
+                                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-600">
+                                                {% if chemical.objCls %}
+                                                    <span class="px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs">
+                                                        {{ chemical.objCls }}
+                                                    </span>
+                                                {% else %}
+                                                    N/A
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-md font-semibold text-gray-900">N/A</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p class="text-sm text-yellow-700">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        {% if query.clinpgx_variant_data.error %}{{ query.clinpgx_variant_data.error }}{% else %}No pharmacogenomic annotation available{% endif %}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Summary Cards (Hidden for Variant Search) -->
+    {% if query.search_type != 'variant' %}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <!-- HPO Phenotypes Card -->
-        <a href="#phenotypes-section" class="block bg-white rounded-lg shadow-md p-6 border-t-4 border-red-500 hover:shadow-lg transition-shadow cursor-pointer">
+        <!-- HPO Phenotypes/Genes Card -->
+        <a href="#phenotypes-section" class="block bg-white rounded-lg shadow-md p-6 border-t-4 {% if query.search_type == 'phenotype' %}border-purple-500{% elif query.search_type == 'disease' %}border-red-500{% else %}border-red-500{% endif %} hover:shadow-lg transition-shadow cursor-pointer">
             <div class="flex items-center justify-between mb-2">
-                <h3 class="text-lg font-semibold text-gray-800">HPO Phenotypes</h3>
+                <h3 class="text-lg font-semibold text-gray-800">
+                    {% if query.search_type == 'phenotype' %}Associated Genes{% elif query.search_type == 'disease' %}Associated Phenotypes{% else %}HPO Phenotypes{% endif %}
+                </h3>
+                {% if query.search_type == 'phenotype' %}
+                <i class="fas fa-dna text-purple-500 text-2xl"></i>
+                {% elif query.search_type == 'disease' %}
                 <i class="fas fa-heartbeat text-red-500 text-2xl"></i>
+                {% else %}
+                <i class="fas fa-heartbeat text-red-500 text-2xl"></i>
+                {% endif %}
             </div>
             <p class="text-3xl font-bold text-gray-900">{{ phenotypes_total_count }}</p>
-            <p class="text-sm text-gray-600 mt-1">Phenotype terms</p>
+            <p class="text-sm text-gray-600 mt-1">
+                {% if query.search_type == 'phenotype' %}Genes{% elif query.search_type == 'disease' %}Phenotype terms{% else %}Phenotype terms{% endif %}
+            </p>
         </a>
 
-        <!-- Associated Diseases Card -->
-        <a href="#diseases-section" class="block bg-white rounded-lg shadow-md p-6 border-t-4 border-orange-500 hover:shadow-lg transition-shadow cursor-pointer">
+        <!-- Associated Diseases/Genes Card -->
+        <a href="#diseases-section" class="block bg-white rounded-lg shadow-md p-6 border-t-4 {% if query.search_type == 'disease' %}border-purple-500{% else %}border-orange-500{% endif %} hover:shadow-lg transition-shadow cursor-pointer">
             <div class="flex items-center justify-between mb-2">
-                <h3 class="text-lg font-semibold text-gray-800">Associated Diseases</h3>
+                <h3 class="text-lg font-semibold text-gray-800">
+                    {% if query.search_type == 'disease' %}Associated Genes{% else %}Associated Diseases{% endif %}
+                </h3>
+                {% if query.search_type == 'disease' %}
+                <i class="fas fa-dna text-purple-500 text-2xl"></i>
+                {% else %}
                 <i class="fas fa-disease text-orange-500 text-2xl"></i>
+                {% endif %}
             </div>
             <p class="text-3xl font-bold text-gray-900">{{ diseases_total_count }}</p>
-            <p class="text-sm text-gray-600 mt-1">Disease associations</p>
+            <p class="text-sm text-gray-600 mt-1">
+                {% if query.search_type == 'disease' %}Gene associations{% else %}Disease associations{% endif %}
+            </p>
         </a>
     </div>
+    {% endif %}
 
-    <!-- HPO Phenotypes Results -->
-    {% if query.phenotypes %}
+    <!-- HPO Phenotypes/Associated Genes Results (Hidden for Variant Search) -->
+    {% if query.phenotypes and query.search_type != 'variant' %}
     <div id="phenotypes-section" class="bg-white rounded-lg shadow-md p-6 mb-8 scroll-mt-8">
         <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">
+            {% if query.search_type == 'phenotype' %}
+            <i class="fas fa-dna text-purple-500 mr-2"></i>
+            Associated Genes
+            {% elif query.search_type == 'disease' %}
+            <i class="fas fa-heartbeat text-red-500 mr-2"></i>
+            Associated Phenotypes
+            {% else %}
             <i class="fas fa-heartbeat text-red-500 mr-2"></i>
             HPO Phenotypes
+            {% endif %}
         </h2>
         <p class="text-sm text-gray-600 mb-4">
+            {% if query.search_type == 'phenotype' %}
+            Genes associated with phenotype "{{ query.search_term }}"
+            {% elif query.search_type == 'disease' %}
+            Phenotype terms from the Human Phenotype Ontology (HPO) associated with disease "{{ query.search_term }}"
+            {% else %}
             Phenotype terms from the Human Phenotype Ontology (HPO) associated with {{ query.search_term }}
+            {% endif %}
             <span class="font-semibold">({{ phenotypes_total_count }} total)</span>
         </p>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
+                    {% if query.search_type == 'phenotype' %}
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gene Symbol</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entrez ID</th>
+                    </tr>
+                    {% elif query.search_type == 'disease' %}
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HPO ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phenotype Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Definition</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Frequency</th>
+                    </tr>
+                    {% else %}
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HPO ID</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phenotype Name</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Definition</th>
                     </tr>
+                    {% endif %}
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for phenotype in phenotypes_page_obj %}
                     <tr class="hover:bg-gray-50">
+                        {% if query.search_type == 'phenotype' %}
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ phenotype.gene_symbol }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="https://www.ncbi.nlm.nih.gov/gene/{{ phenotype.entrez_id }}"
+                               target="_blank"
+                               class="text-blue-600 hover:text-blue-900 text-sm">
+                                {{ phenotype.entrez_id }}
+                                <i class="fas fa-external-link-alt text-xs ml-1"></i>
+                            </a>
+                        </td>
+                        {% elif query.search_type == 'disease' %}
                         <td class="px-6 py-4 whitespace-nowrap">
                             <a href="https://hpo.jax.org/app/browse/term/{{ phenotype.hpo_id }}"
                                target="_blank"
@@ -138,6 +471,27 @@
                         <td class="px-6 py-4">
                             <div class="text-sm text-gray-500">{{ phenotype.definition }}</div>
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                {{ phenotype.frequency }}
+                            </span>
+                        </td>
+                        {% else %}
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="https://hpo.jax.org/app/browse/term/{{ phenotype.hpo_id }}"
+                               target="_blank"
+                               class="text-blue-600 hover:text-blue-900 font-mono text-sm">
+                                {{ phenotype.hpo_id }}
+                                <i class="fas fa-external-link-alt text-xs ml-1"></i>
+                            </a>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">{{ phenotype.name }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-500">{{ phenotype.definition }}</div>
+                        </td>
+                        {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -210,29 +564,58 @@
     </div>
     {% endif %}
 
-    <!-- Associated Diseases Results -->
-    {% if query.diseases %}
+    <!-- Associated Diseases/Genes Results (Hidden for Variant Search) -->
+    {% if query.diseases and query.search_type != 'variant' %}
     <div id="diseases-section" class="bg-white rounded-lg shadow-md p-6 mb-8 scroll-mt-8">
         <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">
+            {% if query.search_type == 'disease' %}
+            <i class="fas fa-dna text-purple-500 mr-2"></i>
+            Associated Genes
+            {% else %}
             <i class="fas fa-disease text-orange-500 mr-2"></i>
             Associated Diseases
+            {% endif %}
         </h2>
         <p class="text-sm text-gray-600 mb-4">
+            {% if query.search_type == 'disease' %}
+            Genes associated with disease "{{ query.search_term }}" from HPO annotations
+            {% else %}
             Diseases associated with {{ query.search_term }} from HPO annotations
+            {% endif %}
             <span class="font-semibold">({{ diseases_total_count }} total)</span>
         </p>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
+                    {% if query.search_type == 'disease' %}
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gene Symbol</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entrez ID</th>
+                    </tr>
+                    {% else %}
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Database ID</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Disease Name</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Database</th>
                     </tr>
+                    {% endif %}
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for disease in diseases_page_obj %}
                     <tr class="hover:bg-gray-50">
+                        {% if query.search_type == 'disease' %}
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ disease.gene_symbol }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="https://www.ncbi.nlm.nih.gov/gene/{{ disease.entrez_id }}"
+                               target="_blank"
+                               class="text-blue-600 hover:text-blue-900 text-sm">
+                                {{ disease.entrez_id }}
+                                <i class="fas fa-external-link-alt text-xs ml-1"></i>
+                            </a>
+                        </td>
+                        {% else %}
                         <td class="px-6 py-4 whitespace-nowrap">
                             <a href="https://hpo.jax.org/browse/disease/{{ disease.disease_id }}"
                                target="_blank"
@@ -249,18 +632,19 @@
                                 {{ disease.database }}
                             </span>
                         </td>
+                        {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
 
-        <!-- Diseases Pagination -->
+        <!-- Diseases/Genes Pagination -->
         {% if diseases_page_obj.has_other_pages %}
-        <nav aria-label="Diseases pagination" class="mt-4">
+        <nav aria-label="{% if query.search_type == 'disease' %}Genes{% else %}Diseases{% endif %} pagination" class="mt-4">
             <div class="d-flex justify-content-between align-items-center">
                 <div class="text-sm text-gray-600">
-                    Showing {{ diseases_page_obj.start_index }} to {{ diseases_page_obj.end_index }} of {{ diseases_total_count }} diseases
+                    Showing {{ diseases_page_obj.start_index }} to {{ diseases_page_obj.end_index }} of {{ diseases_total_count }} {% if query.search_type == 'disease' %}genes{% else %}diseases{% endif %}
                 </div>
                 <ul class="pagination mb-0">
                     {% if diseases_page_obj.has_previous %}
@@ -321,16 +705,28 @@
     </div>
     {% endif %}
 
-    <!-- No Results Message -->
-    {% if not query.phenotypes and not query.diseases %}
+    <!-- No Results Message (Hidden for Variant Search) -->
+    {% if not query.phenotypes and not query.diseases and query.search_type != 'variant' %}
     <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
         <i class="fas fa-search text-gray-400 text-5xl mb-4"></i>
         <h3 class="text-xl font-semibold text-gray-700 mb-2">No Results Found</h3>
         <p class="text-gray-600 mb-4">
-            No phenotypes or diseases were found for "{{ query.search_term }}" in the local HPO database.
+            {% if query.search_type == 'phenotype' %}
+            No genes or diseases were found for phenotype "{{ query.search_term }}" in the local HPO database.
+            {% elif query.search_type == 'disease' %}
+            No genes or phenotypes were found for disease "{{ query.search_term }}" in the local HPO database.
+            {% else %}
+            No phenotypes or diseases were found for gene "{{ query.search_term }}" in the local HPO database.
+            {% endif %}
         </p>
         <p class="text-sm text-gray-500">
+            {% if query.search_type == 'phenotype' %}
+            This could mean the phenotype is not in the database or has no associated genes.
+            {% elif query.search_type == 'disease' %}
+            This could mean the disease is not in the database or has no HPO annotations.
+            {% else %}
             This could mean the gene is not in the database or has no HPO annotations.
+            {% endif %}
         </p>
     </div>
     {% endif %}

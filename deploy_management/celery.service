@@ -11,17 +11,17 @@ Group=burlo
 WorkingDirectory=/home/burlo/cholestrack/cholestrack
 
 # Path to virtual environment
-Environment="PATH=/home/burlo/cholestrack/.venv/bin"
+Environment="PATH=/home/burlo/cholestrack/cholestrack/.venv/bin"
 
 # Celery worker command
-ExecStart=/home/burlo/cholestrack/.venv/bin/celery -A celery_app worker \
+ExecStart=/home/burlo/cholestrack/cholestrack/.venv/bin/celery -A celery_app worker \
     --detach \
     --loglevel=info \
     --logfile=/var/log/celery/worker.log \
     --pidfile=/var/run/celery/worker.pid
 
 # Celery stop command
-ExecStop=/home/burlo/cholestrack/.venv/bin/celery -A celery_app control shutdown
+ExecStop=/home/burlo/cholestrack/cholestrack/.venv/bin/celery -A celery_app control shutdown
 
 # Process management
 PIDFile=/var/run/celery/worker.pid

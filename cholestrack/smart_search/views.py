@@ -7,10 +7,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.http import JsonResponse
 from users.decorators import role_confirmed_required
-from .models import GeneSearchQuery
+from .models import GeneSearchQuery, HPOTerm, Disease
 from .forms import GeneSearchForm
-from .api_utils import fetch_gene_data
+from .api_utils import fetch_gene_data, fetch_phenotype_data, fetch_disease_data, fetch_variant_data, fetch_clinpgx_variant_data
 
 
 @login_required
@@ -23,10 +24,12 @@ def search_home(request):
     if request.method == 'POST':
         form = GeneSearchForm(request.POST)
         if form.is_valid():
+            search_type = form.cleaned_data['search_type']
             search_term = form.cleaned_data['search_term']
 
             # Check if we have a recent cached result
             cached_query = GeneSearchQuery.objects.filter(
+                search_type=search_type,
                 search_term=search_term,
                 success=True
             ).order_by('-created_at').first()
@@ -39,6 +42,7 @@ def search_home(request):
             # Create new search query
             query = GeneSearchQuery.objects.create(
                 user=request.user,
+                search_type=search_type,
                 search_term=search_term
             )
 
@@ -75,8 +79,18 @@ def process_search(request, query_id):
         return redirect('smart_search:search_result', query_id=query.id)
 
     try:
-        # Fetch gene data from HPO
-        results = fetch_gene_data(query.search_term)
+        # Fetch data based on search type
+        if query.search_type == 'gene':
+            results = fetch_gene_data(query.search_term)
+        elif query.search_type == 'phenotype':
+            results = fetch_phenotype_data(query.search_term)
+        elif query.search_type == 'disease':
+            results = fetch_disease_data(query.search_term)
+        elif query.search_type == 'variant':
+            results = fetch_variant_data(query.search_term)
+        else:
+            # Default to gene search for backward compatibility
+            results = fetch_gene_data(query.search_term)
 
         # Check for errors
         if 'error' in results:
@@ -86,10 +100,35 @@ def process_search(request, query_id):
             messages.error(request, f'Error: {results["error"]}')
             return redirect('smart_search:search_result', query_id=query.id)
 
-        # Store results
-        query.phenotypes = results['phenotypes']
-        query.diseases = results['diseases']
-        query.gene_info = results['gene_info']
+        # Store results based on search type
+        if query.search_type == 'gene':
+            query.phenotypes = results['phenotypes']
+            query.diseases = results['diseases']
+            query.gene_info = results['gene_info']
+            query.clinpgx_data = results.get('clinpgx_data')  # Store ClinPGx data
+            success_msg = (f'Found {len(results["phenotypes"])} HPO phenotype terms and '
+                          f'{len(results["diseases"])} associated diseases for gene {query.search_term}.')
+        elif query.search_type == 'phenotype':
+            query.phenotypes = results['genes']  # Store genes in phenotypes field for phenotype searches
+            query.diseases = results['diseases']
+            query.gene_info = results['phenotype_info']  # Store phenotype info in gene_info field
+            success_msg = (f'Found {len(results["genes"])} associated genes and '
+                          f'{len(results["diseases"])} associated diseases for phenotype "{query.search_term}".')
+        elif query.search_type == 'disease':
+            query.phenotypes = results['phenotypes']  # Store phenotypes for disease
+            query.diseases = results['genes']  # Store genes in diseases field for disease searches
+            query.gene_info = results['disease_info']  # Store disease info in gene_info field
+            success_msg = (f'Found {len(results["phenotypes"])} associated phenotypes and '
+                          f'{len(results["genes"])} associated genes for disease "{query.search_term}".')
+        else:  # variant search
+            query.variant_data = results  # Store variant data
+
+            # Fetch ClinPGx variant annotation data
+            clinpgx_variant_results = fetch_clinpgx_variant_data(query.search_term)
+            query.clinpgx_variant_data = clinpgx_variant_results  # Store ClinPGx variant data
+
+            success_msg = f'Retrieved variant information for "{query.search_term}".'
+
         query.success = True
 
         # Set cache expiration (7 days)
@@ -97,11 +136,7 @@ def process_search(request, query_id):
 
         query.save()
 
-        messages.success(
-            request,
-            f'Found {len(results["phenotypes"])} HPO phenotype terms and '
-            f'{len(results["diseases"])} associated diseases for {query.search_term}.'
-        )
+        messages.success(request, success_msg)
 
     except Exception as e:
         query.success = False
@@ -167,6 +202,7 @@ def refresh_search(request, query_id):
     # Create new search query with same parameters
     new_query = GeneSearchQuery.objects.create(
         user=request.user,
+        search_type=query.search_type,
         search_term=query.search_term
     )
 
@@ -187,3 +223,71 @@ def search_history(request):
         'title': 'Search History'
     }
     return render(request, 'smart_search/search_history.html', context)
+
+
+@login_required
+@role_confirmed_required
+def autocomplete_phenotypes(request):
+    """
+    AJAX endpoint for phenotype autocomplete.
+    Returns matching HPO terms based on partial input (minimum 5 characters).
+    """
+    query = request.GET.get('q', '').strip()
+
+    # Minimum 5 characters to trigger autocomplete
+    if len(query) < 5:
+        return JsonResponse({'results': []})
+
+    try:
+        # Case-insensitive search in HPOTerm name field
+        phenotypes = HPOTerm.objects.filter(
+            name__icontains=query
+        ).order_by('name')[:10]  # Limit to 10 results
+
+        results = [
+            {
+                'hpo_id': phenotype.hpo_id,
+                'name': phenotype.name,
+                'display': f"{phenotype.name} ({phenotype.hpo_id})"
+            }
+            for phenotype in phenotypes
+        ]
+
+        return JsonResponse({'results': results})
+
+    except Exception as e:
+        return JsonResponse({'results': [], 'error': str(e)})
+
+
+@login_required
+@role_confirmed_required
+def autocomplete_diseases(request):
+    """
+    AJAX endpoint for disease autocomplete.
+    Returns matching Disease terms based on partial input (minimum 5 characters).
+    """
+    query = request.GET.get('q', '').strip()
+
+    # Minimum 5 characters to trigger autocomplete
+    if len(query) < 5:
+        return JsonResponse({'results': []})
+
+    try:
+        # Case-insensitive search in Disease name field
+        diseases = Disease.objects.filter(
+            disease_name__icontains=query
+        ).order_by('disease_name')[:10]  # Limit to 10 results
+
+        results = [
+            {
+                'disease_id': disease.database_id,
+                'name': disease.disease_name,
+                'display': f"{disease.disease_name} ({disease.database_id})"
+            }
+            for disease in diseases
+        ]
+
+        return JsonResponse({'results': results})
+
+    except Exception as e:
+        return JsonResponse({'results': [], 'error': str(e)})

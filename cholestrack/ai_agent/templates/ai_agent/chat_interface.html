@@ -7,7 +7,7 @@
 <div class="chat-container">
     <div class="chat-sidebar">
         <div class="sidebar-header">
-            <h3><i class="fas fa-robot"></i> AI Agent</h3>
+            <h3><i class="fas fa-robot"></i> Billy</h3>
             <button onclick="newSession()" class="btn btn-new-chat">
                 <i class="fas fa-plus"></i> New Chat
             </button>
@@ -41,8 +41,8 @@
             {% if not messages %}
             <div class="welcome-message">
                 <div class="welcome-icon"><i class="fas fa-dna fa-3x"></i></div>
-                <h3>Welcome to the AI Genomic Analysis Agent</h3>
-                <p>I can help you analyze variant data, apply genetic models, and generate reports.</p>
+                <h3>Welcome to Billy - Your AI Genomic Analysis Assistant</h3>
+                <p>I'm Billy, and I can help you analyze variant data, apply genetic models, and generate reports.</p>
                 <div class="quick-actions">
                     <h4>Try asking:</h4>
                     <button class="quick-action" onclick="quickQuestion('What samples are available for analysis?')">
@@ -72,13 +72,13 @@
                     <div class="message-header">
                         <span class="message-role">
                             {% if msg.role == 'user' %}You
-                            {% elif msg.role == 'assistant' %}AI Agent
+                            {% elif msg.role == 'assistant' %}Billy
                             {% else %}System
                             {% endif %}
                         </span>
                         <span class="message-time">{{ msg.created_at|date:"H:i" }}</span>
                     </div>
-                    <div class="message-text">{{ msg.content|linebreaks }}</div>
+                    <div class="message-text markdown-content">{{ msg.content|linebreaks }}</div>
                     {% if msg.has_analysis_job and msg.metadata %}
                     <div class="job-status" id="job-{{ msg.metadata.job_id }}">
                         <i class="fas fa-spinner fa-spin"></i> Analysis job running...
@@ -352,6 +352,7 @@
 .message-content {
     flex: 1;
     max-width: 80%;
+    min-width: 0; /* Important for flex items to shrink properly */
 }
 
 .message-header {
@@ -378,10 +379,64 @@
     line-height: 1.6;
     color: #2c3e50;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    max-width: 100%;
 }
 
 .message-user .message-text {
     background: #e8f4f8;
+}
+
+/* Markdown rendering styles */
+.markdown-content strong {
+    font-weight: 700;
+    color: #1a202c;
+}
+
+.markdown-content em {
+    font-style: italic;
+}
+
+.markdown-content code {
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.markdown-content pre {
+    background: #f1f5f9;
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 10px 0;
+    max-width: 100%;
+}
+
+.markdown-content pre code {
+    word-wrap: normal;
+    overflow-wrap: normal;
+}
+
+.markdown-content ul, .markdown-content ol {
+    margin-left: 20px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.markdown-content li {
+    margin-bottom: 4px;
+}
+
+.markdown-content h3, .markdown-content h4 {
+    margin-top: 12px;
+    margin-bottom: 8px;
+    font-weight: 600;
 }
 
 .typing-indicator {
@@ -487,8 +542,26 @@
 }
 </style>
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
 const sessionId = '{{ active_session.session_id }}';
+
+// Configure marked for inline parsing
+marked.setOptions({
+    breaks: true,
+    gfm: true
+});
+
+// Convert existing messages to markdown on page load
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.markdown-content').forEach(function(element) {
+        if (element.dataset.rendered !== 'true') {
+            const text = element.textContent.trim();
+            element.innerHTML = marked.parse(text);
+            element.dataset.rendered = 'true';
+        }
+    });
+});
 
 function sendMessage(event) {
     event.preventDefault();
@@ -544,7 +617,7 @@ function addMessageToUI(role, content) {
 
     const roleLabels = {
         'user': 'You',
-        'assistant': 'AI Agent',
+        'assistant': 'Billy',
         'system': 'System'
     };
 
@@ -564,7 +637,7 @@ function addMessageToUI(role, content) {
                     <span class="message-role">${roleLabels[role]}</span>
                     <span class="message-time">${timeStr}</span>
                 </div>
-                <div class="message-text">${content.replace(/\n/g, '<br>')}</div>
+                <div class="message-text markdown-content">${marked.parse(content)}</div>
             </div>
         </div>
     `;

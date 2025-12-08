@@ -15,6 +15,7 @@ from users.decorators import role_confirmed_required
 from .models import ChatSession, ChatMessage, AnalysisJob
 from .gemini_client import GeminiAnalysisClient, DataAnonymizer
 from .tasks import run_statistical_analysis, run_genetic_model_analysis, run_comparative_analysis
+from .tsv_loader import load_tsv_preview, format_dataframe_for_ai, get_file_stats, count_gene_variants
 from files.models import AnalysisFileLocation
 
 
@@ -86,32 +87,112 @@ def send_message(request):
         if session.messages.count() == 1:
             session.update_title_from_first_message()
 
-        # Build conversation history
+        # Build conversation history (limit to last 10 messages for context window)
+        # This prevents infinite history growth and API token limits
         conversation_history = []
-        for msg in session.messages.filter(role__in=['user', 'assistant']).order_by('created_at'):
+        recent_messages = session.messages.filter(
+            role__in=['user', 'assistant']
+        ).order_by('-created_at')[:10]  # Get last 10 messages
+
+        # Reverse to maintain chronological order
+        for msg in reversed(recent_messages):
             conversation_history.append({
                 'role': msg.role,
                 'content': msg.content
             })
 
-        # Get available samples for context
-        available_samples = AnalysisFileLocation.objects.filter(
+        # Get available samples with file locations
+        # No limit - show ALL samples so AI can reference any of them
+        available_samples_qs = AnalysisFileLocation.objects.filter(
             file_type='TSV',
             is_active=True
-        ).values_list('sample_id', flat=True).distinct()
+        ).values('sample_id', 'file_path', 'data_type').distinct()
 
-        # Create sample ID anonymization map
-        anonymizer = DataAnonymizer()
-        sample_id_map = {
-            sample_id: anonymizer.anonymize_sample_id(sample_id)
-            for sample_id in available_samples
-        }
+        # No need to anonymize - sample_id in database is already anonymized
+        sample_id_map = {}  # Keep empty map for compatibility with existing code
 
-        # Prepare variant data summary
-        variant_data_summary = f"Available samples for analysis ({len(available_samples)} total):\n"
-        for sample_id in list(available_samples)[:10]:  # Show first 10
-            anon_id = sample_id_map[sample_id]
-            variant_data_summary += f"- {anon_id}\n"
+        # Build sample list with file information
+        sample_list = list(available_samples_qs)
+        sample_ids = [s['sample_id'] for s in sample_list]
+
+        # Prepare variant data summary with ALL samples
+        variant_data_summary = f"Available samples for analysis ({len(sample_ids)} total):\n\n"
+        for sample in sample_list:
+            variant_data_summary += f"- {sample['sample_id']} ({sample['data_type']})\n"
+
+        variant_data_summary += "\nYou can query any of these samples. When a user asks about a specific sample, "
+        variant_data_summary += "I will load the variant data from the corresponding TSV file for analysis.\n"
+
+        # Check if user mentions specific sample IDs in their message
+        # If so, load preview data from those TSV files
+        mentioned_samples = []
+        for sample_id in sample_ids:
+            if sample_id.lower() in message_content.lower():
+                mentioned_samples.append(sample_id)
+
+        # Extract potential gene names from user's message
+        # Gene names are typically uppercase words (e.g., BRCA1, LDLR, TP53, ATP8B1)
+        import re
+        words = message_content.split()
+        potential_genes = []
+        for word in words:
+            # Remove punctuation and check if it's an uppercase word 2-10 chars
+            clean_word = re.sub(r'[^\w]', '', word)
+            if clean_word.isupper() and 2 <= len(clean_word) <= 10 and clean_word.isalnum():
+                potential_genes.append(clean_word)
+
+        # Remove duplicates while preserving order
+        mentioned_genes = list(dict.fromkeys(potential_genes))
+
+        # Load data previews for mentioned samples
+        if mentioned_samples:
+            variant_data_summary += "\n" + "="*60 + "\n"
+            variant_data_summary += "VARIANT DATA PREVIEWS (first 5 rows):\n"
+            variant_data_summary += "="*60 + "\n\n"
+
+            for sample_id in mentioned_samples[:3]:  # Limit to 3 samples to avoid overwhelming context
+                # Get file path for this sample
+                sample_file = next((s for s in sample_list if s['sample_id'] == sample_id), None)
+                if sample_file:
+                    # Construct full file path - files are in project's media/remote_files/
+                    relative_path = sample_file['file_path']
+                    file_path = f"{settings.BASE_DIR}/media/remote_files/{relative_path}"
+
+                    # Get file statistics first (total rows, etc.)
+                    stats, stats_error = get_file_stats(file_path)
+
+                    if stats:
+                        variant_data_summary += f"Sample: {sample_id}\n"
+                        variant_data_summary += f"File: {Path(file_path).name}\n"
+                        variant_data_summary += f"**IMPORTANT - ACTUAL FILE STATISTICS:**\n"
+                        variant_data_summary += f"  - Total rows (variants): {stats['total_rows']:,}\n"
+                        variant_data_summary += f"  - Total columns: {stats['total_columns']}\n"
+                        variant_data_summary += f"  - File size: {stats['file_size_mb']:.2f} MB\n\n"
+
+                        # Load preview of the TSV file
+                        df, preview_error = load_tsv_preview(file_path, num_rows=5)
+
+                        if df is not None:
+                            variant_data_summary += f"Data preview (FIRST 5 ROWS ONLY - do not extrapolate counts from this):\n"
+                            variant_data_summary += format_dataframe_for_ai(df, max_cols=40)
+                            variant_data_summary += f"\n\nNOTE: This is only a 5-row preview. The actual file has {stats['total_rows']:,} rows total.\n"
+
+                            # If specific genes were mentioned, query them automatically
+                            if mentioned_genes:
+                                variant_data_summary += f"\n**GENE-SPECIFIC VARIANT COUNTS (queried from full file):**\n"
+                                for gene_name in mentioned_genes[:5]:  # Limit to 5 genes to avoid overwhelming
+                                    gene_count, gene_error = count_gene_variants(file_path, gene_name)
+                                    if gene_count is not None:
+                                        variant_data_summary += f"  - {gene_name}: {gene_count:,} variants found\n"
+                                    # If error, skip silently (might not be a real gene name)
+                                variant_data_summary += "\n"
+                        else:
+                            variant_data_summary += f"Preview error: {preview_error}\n"
+
+                        variant_data_summary += "\n" + "-"*60 + "\n\n"
+                    else:
+                        variant_data_summary += f"Sample: {sample_id}\n"
+                        variant_data_summary += f"Error loading file: {stats_error}\n\n"
 
         # Call Gemini API
         try:

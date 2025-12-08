@@ -147,7 +147,7 @@
                             <td class="py-2 px-4 text-center">
                                 {% for file_type, file_data in patient.files.items %}
                                     <button type="button"
-                                            onclick="openDownloadModal('{{ file_type }}', {{ file_data.id }}, '{{ file_data.server }}')"
+                                            onclick="openDownloadModal('{{ file_type }}', {{ file_data.id }}, '{{ file_data.server }}', {{ file_data.bai_id|default:'null' }})"
                                             title="Download {{ file_type }} file from Server {{ file_data.server }}"
                                             class="btn btn-sm download-btn
                                                 {% if file_type == 'VCF' %}bg-green-600 hover:bg-green-700
@@ -551,7 +551,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Modal functions for file downloads
-function openDownloadModal(fileType, fileLocationId, server) {
+function openDownloadModal(fileType, fileLocationId, server, baiFileId) {
     const modal = document.getElementById('downloadModal');
     const modalTitle = document.getElementById('modalTitle');
     const mainFileLabel = document.getElementById('mainFileLabel');
@@ -568,20 +568,38 @@ function openDownloadModal(fileType, fileLocationId, server) {
     if (fileType === 'BAM') {
         mainFileLabel.textContent = 'BAM File';
         pairedFileLabel.textContent = 'BAI Index';
+
+        // Set form actions - use baiFileId for BAI download if provided
+        mainFileForm.action = `/files/download/${fileLocationId}/main/`;
+        if (baiFileId && baiFileId !== null) {
+            // Use the separate BAI file's ID for the paired file
+            pairedFileForm.action = `/files/download/${baiFileId}/main/`;
+        } else {
+            // Fallback to the old paired file method
+            pairedFileForm.action = `/files/download/${fileLocationId}/pair/`;
+        }
     } else if (fileType === 'VCF') {
         mainFileLabel.textContent = 'VCF File';
         pairedFileLabel.textContent = 'TBI Index';
+
+        // Set form actions
+        mainFileForm.action = `/files/download/${fileLocationId}/main/`;
+        pairedFileForm.action = `/files/download/${fileLocationId}/pair/`;
     } else if (fileType === 'FASTQ') {
         mainFileLabel.textContent = 'Read 1 (_1.fastq.gz)';
         pairedFileLabel.textContent = 'Read 2 (_2.fastq.gz)';
+
+        // Set form actions
+        mainFileForm.action = `/files/download/${fileLocationId}/main/`;
+        pairedFileForm.action = `/files/download/${fileLocationId}/pair/`;
     } else {
         mainFileLabel.textContent = 'Main File';
         pairedFileLabel.textContent = 'Paired File';
-    }
 
-    // Set form actions
-    mainFileForm.action = `/files/download/${fileLocationId}/main/`;
-    pairedFileForm.action = `/files/download/${fileLocationId}/pair/`;
+        // Set form actions
+        mainFileForm.action = `/files/download/${fileLocationId}/main/`;
+        pairedFileForm.action = `/files/download/${fileLocationId}/pair/`;
+    }
 
     // Show modal
     modal.style.display = 'block';

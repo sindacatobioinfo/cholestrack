@@ -56,16 +56,16 @@
                 </a>
             </div>
 
-            <!-- Gene Search Card -->
+            <!-- Smart Search Card -->
             <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
                 <h3 class="text-xl font-semibold text-gray-800 mb-3">
-                    <i class="fas fa-search-plus text-indigo-600 mr-2"></i> Gene Search
+                    <i class="fas fa-search-plus text-indigo-600 mr-2"></i> Smart Search
                 </h3>
                 <p class="text-gray-600 mb-4">
-                    Search genes for HPO phenotypes, OMIM diseases, and PharmGKB drug data.
+                    Search genes, phenotypes, and diseases using HPO, OMIM, and PharmGKB databases.
                 </p>
                 <a href="{% url 'smart_search:search_home' %}" class="btn btn-indigo">
-                    Search Gene
+                    Smart Search
                 </a>
             </div>
         </div>
@@ -85,18 +85,33 @@
                 </a>
             </div>
 
-            <!-- AI Genomic Analysis Agent Card -->
+            <!-- Billy - AI Genomic Analysis Agent Card -->
             <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
                 <h3 class="text-xl font-semibold text-gray-800 mb-3">
-                    <i class="fas fa-robot text-cyan-600 mr-2"></i> AI Analysis Agent
+                    <i class="fas fa-robot text-cyan-600 mr-2"></i> Billy - AI Agent
                 </h3>
                 <p class="text-gray-600 mb-4">
-                    Chat with AI to analyze variant data, apply genetic models, and generate reports.
+                    Chat with Billy to analyze variant data, apply genetic models, and generate reports.
                 </p>
                 <a href="{% url 'ai_agent:chat_interface' %}" class="btn btn-cyan">
-                    Open AI Agent
+                    Chat with Billy
                 </a>
             </div>
+
+            <!-- Admin Center Card (Only visible to admins) -->
+            {% if user.role.role == 'ADMIN' %}
+            <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+                <h3 class="text-xl font-semibold text-gray-800 mb-3">
+                    <i class="fas fa-user-shield text-red-600 mr-2"></i> Admin Center
+                </h3>
+                <p class="text-gray-600 mb-4">
+                    Manage users, roles, permissions, and system settings.
+                </p>
+                <a href="{% url 'home:admin_center' %}" class="btn btn-danger">
+                    Admin Center
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -173,6 +188,15 @@
 
     .btn-cyan:hover {
         background-color: #0891b2;
+    }
+
+    .btn-danger {
+        background-color: #dc2626;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background-color: #b91c1c;
     }
 </style>
 {% endblock %}

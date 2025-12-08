@@ -40,14 +40,16 @@ def create_extraction(request):
             sample_id = form.cleaned_data['sample_id']
             region_method = form.cleaned_data['region_method']
 
-            # Get the BAM file for this sample
-            try:
-                bam_file = AnalysisFileLocation.objects.get(
-                    sample_id=sample_id,
-                    file_type='BAM',
-                    is_active=True
-                )
-            except AnalysisFileLocation.DoesNotExist:
+            # Get the BAM file for this sample (exclude .bai index files)
+            bam_file = AnalysisFileLocation.objects.filter(
+                sample_id=sample_id,
+                file_type='BAM',
+                is_active=True
+            ).exclude(
+                file_path__contains='.bai'
+            ).first()
+
+            if not bam_file:
                 messages.error(request, f'BAM file not found for sample: {sample_id}')
                 return render(request, 'region_selection/create_extraction.html', {'form': form})
 

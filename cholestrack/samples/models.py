@@ -38,6 +38,14 @@ class Patient(models.Model):
         verbose_name="Clinical Information (JSON)",
         help_text="Unstructured clinical data in JSON format (e.g., diagnosis, symptoms, lab results, phenotype)"
     )
+
+    signs_and_symptoms = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Signs and Symptoms (HPO)",
+        help_text="List of HPO phenotype terms describing patient's signs and symptoms"
+    )
+
     main_exome_result = models.CharField(
         max_length=255,
         default="Awaiting Analysis",

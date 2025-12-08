@@ -1,10 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en"> <!-- Alterado para 'en' -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cholestrack - IRCCS Materno Infantile Burlo Garofolo</title>
-    
+
     <!-- Links de CSS (Tailwind, Bootstrap, Font Awesome) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
@@ -31,21 +32,9 @@
 
         .burlo-logo {
             height: 60px;
+            width: auto;
             margin-right: 20px;
-        }
-        
-        .burlo-logo-placeholder {
-            width: 60px;
-            height: 60px;
-            border: 1px solid #ccc;
-            background-color: #008080;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            color: white;
-            font-size: 1.2em;
+            object-fit: contain;
         }
 
         .burlo-title h1 {
@@ -105,7 +94,7 @@
 <body>
     <header>
         <div class="burlo-header">
-            <div class="burlo-logo-placeholder">B</div> 
+            <img src="{% static 'images/avatar_burlo.png' %}" alt="Burlo Garofolo Logo" class="burlo-logo">
             <div class="burlo-title">
                 <h1>IRCCS materno infantile Burlo Garofolo</h1>
                 <p>Regione Friuli Venezia Giulia</p>

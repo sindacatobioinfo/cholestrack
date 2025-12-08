@@ -2,7 +2,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.models import User
-from django.contrib.auth.views import LoginView as DjangoLoginView
+from django.contrib.auth.views import LoginView as DjangoLoginView, PasswordResetView
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -248,3 +248,45 @@ class CholestrackLoginView(DjangoLoginView):
     Custom login view using Django's built-in authentication.
     """
     template_name = 'users/login.html'
+
+
+class CholestrackPasswordResetView(PasswordResetView):
+    """
+    Custom password reset view that validates email exists in database.
+    Shows error message if email is not found.
+    """
+    template_name = 'users/password_reset_form.html'
+    email_template_name = 'users/password_reset_email.html'
+    subject_template_name = 'users/password_reset_subject.txt'
+    success_url = '/password-reset/done/'
+
+    def form_valid(self, form):
+        """
+        Check if email exists in database before sending reset email.
+        """
+        email = form.cleaned_data['email']
+
+        # Check if user with this email exists
+        if not User.objects.filter(email=email).exists():
+            messages.error(
+                self.request,
+                f'No account found with email address: {email}. '
+                'Please check the email address and try again, or contact support if you need assistance.'
+            )
+            return redirect('users:password_reset')
+
+        # Check if user account is active
+        user = User.objects.get(email=email)
+        if not user.is_active:
+            messages.error(
+                self.request,
+                'This account has not been activated yet. Please verify your email address first.'
+            )
+            return redirect('users:password_reset')
+
+        # Email exists and is active, proceed with password reset
+        messages.success(
+            self.request,
+            f'Password reset email has been sent to {email}. Please check your inbox.'
+        )
+        return super().form_valid(form)

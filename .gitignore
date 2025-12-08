@@ -5,7 +5,6 @@
 /cholestrack/.venv
 /cholestrack/.env
 /cholestrack/staticfiles/
-/cholestrack/static/
 /cholestrack/media/
 
 #Deploy logs
