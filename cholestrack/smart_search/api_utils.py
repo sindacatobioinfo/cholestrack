@@ -421,14 +421,14 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
                 data = response_data
 
             # Extract relevant fields
-            # Get variant page ID from data > location > linkedObjects > id
-            variant_page_id = None
+            # Get variant ID from data > location > linkedObjects > id
+            variant_linked_id = None
             if 'location' in data and data['location']:
                 location = data['location']
                 if 'linkedObjects' in location and location['linkedObjects']:
                     for obj in location['linkedObjects']:
                         if obj.get('objCls') == 'Variant':
-                            variant_page_id = obj.get('id')
+                            variant_linked_id = obj.get('id')
                             break
 
             # Get gene symbol from data > location > genes > symbol
@@ -440,9 +440,9 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
                     gene_symbol = location['genes'][0].get('symbol') if len(location['genes']) > 0 else None
 
             return {
-                'variantId': data.get('id', 'N/A'),  # Actual variant ID to display
+                'variantId': variant_linked_id if variant_linked_id else 'N/A',  # ID from linkedObjects
                 'accessionId': data.get('accessionId', 'N/A'),
-                'variantPageId': variant_page_id,  # ID for variant page link
+                'variantPageId': variant_linked_id,  # Same ID for variant page link
                 'geneSymbol': gene_symbol,  # Gene symbol
                 'alleleGenotype': data.get('alleleGenotype', 'N/A'),
                 'comparison': data.get('comparison', 'N/A'),
