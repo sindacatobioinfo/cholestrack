@@ -253,8 +253,11 @@ def fetch_clinpgx_data(gene_symbol: str) -> Dict:
             'accept': 'application/json'
         }
 
-        # Make request with timeout
-        response = requests.get(url, params=params, headers=headers, timeout=10)
+        # Log before making request
+        logger.info(f"ClinPGx Gene API - Making request for gene: {gene_symbol}")
+
+        # Make request with longer timeout (30 seconds)
+        response = requests.get(url, params=params, headers=headers, timeout=30)
 
         # Debug: Log the actual URL and response
         logger.info(f"ClinPGx Gene API - URL: {response.url}")
@@ -377,8 +380,11 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
             'accept': 'application/json'
         }
 
-        # Make request with timeout
-        response = requests.get(url, params=params, headers=headers, timeout=10)
+        # Log before making request
+        logger.info(f"ClinPGx Variant API - Making request for variant: {variant_id}")
+
+        # Make request with longer timeout (30 seconds)
+        response = requests.get(url, params=params, headers=headers, timeout=30)
 
         # Debug: Log the actual URL and response
         logger.info(f"ClinPGx Variant API - URL: {response.url}")
