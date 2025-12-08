@@ -13,7 +13,7 @@
                     Results for <span class="text-purple-600">{{ query.search_term }}</span>
                 </h1>
                 <p class="text-gray-600">
-                    {% if query.search_type == 'phenotype' %}Phenotype Search{% elif query.search_type == 'disease' %}Disease Search{% else %}Gene Search{% endif %} | Searched: {{ query.created_at|date:"Y-m-d H:i" }}
+                    {% if query.search_type == 'phenotype' %}Phenotype Search{% elif query.search_type == 'disease' %}Disease Search{% elif query.search_type == 'variant' %}Variant Search{% else %}Gene Search{% endif %} | Searched: {{ query.created_at|date:"Y-m-d H:i" }}
                 </p>
             </div>
             <div class="flex space-x-3">
@@ -116,8 +116,17 @@
                 <div class="flex-shrink-0">
                     <i class="fas fa-pills text-green-400 text-xl"></i>
                 </div>
-                <div class="ml-3">
-                    <h3 class="text-sm font-medium text-green-800">ClinPGx Pharmacogenomics</h3>
+                <div class="ml-3 w-full">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-medium text-green-800">ClinPGx Pharmacogenomics</h3>
+                        {% if query.clinpgx_data.id %}
+                        <a href="https://www.clinpgx.org/gene/{{ query.clinpgx_data.id }}"
+                           target="_blank"
+                           class="text-xs text-green-600 hover:text-green-800 font-medium whitespace-nowrap">
+                            View on ClinPGx <i class="fas fa-external-link-alt ml-1"></i>
+                        </a>
+                        {% endif %}
+                    </div>
 
                     {% if query.clinpgx_data.success %}
                     <div class="mt-2 space-y-2">
@@ -158,6 +167,79 @@
             </div>
         </div>
         {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Variant Information Card (Variant Search Only) -->
+    {% if query.search_type == 'variant' and query.variant_data %}
+    <div class="bg-purple-50 border-l-4 border-purple-400 p-6 mb-6">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <i class="fas fa-dna text-purple-400 text-2xl"></i>
+            </div>
+            <div class="ml-4 flex-1">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-purple-800">Variant Information</h3>
+                    {% if query.variant_data.name %}
+                    <a href="https://www.ensembl.org/Homo_sapiens/Variation/Explore?v={{ query.variant_data.name }}"
+                       target="_blank"
+                       class="text-sm text-purple-600 hover:text-purple-800 font-medium whitespace-nowrap">
+                        View on Ensembl <i class="fas fa-external-link-alt ml-1"></i>
+                    </a>
+                    {% endif %}
+                </div>
+
+                {% if query.variant_data.success %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Name</p>
+                        <p class="text-md font-semibold text-gray-900">{{ query.variant_data.name }}</p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Assembly</p>
+                        <p class="text-md font-semibold text-gray-900">{{ query.variant_data.assembly_name }}</p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Location</p>
+                        <p class="text-md font-semibold text-gray-900 font-mono text-sm">{{ query.variant_data.location }}</p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Allele String</p>
+                        <p class="text-md font-semibold text-gray-900">{{ query.variant_data.allele_string }}</p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Ancestral Allele</p>
+                        <p class="text-md font-semibold text-gray-900">{{ query.variant_data.ancestral_allele }}</p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 shadow-sm">
+                        <p class="text-sm text-gray-600 mb-1">Minor Allele Frequency (MAF)</p>
+                        <p class="text-md font-semibold text-gray-900">{{ query.variant_data.MAF }}</p>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 shadow-sm col-span-1 md:col-span-2">
+                        <p class="text-sm text-gray-600 mb-1">Most Severe Consequence</p>
+                        <p class="text-md font-semibold text-gray-900">
+                            <span class="px-3 py-1 rounded-full bg-purple-100 text-purple-800 text-sm">
+                                {{ query.variant_data.most_severe_consequence }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                {% else %}
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p class="text-sm text-red-700">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        {% if query.variant_data.error %}{{ query.variant_data.error }}{% else %}No variant data available{% endif %}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
     {% endif %}
 

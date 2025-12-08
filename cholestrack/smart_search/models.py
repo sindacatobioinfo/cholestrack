@@ -28,6 +28,7 @@ class GeneSearchQuery(models.Model):
         ('gene', 'Gene'),
         ('phenotype', 'Phenotype'),
         ('disease', 'Disease'),
+        ('variant', 'Variant'),
     ]
 
     search_type = models.CharField(
@@ -71,6 +72,13 @@ class GeneSearchQuery(models.Model):
         blank=True,
         verbose_name="ClinPGx Data",
         help_text="Pharmacogenomic data from ClinPGx API"
+    )
+
+    variant_data = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name="Variant Data",
+        help_text="Variant information from Ensembl API"
     )
 
     # Metadata

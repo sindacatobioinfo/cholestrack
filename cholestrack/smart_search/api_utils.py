@@ -258,6 +258,7 @@ def fetch_clinpgx_data(gene_symbol: str) -> Dict:
 
             # Extract relevant fields
             return {
+                'id': data.get('id', None),  # ClinPGx gene ID (e.g., PA116)
                 'cpicGene': data.get('cpicGene', False),
                 'hasNonStandardHaplotypes': data.get('hasNonStandardHaplotypes', False),
                 'hideHaplotypes': data.get('hideHaplotypes', False),
@@ -428,6 +429,112 @@ def fetch_phenotype_data(phenotype_search_term: str) -> Dict:
             'diseases': [],
             'phenotype_info': None,
             'error': f'Database error: {str(e)}'
+        }
+
+
+def fetch_variant_data(variant_id: str) -> Dict:
+    """
+    Fetch variant information from Ensembl API.
+
+    Args:
+        variant_id: Variant identifier (e.g., 'rs333')
+
+    Returns:
+        Dictionary with variant data or error information
+    """
+    try:
+        url = f"https://rest.ensembl.org/variation/human/{variant_id}"
+        headers = {
+            'Content-type': 'application/json'
+        }
+
+        # Make request with timeout
+        response = requests.get(url, headers=headers, timeout=10)
+
+        if response.status_code == 200:
+            data = response.json()
+
+            # Extract minor allele frequency (MAF)
+            maf = None
+            if 'MAF' in data and data['MAF']:
+                # MAF is typically the first item if it exists
+                maf = data['MAF']
+            elif 'minor_allele_freq' in data:
+                maf = data['minor_allele_freq']
+
+            # Extract relevant fields
+            return {
+                'name': data.get('name', variant_id),
+                'assembly_name': data.get('assembly_name', 'N/A'),
+                'location': f"{data.get('mappings', [{}])[0].get('location', 'N/A')}" if data.get('mappings') else 'N/A',
+                'allele_string': data.get('mappings', [{}])[0].get('allele_string', 'N/A') if data.get('mappings') else 'N/A',
+                'ancestral_allele': data.get('ancestral_allele', 'N/A'),
+                'MAF': maf if maf else 'N/A',
+                'most_severe_consequence': data.get('most_severe_consequence', 'N/A'),
+                'success': True
+            }
+        elif response.status_code == 404:
+            # Variant not found
+            return {
+                'name': variant_id,
+                'assembly_name': 'N/A',
+                'location': 'N/A',
+                'allele_string': 'N/A',
+                'ancestral_allele': 'N/A',
+                'MAF': 'N/A',
+                'most_severe_consequence': 'N/A',
+                'success': False,
+                'error': f'Variant "{variant_id}" not found in Ensembl database'
+            }
+        else:
+            # Other error
+            return {
+                'name': variant_id,
+                'assembly_name': 'N/A',
+                'location': 'N/A',
+                'allele_string': 'N/A',
+                'ancestral_allele': 'N/A',
+                'MAF': 'N/A',
+                'most_severe_consequence': 'N/A',
+                'success': False,
+                'error': f'Ensembl API error: HTTP {response.status_code}'
+            }
+
+    except requests.exceptions.Timeout:
+        return {
+            'name': variant_id,
+            'assembly_name': 'N/A',
+            'location': 'N/A',
+            'allele_string': 'N/A',
+            'ancestral_allele': 'N/A',
+            'MAF': 'N/A',
+            'most_severe_consequence': 'N/A',
+            'success': False,
+            'error': 'Ensembl API request timeout'
+        }
+    except requests.exceptions.RequestException as e:
+        return {
+            'name': variant_id,
+            'assembly_name': 'N/A',
+            'location': 'N/A',
+            'allele_string': 'N/A',
+            'ancestral_allele': 'N/A',
+            'MAF': 'N/A',
+            'most_severe_consequence': 'N/A',
+            'success': False,
+            'error': f'Ensembl API request failed: {str(e)}'
+        }
+    except Exception as e:
+        return {
+            'name': variant_id,
+            'assembly_name': 'N/A',
+            'location': 'N/A',
+            'allele_string': 'N/A',
+            'ancestral_allele': 'N/A',
+            'MAF': 'N/A',
+            'most_severe_consequence': 'N/A',
+            'success': False,
+            'error': f'Error fetching variant data: {str(e)}'
         }
 
 

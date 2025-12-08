@@ -11,7 +11,7 @@ from django.http import JsonResponse
 from users.decorators import role_confirmed_required
 from .models import GeneSearchQuery, HPOTerm, Disease
 from .forms import GeneSearchForm
-from .api_utils import fetch_gene_data, fetch_phenotype_data, fetch_disease_data
+from .api_utils import fetch_gene_data, fetch_phenotype_data, fetch_disease_data, fetch_variant_data
 
 
 @login_required
@@ -86,6 +86,8 @@ def process_search(request, query_id):
             results = fetch_phenotype_data(query.search_term)
         elif query.search_type == 'disease':
             results = fetch_disease_data(query.search_term)
+        elif query.search_type == 'variant':
+            results = fetch_variant_data(query.search_term)
         else:
             # Default to gene search for backward compatibility
             results = fetch_gene_data(query.search_term)
@@ -112,12 +114,15 @@ def process_search(request, query_id):
             query.gene_info = results['phenotype_info']  # Store phenotype info in gene_info field
             success_msg = (f'Found {len(results["genes"])} associated genes and '
                           f'{len(results["diseases"])} associated diseases for phenotype "{query.search_term}".')
-        else:  # disease search
+        elif query.search_type == 'disease':
             query.phenotypes = results['phenotypes']  # Store phenotypes for disease
             query.diseases = results['genes']  # Store genes in diseases field for disease searches
             query.gene_info = results['disease_info']  # Store disease info in gene_info field
             success_msg = (f'Found {len(results["phenotypes"])} associated phenotypes and '
                           f'{len(results["genes"])} associated genes for disease "{query.search_term}".')
+        else:  # variant search
+            query.variant_data = results  # Store variant data
+            success_msg = f'Retrieved variant information for "{query.search_term}".'
 
         query.success = True
 
