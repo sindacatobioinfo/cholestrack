@@ -253,8 +253,11 @@ def fetch_clinpgx_data(gene_symbol: str) -> Dict:
             'accept': 'application/json'
         }
 
-        # Make request with timeout
-        response = requests.get(url, params=params, headers=headers, timeout=10)
+        # Log before making request
+        logger.info(f"ClinPGx Gene API - Making request for gene: {gene_symbol}")
+
+        # Make request with longer timeout (30 seconds)
+        response = requests.get(url, params=params, headers=headers, timeout=30)
 
         # Debug: Log the actual URL and response
         logger.info(f"ClinPGx Gene API - URL: {response.url}")
@@ -377,8 +380,11 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
             'accept': 'application/json'
         }
 
-        # Make request with timeout
-        response = requests.get(url, params=params, headers=headers, timeout=10)
+        # Log before making request
+        logger.info(f"ClinPGx Variant API - Making request for variant: {variant_id}")
+
+        # Make request with longer timeout (30 seconds)
+        response = requests.get(url, params=params, headers=headers, timeout=30)
 
         # Debug: Log the actual URL and response
         logger.info(f"ClinPGx Variant API - URL: {response.url}")
@@ -398,8 +404,10 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
                 else:
                     # Empty data array
                     return {
+                        'variantId': 'N/A',
                         'accessionId': 'N/A',
                         'variantPageId': None,
+                        'geneSymbol': None,
                         'alleleGenotype': 'N/A',
                         'comparison': 'N/A',
                         'isAssociated': False,
@@ -413,17 +421,29 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
                 data = response_data
 
             # Extract relevant fields
-            # Get variant page ID from linkedObjects
+            # Get variant page ID from data > location > linkedObjects > id
             variant_page_id = None
-            if 'linkedObjects' in data and data['linkedObjects']:
-                for obj in data['linkedObjects']:
-                    if obj.get('objCls') == 'Variant':
-                        variant_page_id = obj.get('id')
-                        break
+            if 'location' in data and data['location']:
+                location = data['location']
+                if 'linkedObjects' in location and location['linkedObjects']:
+                    for obj in location['linkedObjects']:
+                        if obj.get('objCls') == 'Variant':
+                            variant_page_id = obj.get('id')
+                            break
+
+            # Get gene symbol from data > location > genes > symbol
+            gene_symbol = None
+            if 'location' in data and data['location']:
+                location = data['location']
+                if 'genes' in location and location['genes']:
+                    # Take the first gene symbol
+                    gene_symbol = location['genes'][0].get('symbol') if len(location['genes']) > 0 else None
 
             return {
+                'variantId': data.get('id', 'N/A'),  # Actual variant ID to display
                 'accessionId': data.get('accessionId', 'N/A'),
                 'variantPageId': variant_page_id,  # ID for variant page link
+                'geneSymbol': gene_symbol,  # Gene symbol
                 'alleleGenotype': data.get('alleleGenotype', 'N/A'),
                 'comparison': data.get('comparison', 'N/A'),
                 'isAssociated': data.get('isAssociated', False),
@@ -434,8 +454,10 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
         elif response.status_code == 404:
             # Variant annotation not found in ClinPGx
             return {
+                'variantId': 'N/A',
                 'accessionId': 'N/A',
                 'variantPageId': None,
+                'geneSymbol': None,
                 'alleleGenotype': 'N/A',
                 'comparison': 'N/A',
                 'isAssociated': False,
@@ -447,8 +469,10 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
         else:
             # Other error
             return {
+                'variantId': 'N/A',
                 'accessionId': 'N/A',
                 'variantPageId': None,
+                'geneSymbol': None,
                 'alleleGenotype': 'N/A',
                 'comparison': 'N/A',
                 'isAssociated': False,
@@ -460,8 +484,10 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
 
     except requests.exceptions.Timeout:
         return {
+            'variantId': 'N/A',
             'accessionId': 'N/A',
             'variantPageId': None,
+            'geneSymbol': None,
             'alleleGenotype': 'N/A',
             'comparison': 'N/A',
             'isAssociated': False,
@@ -472,8 +498,10 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
         }
     except requests.exceptions.RequestException as e:
         return {
+            'variantId': 'N/A',
             'accessionId': 'N/A',
             'variantPageId': None,
+            'geneSymbol': None,
             'alleleGenotype': 'N/A',
             'comparison': 'N/A',
             'isAssociated': False,
@@ -484,8 +512,10 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
         }
     except Exception as e:
         return {
+            'variantId': 'N/A',
             'accessionId': 'N/A',
             'variantPageId': None,
+            'geneSymbol': None,
             'alleleGenotype': 'N/A',
             'comparison': 'N/A',
             'isAssociated': False,
