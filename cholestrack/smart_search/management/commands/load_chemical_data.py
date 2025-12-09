@@ -1,15 +1,17 @@
 # smart_search/management/commands/load_chemical_data.py
 """
-Management command to download and load ClinPGx chemical relationships data.
+Management command to download and load ClinPGx chemical and relationships data.
 
 Usage:
     python manage.py load_chemical_data
 
 This command:
-1. Downloads relationships.zip from ClinPGx API
-2. Extracts and processes the data
-3. Populates Chemical table with distinct chemicals
-4. Populates ChemicalRelationship table with full data
+1. Downloads drugs.zip from ClinPGx API
+   - Extracts drugs.tsv (first 2 columns: PharmGKB Accession Id, Name)
+   - Populates Chemical table with drug data for autocomplete
+2. Downloads relationships.zip from ClinPGx API
+   - Extracts relationships.tsv
+   - Populates ChemicalRelationship table with full relationship data
 """
 
 import os
@@ -29,6 +31,71 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         """Main command execution."""
         self.stdout.write(self.style.SUCCESS('Starting ClinPGx chemical data load...'))
+
+        # ============================================================
+        # PART 1: Download and load drugs from drugs.zip
+        # ============================================================
+        self.stdout.write('\n' + '='*60)
+        self.stdout.write('PART 1: Loading Chemical/Drug data from drugs.zip')
+        self.stdout.write('='*60)
+
+        drugs_url = 'https://api.clinpgx.org/v1/download/file/data/drugs.zip'
+        self.stdout.write(f'Downloading from {drugs_url}...')
+
+        try:
+            response = requests.get(drugs_url, timeout=60)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            raise CommandError(f'Failed to download drugs.zip: {e}')
+
+        # Extract drugs.tsv from the ZIP file
+        self.stdout.write('Extracting drugs.tsv from ZIP file...')
+        try:
+            with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
+                # List all files in the ZIP
+                file_list = zip_file.namelist()
+                self.stdout.write(f'Files in ZIP: {file_list}')
+
+                # Look specifically for drugs.tsv
+                tsv_file = 'drugs.tsv'
+                if tsv_file not in file_list:
+                    # Try to find it with different casing or path
+                    found = False
+                    for filename in file_list:
+                        if filename.lower().endswith('drugs.tsv'):
+                            tsv_file = filename
+                            found = True
+                            break
+
+                    if not found:
+                        raise CommandError(f'drugs.tsv not found in ZIP. Available files: {file_list}')
+
+                self.stdout.write(f'Processing file: {tsv_file}')
+
+                # Read the TSV file - only first two columns
+                with zip_file.open(tsv_file) as f:
+                    # Read with pandas, only first 2 columns
+                    df_drugs = pd.read_csv(f, sep='\t', dtype=str, na_filter=False, usecols=[0, 1])
+
+        except Exception as e:
+            raise CommandError(f'Failed to extract drugs.zip file: {e}')
+
+        self.stdout.write(f'Loaded {len(df_drugs)} drugs from file')
+        self.stdout.write(f'Columns: {list(df_drugs.columns)}')
+
+        # Rename columns to our standard names
+        df_drugs.columns = ['chemical_id', 'chemical_name']
+
+        # Remove duplicates based on chemical_id
+        df_drugs = df_drugs.drop_duplicates(subset=['chemical_id'], keep='first')
+        self.stdout.write(f'Found {len(df_drugs)} distinct chemicals after deduplication')
+
+        # ============================================================
+        # PART 2: Download and load relationships from relationships.zip
+        # ============================================================
+        self.stdout.write('\n' + '='*60)
+        self.stdout.write('PART 2: Loading Chemical relationships from relationships.zip')
+        self.stdout.write('='*60)
 
         # Download the relationships.zip file
         url = 'https://api.clinpgx.org/v1/download/file/data/relationships.zip'
@@ -103,27 +170,12 @@ class Command(BaseCommand):
         if missing_keys:
             raise CommandError(f'Missing required columns: {missing_keys}. Available columns: {list(df_full.columns)}')
 
-        # Process chemicals for the Chemical table
-        self.stdout.write('Processing chemicals...')
-
-        # Filter Entity1_type == "Chemical"
-        df_entity1 = df_full[df_full[column_mapping['entity1_type']] == 'Chemical'][[column_mapping['entity1_id'], column_mapping['entity1_name']]].copy()
-        df_entity1.columns = ['chemical_id', 'chemical_name']
-
-        # Filter Entity2_type == "Chemical"
-        df_entity2 = df_full[df_full[column_mapping['entity2_type']] == 'Chemical'][[column_mapping['entity2_id'], column_mapping['entity2_name']]].copy()
-        df_entity2.columns = ['chemical_id', 'chemical_name']
-
-        # Concatenate both dataframes
-        df_chemicals = pd.concat([df_entity1, df_entity2], ignore_index=True)
-
-        # Keep only distinct values based on chemical_id (the unique key)
-        # Keep the first occurrence if there are multiple names for the same ID
-        df_chemicals = df_chemicals.drop_duplicates(subset=['chemical_id'], keep='first')
-
-        self.stdout.write(f'Found {len(df_chemicals)} distinct chemicals')
-
-        # Load data into database
+        # ============================================================
+        # PART 3: Load data into database
+        # ============================================================
+        self.stdout.write('\n' + '='*60)
+        self.stdout.write('PART 3: Loading data into database')
+        self.stdout.write('='*60)
         self.stdout.write('Loading data into database...')
 
         with transaction.atomic():
@@ -132,10 +184,10 @@ class Command(BaseCommand):
             Chemical.objects.all().delete()
             ChemicalRelationship.objects.all().delete()
 
-            # Load chemicals
-            self.stdout.write('Loading Chemical table...')
+            # Load chemicals from drugs.tsv
+            self.stdout.write('Loading Chemical table from drugs.tsv data...')
             chemicals_to_create = []
-            for _, row in df_chemicals.iterrows():
+            for _, row in df_drugs.iterrows():
                 chemicals_to_create.append(Chemical(
                     chemical_id=row['chemical_id'],
                     chemical_name=row['chemical_name']
@@ -143,7 +195,7 @@ class Command(BaseCommand):
 
             # Bulk create chemicals
             Chemical.objects.bulk_create(chemicals_to_create, batch_size=1000)
-            self.stdout.write(self.style.SUCCESS(f'Created {len(chemicals_to_create)} chemicals'))
+            self.stdout.write(self.style.SUCCESS(f'Created {len(chemicals_to_create)} chemicals from drugs.tsv'))
 
             # Load full relationships
             self.stdout.write('Loading ChemicalRelationship table...')
