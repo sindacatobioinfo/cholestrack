@@ -126,8 +126,8 @@ class Command(BaseCommand):
                     entity2_type=row['Entity2_type'],
                     evidence=row.get('Evidence', ''),
                     association=row.get('Association', ''),
-                    pk=row.get('PK', ''),
-                    pd=row.get('PD', '')
+                    pharmacokinetics=row.get('PK', ''),
+                    pharmacodynamics=row.get('PD', '')
                 ))
 
             # Bulk create relationships

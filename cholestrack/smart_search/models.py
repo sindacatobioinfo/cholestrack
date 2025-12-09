@@ -454,18 +454,18 @@ class ChemicalRelationship(models.Model):
         verbose_name="Association"
     )
 
-    pk = models.CharField(
+    pharmacokinetics = models.CharField(
         max_length=200,
         blank=True,
         null=True,
-        verbose_name="PK"
+        verbose_name="Pharmacokinetics (PK)"
     )
 
-    pd = models.CharField(
+    pharmacodynamics = models.CharField(
         max_length=200,
         blank=True,
         null=True,
-        verbose_name="PD"
+        verbose_name="Pharmacodynamics (PD)"
     )
 
     class Meta:

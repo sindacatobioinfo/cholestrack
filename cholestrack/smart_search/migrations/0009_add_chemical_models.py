@@ -39,8 +39,8 @@ class Migration(migrations.Migration):
                 ('entity2_type', models.CharField(max_length=100, verbose_name='Entity 2 Type')),
                 ('evidence', models.TextField(blank=True, null=True, verbose_name='Evidence')),
                 ('association', models.CharField(blank=True, max_length=200, null=True, verbose_name='Association')),
-                ('pk', models.CharField(blank=True, max_length=200, null=True, verbose_name='PK')),
-                ('pd', models.CharField(blank=True, max_length=200, null=True, verbose_name='PD')),
+                ('pharmacokinetics', models.CharField(blank=True, max_length=200, null=True, verbose_name='Pharmacokinetics (PK)')),
+                ('pharmacodynamics', models.CharField(blank=True, max_length=200, null=True, verbose_name='Pharmacodynamics (PD)')),
             ],
             options={
                 'verbose_name': 'Chemical Relationship',
