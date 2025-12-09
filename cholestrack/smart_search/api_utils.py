@@ -401,6 +401,26 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
                 # Take the first element if array is not empty
                 if isinstance(data_array, list) and len(data_array) > 0:
                     data = data_array[0]
+
+                    # Collect ALL relatedChemicals from ALL elements in the data array
+                    all_related_chemicals = []
+                    seen_chemicals = set()  # Track unique chemicals
+
+                    for element in data_array:
+                        chemicals = element.get('relatedChemicals', [])
+                        if chemicals:
+                            for chemical in chemicals:
+                                # Create a unique identifier for deduplication
+                                # Use 'id' if available, otherwise use 'name'
+                                if isinstance(chemical, dict):
+                                    unique_id = chemical.get('id') or chemical.get('name')
+                                else:
+                                    unique_id = str(chemical)
+
+                                # Only add if not seen before
+                                if unique_id and unique_id not in seen_chemicals:
+                                    seen_chemicals.add(unique_id)
+                                    all_related_chemicals.append(chemical)
                 else:
                     # Empty data array
                     return {
@@ -419,6 +439,7 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
             else:
                 # Unexpected response format
                 data = response_data
+                all_related_chemicals = []
 
             # Extract relevant fields
             # Get variant ID from data > location > linkedObjects > id
@@ -448,7 +469,7 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
                 'comparison': data.get('comparison', 'N/A'),
                 'isAssociated': data.get('isAssociated', False),
                 'isPlural': data.get('isPlural', False),
-                'relatedChemicals': data.get('relatedChemicals', []),
+                'relatedChemicals': all_related_chemicals,  # All distinct chemicals from all data elements
                 'success': True
             }
         elif response.status_code == 404:
