@@ -46,6 +46,13 @@ class Patient(models.Model):
         help_text="List of HPO phenotype terms describing patient's signs and symptoms"
     )
 
+    administered_drugs = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Administered Drugs",
+        help_text="List of drugs/chemicals administered to the patient"
+    )
+
     main_exome_result = models.CharField(
         max_length=255,
         default="Awaiting Analysis",

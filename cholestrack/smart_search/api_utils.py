@@ -401,6 +401,26 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
                 # Take the first element if array is not empty
                 if isinstance(data_array, list) and len(data_array) > 0:
                     data = data_array[0]
+
+                    # Collect ALL relatedChemicals from ALL elements in the data array
+                    all_related_chemicals = []
+                    seen_chemicals = set()  # Track unique chemicals
+
+                    for element in data_array:
+                        chemicals = element.get('relatedChemicals', [])
+                        if chemicals:
+                            for chemical in chemicals:
+                                # Create a unique identifier for deduplication
+                                # Use 'id' if available, otherwise use 'name'
+                                if isinstance(chemical, dict):
+                                    unique_id = chemical.get('id') or chemical.get('name')
+                                else:
+                                    unique_id = str(chemical)
+
+                                # Only add if not seen before
+                                if unique_id and unique_id not in seen_chemicals:
+                                    seen_chemicals.add(unique_id)
+                                    all_related_chemicals.append(chemical)
                 else:
                     # Empty data array
                     return {
@@ -419,6 +439,7 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
             else:
                 # Unexpected response format
                 data = response_data
+                all_related_chemicals = []
 
             # Extract relevant fields
             # Get variant ID from data > location > linkedObjects > id
@@ -448,7 +469,7 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
                 'comparison': data.get('comparison', 'N/A'),
                 'isAssociated': data.get('isAssociated', False),
                 'isPlural': data.get('isPlural', False),
-                'relatedChemicals': data.get('relatedChemicals', []),
+                'relatedChemicals': all_related_chemicals,  # All distinct chemicals from all data elements
                 'success': True
             }
         elif response.status_code == 404:
@@ -526,6 +547,109 @@ def fetch_clinpgx_variant_data(variant_id: str) -> Dict:
         }
 
 
+def fetch_clinpgx_drug_labels(gene_symbol: str) -> Dict:
+    """
+    Fetch drug label annotations from ClinPGx API for a given gene.
+
+    Args:
+        gene_symbol: Gene symbol (e.g., 'ABCG2')
+
+    Returns:
+        Dictionary with ClinPGx drug label data or error information
+    """
+    try:
+        url = f"https://api.clinpgx.org/v1/data/label"
+        params = {
+            'relatedGenes.symbol': gene_symbol.upper(),
+            'view': 'min'
+        }
+        headers = {
+            'accept': 'application/json'
+        }
+
+        # Log before making request
+        logger.info(f"ClinPGx Drug Label API - Making request for gene: {gene_symbol}")
+
+        # Make request with longer timeout (30 seconds)
+        response = requests.get(url, params=params, headers=headers, timeout=30)
+
+        # Debug: Log the actual URL and response
+        logger.info(f"ClinPGx Drug Label API - URL: {response.url}")
+        logger.info(f"ClinPGx Drug Label API - Status: {response.status_code}")
+        logger.info(f"ClinPGx Drug Label API - Response: {response.text[:500]}")
+
+        if response.status_code == 200:
+            response_data = response.json()
+
+            # API response structure: {"data": [...]}
+            if 'data' in response_data:
+                data_array = response_data['data']
+
+                # Extract id and name from each label
+                labels = []
+                if isinstance(data_array, list):
+                    for item in data_array:
+                        label_id = item.get('id')
+                        label_name = item.get('name')
+                        if label_id:  # Only add if has an ID
+                            labels.append({
+                                'id': label_id,
+                                'name': label_name or 'N/A'
+                            })
+
+                return {
+                    'labels': labels,
+                    'count': len(labels),
+                    'success': True
+                }
+            else:
+                # Unexpected response format
+                return {
+                    'labels': [],
+                    'count': 0,
+                    'success': False,
+                    'error': 'Unexpected response format from ClinPGx API'
+                }
+        elif response.status_code == 404:
+            # No drug labels found for this gene
+            return {
+                'labels': [],
+                'count': 0,
+                'success': True,
+                'message': f'No drug label annotations found for gene "{gene_symbol}"'
+            }
+        else:
+            # Other error
+            return {
+                'labels': [],
+                'count': 0,
+                'success': False,
+                'error': f'ClinPGx API error: HTTP {response.status_code}'
+            }
+
+    except requests.exceptions.Timeout:
+        return {
+            'labels': [],
+            'count': 0,
+            'success': False,
+            'error': 'ClinPGx API request timeout'
+        }
+    except requests.exceptions.RequestException as e:
+        return {
+            'labels': [],
+            'count': 0,
+            'success': False,
+            'error': f'ClinPGx API request failed: {str(e)}'
+        }
+    except Exception as e:
+        return {
+            'labels': [],
+            'count': 0,
+            'success': False,
+            'error': f'Error fetching ClinPGx drug label data: {str(e)}'
+        }
+
+
 def fetch_gene_data(gene_symbol: str) -> Dict:
     """
     Fetch all HPO data for a gene including phenotypes and diseases from local database,
@@ -535,7 +659,7 @@ def fetch_gene_data(gene_symbol: str) -> Dict:
         gene_symbol: Gene symbol (e.g., 'ATP8B1')
 
     Returns:
-        Dictionary with phenotypes, diseases, gene_info, and clinpgx_data
+        Dictionary with phenotypes, diseases, gene_info, clinpgx_data, and clinpgx_drug_labels
     """
     hpo_client = HPOLocalClient()
     results = hpo_client.search_gene(gene_symbol)
@@ -543,6 +667,10 @@ def fetch_gene_data(gene_symbol: str) -> Dict:
     # Add ClinPGx data
     clinpgx_data = fetch_clinpgx_data(gene_symbol)
     results['clinpgx_data'] = clinpgx_data
+
+    # Add ClinPGx drug label data
+    clinpgx_drug_labels = fetch_clinpgx_drug_labels(gene_symbol)
+    results['clinpgx_drug_labels'] = clinpgx_drug_labels
 
     return results
 

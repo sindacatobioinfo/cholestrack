@@ -344,6 +344,26 @@
                 <!-- Hidden field to store JSON -->
                 {{ form.signs_and_symptoms_json }}
             </p>
+
+            <!-- Administered Drugs Autocomplete -->
+            <p>
+                <label for="drug-input">Administered Drugs</label>
+                <div class="relative">
+                    <input type="text"
+                           id="drug-input"
+                           class="form-control"
+                           placeholder="Type at least 3 characters to search drugs/chemicals..."
+                           autocomplete="off">
+                    <div id="drug-dropdown" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto" style="position: absolute; z-index: 1000; display: none;"></div>
+                </div>
+                <span class="help-text">Search and add drugs/chemicals administered to the patient</span>
+
+                <!-- Selected drugs list -->
+                <div id="selected-drugs" style="margin-top: 15px;"></div>
+
+                <!-- Hidden field to store JSON -->
+                {{ form.administered_drugs_json }}
+            </p>
         </div>
 
         <!-- Analysis Information Section -->
@@ -612,6 +632,187 @@ document.addEventListener('DOMContentLoaded', function() {
     phenotypeInput.addEventListener('blur', function() {
         setTimeout(function() {
             dropdown.style.display = 'none';
+        }, 200);
+    });
+
+    // ============== Administered Drugs Autocomplete ==============
+    const drugInput = document.getElementById('drug-input');
+    const drugDropdown = document.getElementById('drug-dropdown');
+    const selectedDrugsContainer = document.getElementById('selected-drugs');
+    const drugsHiddenField = document.getElementById('{{ form.administered_drugs_json.id_for_label }}');
+
+    let selectedDrugs = [];
+    let drugDebounceTimer;
+
+    // Load existing drugs from hidden field
+    function loadExistingDrugs() {
+        const existingData = drugsHiddenField.value;
+        if (existingData) {
+            try {
+                selectedDrugs = JSON.parse(existingData);
+                renderSelectedDrugs();
+            } catch (e) {
+                console.error('Error parsing existing drugs:', e);
+                selectedDrugs = [];
+            }
+        }
+    }
+
+    // Initialize on page load
+    loadExistingDrugs();
+
+    // Handle input for autocomplete
+    drugInput.addEventListener('input', function(e) {
+        const query = e.target.value.trim();
+
+        // Clear previous timer
+        clearTimeout(drugDebounceTimer);
+
+        // Only trigger with 3+ characters
+        if (query.length < 3) {
+            drugDropdown.style.display = 'none';
+            return;
+        }
+
+        // Debounce to avoid too many requests
+        drugDebounceTimer = setTimeout(function() {
+            fetchDrugAutocomplete(query);
+        }, 300);
+    });
+
+    // Fetch autocomplete results
+    async function fetchDrugAutocomplete(query) {
+        try {
+            const response = await fetch(`/smart-search/autocomplete-chemicals/?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+
+            if (data.results && data.results.length > 0) {
+                displayDrugResults(data.results);
+            } else {
+                drugDropdown.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Drug autocomplete error:', error);
+            drugDropdown.style.display = 'none';
+        }
+    }
+
+    // Display autocomplete results
+    function displayDrugResults(results) {
+        drugDropdown.innerHTML = '';
+
+        results.forEach(result => {
+            // Check if already selected
+            const alreadySelected = selectedDrugs.some(d => d.chemical_id === result.chemical_id);
+
+            const item = document.createElement('div');
+            item.style.padding = '12px 16px';
+            item.style.cursor = alreadySelected ? 'default' : 'pointer';
+            item.style.borderBottom = '1px solid #e5e7eb';
+            item.style.backgroundColor = alreadySelected ? '#f3f4f6' : 'white';
+
+            if (!alreadySelected) {
+                item.onmouseover = function() { this.style.backgroundColor = '#eff6ff'; };
+                item.onmouseout = function() { this.style.backgroundColor = 'white'; };
+            }
+
+            item.innerHTML = `
+                <div style="font-weight: 500; color: ${alreadySelected ? '#9ca3af' : '#111827'};">
+                    ${escapeHtml(result.name)}
+                    ${alreadySelected ? '<span style="color: #059669; font-size: 12px; margin-left: 8px;">✓ Added</span>' : ''}
+                </div>
+                <div style="font-size: 12px; color: #6b7280;">${escapeHtml(result.chemical_id)}</div>
+            `;
+
+            if (!alreadySelected) {
+                item.addEventListener('click', function() {
+                    addDrug({
+                        chemical_id: result.chemical_id,
+                        name: result.name
+                    });
+                    drugInput.value = '';
+                    drugDropdown.style.display = 'none';
+                });
+            }
+
+            drugDropdown.appendChild(item);
+        });
+
+        drugDropdown.style.display = 'block';
+    }
+
+    // Add drug to selected list
+    function addDrug(drug) {
+        // Check if already exists
+        if (selectedDrugs.some(d => d.chemical_id === drug.chemical_id)) {
+            return;
+        }
+
+        selectedDrugs.push(drug);
+        updateDrugsHiddenField();
+        renderSelectedDrugs();
+    }
+
+    // Remove drug from selected list
+    function removeDrug(chemicalId) {
+        selectedDrugs = selectedDrugs.filter(d => d.chemical_id !== chemicalId);
+        updateDrugsHiddenField();
+        renderSelectedDrugs();
+    }
+
+    // Update hidden field with JSON
+    function updateDrugsHiddenField() {
+        drugsHiddenField.value = JSON.stringify(selectedDrugs);
+    }
+
+    // Render selected drugs as tags
+    function renderSelectedDrugs() {
+        if (selectedDrugs.length === 0) {
+            selectedDrugsContainer.innerHTML = '<p style="color: #6c757d; font-size: 14px; font-style: italic;">No drugs selected yet</p>';
+            return;
+        }
+
+        selectedDrugsContainer.innerHTML = '<div style="display: flex; flex-wrap: wrap; gap: 8px;"></div>';
+        const tagsContainer = selectedDrugsContainer.firstElementChild;
+
+        selectedDrugs.forEach(drug => {
+            const tag = document.createElement('div');
+            tag.style.cssText = 'display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; background-color: #fef3c7; border: 1px solid #fbbf24; border-radius: 6px; font-size: 14px; color: #78350f;';
+
+            tag.innerHTML = `
+                <div>
+                    <div style="font-weight: 600;">${escapeHtml(drug.name)}</div>
+                    <div style="font-size: 11px; color: #92400e;">${escapeHtml(drug.chemical_id)}</div>
+                </div>
+                <button type="button"
+                        style="background: none; border: none; color: #78350f; cursor: pointer; font-size: 18px; line-height: 1; padding: 0; margin-left: 4px;"
+                        title="Remove drug"
+                        data-chemical-id="${escapeHtml(drug.chemical_id)}">
+                    ×
+                </button>
+            `;
+
+            // Add remove handler
+            const removeBtn = tag.querySelector('button');
+            removeBtn.addEventListener('click', function() {
+                removeDrug(this.getAttribute('data-chemical-id'));
+            });
+
+            tagsContainer.appendChild(tag);
+        });
+    }
+
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (e.target !== drugInput && e.target !== drugDropdown && !drugDropdown.contains(e.target)) {
+            drugDropdown.style.display = 'none';
+        }
+    });
+
+    // Clear input when it loses focus
+    drugInput.addEventListener('blur', function() {
+        setTimeout(function() {
+            drugDropdown.style.display = 'none';
         }, 200);
     });
 });

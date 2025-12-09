@@ -74,6 +74,13 @@ class GeneSearchQuery(models.Model):
         help_text="Pharmacogenomic data from ClinPGx API"
     )
 
+    clinpgx_drug_labels = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name="ClinPGx Drug Labels",
+        help_text="Drug label annotations from ClinPGx API"
+    )
+
     variant_data = models.JSONField(
         null=True,
         blank=True,
@@ -365,3 +372,111 @@ class GeneDiseaseAssociation(models.Model):
 
     def __str__(self):
         return f"{self.gene.gene_symbol} - {self.disease.database_id}"
+
+
+class Chemical(models.Model):
+    """
+    Chemical/Drug information from ClinPGx relationships data.
+    Used for autocomplete when selecting administered drugs for patients.
+    """
+    chemical_id = models.CharField(
+        max_length=200,
+        unique=True,
+        db_index=True,
+        verbose_name="Chemical ID",
+        help_text="Chemical identifier (e.g., PA449015)"
+    )
+
+    chemical_name = models.CharField(
+        max_length=500,
+        verbose_name="Chemical Name",
+        help_text="Name of the chemical/drug"
+    )
+
+    class Meta:
+        verbose_name = "Chemical"
+        verbose_name_plural = "Chemicals"
+        ordering = ['chemical_name']
+        indexes = [
+            models.Index(fields=['chemical_id']),
+            models.Index(fields=['chemical_name']),
+        ]
+
+    def __str__(self):
+        return f"{self.chemical_id}: {self.chemical_name}"
+
+
+class ChemicalRelationship(models.Model):
+    """
+    Full chemical relationships data from ClinPGx for future implementations.
+    Stores the complete relationships.zip data.
+    """
+    entity1_id = models.CharField(
+        max_length=200,
+        verbose_name="Entity 1 ID"
+    )
+
+    entity1_name = models.CharField(
+        max_length=500,
+        verbose_name="Entity 1 Name"
+    )
+
+    entity1_type = models.CharField(
+        max_length=100,
+        verbose_name="Entity 1 Type"
+    )
+
+    entity2_id = models.CharField(
+        max_length=200,
+        verbose_name="Entity 2 ID"
+    )
+
+    entity2_name = models.CharField(
+        max_length=500,
+        verbose_name="Entity 2 Name"
+    )
+
+    entity2_type = models.CharField(
+        max_length=100,
+        verbose_name="Entity 2 Type"
+    )
+
+    evidence = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Evidence"
+    )
+
+    association = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name="Association"
+    )
+
+    pharmacokinetics = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name="Pharmacokinetics (PK)"
+    )
+
+    pharmacodynamics = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name="Pharmacodynamics (PD)"
+    )
+
+    class Meta:
+        verbose_name = "Chemical Relationship"
+        verbose_name_plural = "Chemical Relationships"
+        indexes = [
+            models.Index(fields=['entity1_type']),
+            models.Index(fields=['entity2_type']),
+            models.Index(fields=['entity1_id']),
+            models.Index(fields=['entity2_id']),
+        ]
+
+    def __str__(self):
+        return f"{self.entity1_name} - {self.entity2_name}"

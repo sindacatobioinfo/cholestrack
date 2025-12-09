@@ -16,4 +16,5 @@ urlpatterns = [
     path('history/', views.search_history, name='search_history'),
     path('autocomplete/', views.autocomplete_phenotypes, name='autocomplete_phenotypes'),
     path('autocomplete-diseases/', views.autocomplete_diseases, name='autocomplete_diseases'),
+    path('autocomplete-chemicals/', views.autocomplete_chemicals, name='autocomplete_chemicals'),
 ]

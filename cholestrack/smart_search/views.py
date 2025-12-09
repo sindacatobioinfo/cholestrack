@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import JsonResponse
 from users.decorators import role_confirmed_required
-from .models import GeneSearchQuery, HPOTerm, Disease
+from .models import GeneSearchQuery, HPOTerm, Disease, Chemical
 from .forms import GeneSearchForm
 from .api_utils import fetch_gene_data, fetch_phenotype_data, fetch_disease_data, fetch_variant_data, fetch_clinpgx_variant_data
 
@@ -125,6 +125,7 @@ def process_search(request, query_id):
             query.diseases = results['diseases']
             query.gene_info = results['gene_info']
             query.clinpgx_data = results.get('clinpgx_data')  # Store ClinPGx data
+            query.clinpgx_drug_labels = results.get('clinpgx_drug_labels')  # Store ClinPGx drug labels
             success_msg = (f'Found {len(results["phenotypes"])} HPO phenotype terms and '
                           f'{len(results["diseases"])} associated diseases for gene {query.search_term}.')
         elif query.search_type == 'phenotype':
@@ -309,6 +310,40 @@ def autocomplete_diseases(request):
                 'display': f"{disease.disease_name} ({disease.database_id})"
             }
             for disease in diseases
+        ]
+
+        return JsonResponse({'results': results})
+
+    except Exception as e:
+        return JsonResponse({'results': [], 'error': str(e)})
+
+
+@login_required
+@role_confirmed_required
+def autocomplete_chemicals(request):
+    """
+    AJAX endpoint for chemical/drug autocomplete.
+    Returns matching Chemical terms based on partial input (minimum 3 characters).
+    """
+    query = request.GET.get('q', '').strip()
+
+    # Minimum 3 characters to trigger autocomplete
+    if len(query) < 3:
+        return JsonResponse({'results': []})
+
+    try:
+        # Case-insensitive search in Chemical name field
+        chemicals = Chemical.objects.filter(
+            chemical_name__icontains=query
+        ).order_by('chemical_name')[:10]  # Limit to 10 results
+
+        results = [
+            {
+                'chemical_id': chemical.chemical_id,
+                'name': chemical.chemical_name,
+                'display': f"{chemical.chemical_name} ({chemical.chemical_id})"
+            }
+            for chemical in chemicals
         ]
 
         return JsonResponse({'results': results})

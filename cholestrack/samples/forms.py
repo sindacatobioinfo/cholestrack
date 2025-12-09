@@ -54,6 +54,13 @@ class PatientForm(forms.ModelForm):
         label='Signs and Symptoms (HPO)'
     )
 
+    # Hidden field for administered drugs (managed by JavaScript)
+    administered_drugs_json = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(),
+        label='Administered Drugs'
+    )
+
     class Meta:
         model = Patient
         fields = [
@@ -61,6 +68,7 @@ class PatientForm(forms.ModelForm):
             'name',
             'birth_date',
             'signs_and_symptoms',
+            'administered_drugs',
             'main_exome_result',
             'analysis_status',
             'responsible_user',
@@ -130,6 +138,11 @@ class PatientForm(forms.ModelForm):
             if self.instance.signs_and_symptoms:
                 self.fields['signs_and_symptoms_json'].initial = json.dumps(self.instance.signs_and_symptoms)
 
+        # Populate administered_drugs_json field
+        if self.instance and self.instance.pk:
+            if self.instance.administered_drugs:
+                self.fields['administered_drugs_json'].initial = json.dumps(self.instance.administered_drugs)
+
     def save(self, commit=True):
         instance = super().save(commit=False)
 
@@ -156,6 +169,16 @@ class PatientForm(forms.ModelForm):
                 instance.signs_and_symptoms = []
         else:
             instance.signs_and_symptoms = []
+
+        # Handle administered_drugs from hidden JSON field
+        drugs_json = self.cleaned_data.get('administered_drugs_json', '')
+        if drugs_json:
+            try:
+                instance.administered_drugs = json.loads(drugs_json)
+            except (json.JSONDecodeError, TypeError):
+                instance.administered_drugs = []
+        else:
+            instance.administered_drugs = []
 
         if commit:
             instance.save()
