@@ -44,20 +44,23 @@ class Command(BaseCommand):
         self.stdout.write('Extracting ZIP file...')
         try:
             with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
-                # Assuming the TSV file is named relationships.tsv or similar
-                # List all files in the ZIP to find the right one
+                # List all files in the ZIP
                 file_list = zip_file.namelist()
                 self.stdout.write(f'Files in ZIP: {file_list}')
 
-                # Find the TSV file (usually relationships.tsv)
-                tsv_file = None
-                for filename in file_list:
-                    if filename.endswith('.tsv') or filename.endswith('.txt'):
-                        tsv_file = filename
-                        break
+                # Look specifically for relationships.tsv
+                tsv_file = 'relationships.tsv'
+                if tsv_file not in file_list:
+                    # Try to find it with different casing or path
+                    found = False
+                    for filename in file_list:
+                        if filename.lower().endswith('relationships.tsv'):
+                            tsv_file = filename
+                            found = True
+                            break
 
-                if not tsv_file:
-                    raise CommandError('No TSV file found in relationships.zip')
+                    if not found:
+                        raise CommandError(f'relationships.tsv not found in ZIP. Available files: {file_list}')
 
                 self.stdout.write(f'Processing file: {tsv_file}')
 
