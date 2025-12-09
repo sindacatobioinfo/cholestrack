@@ -117,8 +117,9 @@ class Command(BaseCommand):
         # Concatenate both dataframes
         df_chemicals = pd.concat([df_entity1, df_entity2], ignore_index=True)
 
-        # Keep only distinct values
-        df_chemicals = df_chemicals.drop_duplicates(subset=['chemical_id', 'chemical_name'])
+        # Keep only distinct values based on chemical_id (the unique key)
+        # Keep the first occurrence if there are multiple names for the same ID
+        df_chemicals = df_chemicals.drop_duplicates(subset=['chemical_id'], keep='first')
 
         self.stdout.write(f'Found {len(df_chemicals)} distinct chemicals')
 
