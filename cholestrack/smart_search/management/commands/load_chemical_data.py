@@ -72,15 +72,43 @@ class Command(BaseCommand):
         self.stdout.write(f'Loaded {len(df_full)} rows from relationships file')
         self.stdout.write(f'Columns: {list(df_full.columns)}')
 
+        # Check actual column names and map them
+        # Common variations: Entity1_type vs Entity 1_type vs entity1_type
+        column_mapping = {}
+        for col in df_full.columns:
+            col_lower = col.lower().replace(' ', '_')
+            if 'entity' in col_lower and '1' in col_lower:
+                if 'type' in col_lower:
+                    column_mapping['entity1_type'] = col
+                elif 'id' in col_lower:
+                    column_mapping['entity1_id'] = col
+                elif 'name' in col_lower:
+                    column_mapping['entity1_name'] = col
+            elif 'entity' in col_lower and '2' in col_lower:
+                if 'type' in col_lower:
+                    column_mapping['entity2_type'] = col
+                elif 'id' in col_lower:
+                    column_mapping['entity2_id'] = col
+                elif 'name' in col_lower:
+                    column_mapping['entity2_name'] = col
+
+        self.stdout.write(f'Column mapping: {column_mapping}')
+
+        # Verify we have all required columns
+        required_keys = ['entity1_type', 'entity1_id', 'entity1_name', 'entity2_type', 'entity2_id', 'entity2_name']
+        missing_keys = [key for key in required_keys if key not in column_mapping]
+        if missing_keys:
+            raise CommandError(f'Missing required columns: {missing_keys}. Available columns: {list(df_full.columns)}')
+
         # Process chemicals for the Chemical table
         self.stdout.write('Processing chemicals...')
 
         # Filter Entity1_type == "Chemical"
-        df_entity1 = df_full[df_full['Entity1_type'] == 'Chemical'][['Entity1_id', 'Entity1_name']].copy()
+        df_entity1 = df_full[df_full[column_mapping['entity1_type']] == 'Chemical'][[column_mapping['entity1_id'], column_mapping['entity1_name']]].copy()
         df_entity1.columns = ['chemical_id', 'chemical_name']
 
         # Filter Entity2_type == "Chemical"
-        df_entity2 = df_full[df_full['Entity2_type'] == 'Chemical'][['Entity2_id', 'Entity2_name']].copy()
+        df_entity2 = df_full[df_full[column_mapping['entity2_type']] == 'Chemical'][[column_mapping['entity2_id'], column_mapping['entity2_name']]].copy()
         df_entity2.columns = ['chemical_id', 'chemical_name']
 
         # Concatenate both dataframes
@@ -115,19 +143,33 @@ class Command(BaseCommand):
 
             # Load full relationships
             self.stdout.write('Loading ChemicalRelationship table...')
+
+            # Map additional column names for Evidence, Association, PK, PD
+            optional_mapping = {}
+            for col in df_full.columns:
+                col_lower = col.lower()
+                if 'evidence' in col_lower:
+                    optional_mapping['evidence'] = col
+                elif 'association' in col_lower:
+                    optional_mapping['association'] = col
+                elif col_lower == 'pk':
+                    optional_mapping['pk'] = col
+                elif col_lower == 'pd':
+                    optional_mapping['pd'] = col
+
             relationships_to_create = []
             for _, row in df_full.iterrows():
                 relationships_to_create.append(ChemicalRelationship(
-                    entity1_id=row['Entity1_id'],
-                    entity1_name=row['Entity1_name'],
-                    entity1_type=row['Entity1_type'],
-                    entity2_id=row['Entity2_id'],
-                    entity2_name=row['Entity2_name'],
-                    entity2_type=row['Entity2_type'],
-                    evidence=row.get('Evidence', ''),
-                    association=row.get('Association', ''),
-                    pharmacokinetics=row.get('PK', ''),
-                    pharmacodynamics=row.get('PD', '')
+                    entity1_id=row[column_mapping['entity1_id']],
+                    entity1_name=row[column_mapping['entity1_name']],
+                    entity1_type=row[column_mapping['entity1_type']],
+                    entity2_id=row[column_mapping['entity2_id']],
+                    entity2_name=row[column_mapping['entity2_name']],
+                    entity2_type=row[column_mapping['entity2_type']],
+                    evidence=row.get(optional_mapping.get('evidence', 'Evidence'), ''),
+                    association=row.get(optional_mapping.get('association', 'Association'), ''),
+                    pharmacokinetics=row.get(optional_mapping.get('pk', 'PK'), ''),
+                    pharmacodynamics=row.get(optional_mapping.get('pd', 'PD'), '')
                 ))
 
             # Bulk create relationships
