@@ -74,6 +74,13 @@ class GeneSearchQuery(models.Model):
         help_text="Pharmacogenomic data from ClinPGx API"
     )
 
+    clinpgx_drug_labels = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name="ClinPGx Drug Labels",
+        help_text="Drug label annotations from ClinPGx API"
+    )
+
     variant_data = models.JSONField(
         null=True,
         blank=True,

@@ -125,6 +125,7 @@ def process_search(request, query_id):
             query.diseases = results['diseases']
             query.gene_info = results['gene_info']
             query.clinpgx_data = results.get('clinpgx_data')  # Store ClinPGx data
+            query.clinpgx_drug_labels = results.get('clinpgx_drug_labels')  # Store ClinPGx drug labels
             success_msg = (f'Found {len(results["phenotypes"])} HPO phenotype terms and '
                           f'{len(results["diseases"])} associated diseases for gene {query.search_term}.')
         elif query.search_type == 'phenotype':
