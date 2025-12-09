@@ -66,15 +66,17 @@ python manage.py approve_existing_users
 - Patient sample tracking
 - Sample metadata and analysis status
 - Sample filtering and search
+- Administered drugs tracking with autocomplete
 
 **Key Models:**
-- Patient
+- Patient (includes administered_drugs field)
 - Sample (linked to patients)
 
 **Key Features:**
 - Import samples from TSV files
 - Filter samples by various criteria
 - Track analysis status
+- **Administered Drugs:** Track drugs/chemicals administered to patients with autocomplete search powered by PharmGKB data
 
 **Important Commands:**
 ```bash
@@ -132,8 +134,8 @@ python manage.py cleanup_expired_extractions --dry-run
 5. User downloads extracted BAM + BAI
 6. Files auto-delete after download or 10 minutes
 
-### 7. **smart_search** - HPO Gene Search
-Gene-phenotype-disease association search using local HPO database.
+### 7. **smart_search** - HPO Gene Search & ClinPGx Integration
+Gene-phenotype-disease association search using local HPO database with pharmacogenomic data from ClinPGx.
 
 **Key Models:**
 - **HPOTerm**: HPO phenotype terms (e.g., HP:0000001)
@@ -143,9 +145,11 @@ Gene-phenotype-disease association search using local HPO database.
 - **DiseasePhenotypeAssociation**: Disease ↔ HPO term links
 - **GeneDiseaseAssociation**: Gene ↔ Disease links
 - **GeneSearchQuery**: Cached search results (7-day expiration)
+- **Chemical**: Drug/chemical information for autocomplete (PharmGKB IDs)
+- **ChemicalRelationship**: Full relationship data from ClinPGx
 
 **Features:**
-- **Local HPO Database:** No external API calls needed
+- **Local HPO Database:** No external API calls needed for HPO data
 - **Search by Gene Symbol:** Find phenotypes and diseases
 - **Cached Results:** 7-day cache to reduce load
 - **Pagination:** 10 results per page for phenotypes/diseases
@@ -153,6 +157,11 @@ Gene-phenotype-disease association search using local HPO database.
   - HPO phenotype terms with definitions
   - Associated diseases from multiple databases
   - Direct links to HPO website
+- **ClinPGx Pharmacogenomics:**
+  - **Variant Search:** Shows all related chemicals/drugs from ClinPGx (deduplicated)
+  - **Gene Search:** Displays drug label annotations with links to ClinPGx
+  - **Drug Relations Table:** Pharmacogenomic relationships for genes
+  - **Chemical Autocomplete:** Real-time drug search for patient forms
 
 **Important Commands:**
 ```bash
@@ -172,6 +181,9 @@ python manage.py load_hpo_data \
 # Specify HPO release version
 python manage.py load_hpo_data --release v2025-10-22
 
+# Load ClinPGx chemical/drug data (for administered drugs and pharmacogenomics)
+python manage.py load_chemical_data
+
 # Clear cached searches
 python manage.py clear_search_cache --all
 python manage.py clear_search_cache --gene BRCA1
@@ -186,6 +198,7 @@ python manage.py fix_disease_database_field --dry-run
 
 **Data Sources:**
 - HPO annotation files from: https://github.com/obophenotype/human-phenotype-ontology/releases
+- ClinPGx pharmacogenomic data: https://api.clinpgx.org/v1/
 
 **File Formats:**
 1. **genes_to_phenotype.txt**: Gene → Phenotype associations
@@ -196,13 +209,16 @@ python manage.py fix_disease_database_field --dry-run
    - Columns: HPO-ID, HPO-Name, entrez-gene-id, gene-symbol
 4. **phenotype.hpoa**: Disease → Phenotype associations
    - Columns: database-id, disease-name, HPO-ID, frequency, etc.
+5. **drugs.tsv** (from ClinPGx): PharmGKB drug data
+   - Columns: PharmGKB Accession Id, Name
 
 **Typical Workflow:**
 1. Load HPO data into local database (run once, update monthly)
-2. User searches for gene (e.g., "BRCA1")
-3. System queries local database
-4. Results cached for 7 days
-5. User views paginated phenotypes and diseases
+2. Load ClinPGx chemical data (run once, update as needed)
+3. User searches for gene (e.g., "BRCA1")
+4. System queries local database and ClinPGx API
+5. Results cached for 7 days
+6. User views paginated phenotypes, diseases, and drug relationships
 
 ### 8. **ai_agent** - AI Genomic Analysis Agent
 AI-powered assistant for analyzing variant data using natural language.
@@ -379,12 +395,19 @@ python manage.py approve_existing_users
 - Temporary file management with auto-cleanup
 - Download extracted BAM + BAI files
 
-### 4. HPO Gene Search
-- Local HPO database (no external API calls)
+### 4. HPO Gene Search & Pharmacogenomics
+- Local HPO database (no external API calls for HPO data)
 - Search genes for phenotypes and diseases
 - Cached results (7-day expiration)
 - Paginated results (10 per page)
 - Links to external databases (HPO, OMIM, ORPHA)
+- **ClinPGx Integration:**
+  - Variant search shows all related chemicals/drugs
+  - Gene search includes drug label annotations
+  - Drug relations table with links to ClinPGx
+- **Administered Drugs:**
+  - Track drugs/chemicals given to patients
+  - Real-time autocomplete powered by PharmGKB data
 
 ### 5. File Management
 - Track BAM, VCF, and other analysis files
@@ -433,6 +456,7 @@ python manage.py approve_existing_users
 - `/smart-search/` - Search home
 - `/smart-search/result/<id>/` - Search results (with pagination)
 - `/smart-search/history/` - Search history
+- `/smart-search/autocomplete-chemicals/` - AJAX endpoint for drug/chemical autocomplete
 
 ## Important Notes
 
@@ -481,6 +505,12 @@ python manage.py approve_existing_users
 - Website: https://hpo.jax.org/
 - License: https://hpo.jax.org/app/license
 - Citation: Köhler S, et al. The Human Phenotype Ontology in 2024: phenotypes around the world. Nucleic Acids Res. 2024 Jan 5;52(D1):D1333-D1346.
+
+**ClinPGx (Clinical Pharmacogenomics):**
+- Website: https://www.clinpgx.org/
+- API: https://api.clinpgx.org/v1/
+- Data Sources: PharmGKB (Pharmacogenomics Knowledge Base)
+- Purpose: Drug-gene-phenotype relationships and pharmacogenomic annotations
 
 ## Troubleshooting
 
@@ -607,6 +637,7 @@ python manage.py test_gene_search --gene ATP8B1
 
 ---
 
-**Last Updated**: 2024-11-22
+**Last Updated**: 2025-12-09
 **Django Version**: 5.2.8
 **Python Version**: 3.11+
+**Pharmacogenomics**: ClinPGx + PharmGKB Integration
