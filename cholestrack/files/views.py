@@ -94,6 +94,19 @@ def download_single_file(request, file_location_id, file_part='main'):
             messages.error(request, 'The requested file could not be found on the server.')
             return redirect('samples:sample_list')
 
+        # Check file is readable (important for network-mounted directories)
+        if not os.access(target_path, os.R_OK):
+            logger.error(
+                f"File exists but is not readable - Permission denied: "
+                f"Path={target_path}, User={request.user.username}"
+            )
+            messages.error(
+                request,
+                'The file exists but cannot be read due to permission restrictions. '
+                'Please contact the system administrator.'
+            )
+            return redirect('samples:sample_list')
+
         # Determine content type
         content_type_map = {
             '.bai': 'application/octet-stream',
@@ -108,13 +121,32 @@ def download_single_file(request, file_location_id, file_part='main'):
         content_type = content_type_map.get(file_ext.lower(), 'application/octet-stream')
 
         # Stream file
-        file_handle = open(target_path, 'rb')
-        response = FileResponse(file_handle, content_type=content_type)
-        response['Content-Disposition'] = f'attachment; filename="{target_path.name}"'
-        response['Content-Length'] = target_path.stat().st_size
+        try:
+            file_handle = open(target_path, 'rb')
+            response = FileResponse(file_handle, content_type=content_type)
+            response['Content-Disposition'] = f'attachment; filename="{target_path.name}"'
+            response['Content-Length'] = target_path.stat().st_size
 
-        logger.info(f"File download successful: {target_path.name}, Size={target_path.stat().st_size}")
-        return response
+            logger.info(f"File download successful: {target_path.name}, Size={target_path.stat().st_size}")
+            return response
+        except PermissionError as e:
+            logger.error(
+                f"Permission denied when opening file: Path={target_path}, "
+                f"User={request.user.username}, Error={str(e)}"
+            )
+            messages.error(
+                request,
+                'Permission denied when accessing the file. '
+                'Please contact the system administrator to check file permissions.'
+            )
+            return redirect('samples:sample_list')
+        except IOError as e:
+            logger.error(
+                f"IO error when opening file: Path={target_path}, "
+                f"User={request.user.username}, Error={str(e)}"
+            )
+            messages.error(request, 'Error reading the file from storage.')
+            return redirect('samples:sample_list')
 
     except AnalysisFileLocation.DoesNotExist:
         logger.warning(f"File location not found: ID={file_location_id}")
@@ -230,6 +262,19 @@ def download_file(request, file_location_id):
             messages.error(request, 'Invalid file path.')
             return redirect('samples:sample_list')
 
+        # Check file is readable (important for network-mounted directories)
+        if not os.access(full_file_path, os.R_OK):
+            logger.error(
+                f"File exists but is not readable - Permission denied: "
+                f"Path={full_file_path}, User={request.user.username}"
+            )
+            messages.error(
+                request,
+                'The file exists but cannot be read due to permission restrictions. '
+                'Please contact the system administrator.'
+            )
+            return redirect('samples:sample_list')
+
         # Use original filename only
         original_filename = full_file_path.name
 
@@ -250,17 +295,44 @@ def download_file(request, file_location_id):
                     index_file_path = Path(str(full_file_path).replace('.bam', '.bai'))
                     index_filename = original_filename.replace('.bam', '.bai')
 
+                # Check if index file is readable
+                index_readable = False
+                if index_file_path.exists() and index_file_path.is_file():
+                    index_readable = os.access(index_file_path, os.R_OK)
+                    if not index_readable:
+                        logger.warning(
+                            f"Index file exists but is not readable: {index_file_path}"
+                        )
+
                 # Create ZIP file in memory
                 zip_buffer = io.BytesIO()
                 with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                     # Add main file to ZIP
-                    zip_file.write(full_file_path, arcname=original_filename)
+                    try:
+                        zip_file.write(full_file_path, arcname=original_filename)
+                    except PermissionError as e:
+                        logger.error(
+                            f"Permission denied when adding file to ZIP: "
+                            f"Path={full_file_path}, Error={str(e)}"
+                        )
+                        raise  # Re-raise to be caught by outer exception handler
 
-                    # Add index file if it exists
-                    if index_file_path.exists() and index_file_path.is_file():
-                        zip_file.write(index_file_path, arcname=index_filename)
-                        logger.info(
-                            f"Including index file in download: {index_filename}"
+                    # Add index file if it exists and is readable
+                    if index_readable:
+                        try:
+                            zip_file.write(index_file_path, arcname=index_filename)
+                            logger.info(
+                                f"Including index file in download: {index_filename}"
+                            )
+                        except PermissionError as e:
+                            logger.warning(
+                                f"Permission denied when adding index file to ZIP: "
+                                f"Path={index_file_path}, Error={str(e)}"
+                            )
+                            # Continue without index file
+                    elif index_file_path.exists():
+                        logger.warning(
+                            f"Index file exists but is not readable: {index_file_path}"
                         )
                     else:
                         logger.warning(
@@ -288,6 +360,17 @@ def download_file(request, file_location_id):
 
                 return response
 
+            except PermissionError as e:
+                logger.error(
+                    f"Permission denied when creating ZIP: {str(e)}, "
+                    f"Path={full_file_path}, User={request.user.username}"
+                )
+                messages.error(
+                    request,
+                    'Permission denied when accessing the file. '
+                    'Please contact the system administrator to check file permissions.'
+                )
+                return redirect('samples:sample_list')
             except Exception as e:
                 logger.error(
                     f"Error creating ZIP with index file: {str(e)}, "
@@ -331,6 +414,17 @@ def download_file(request, file_location_id):
 
                 return response
 
+            except PermissionError as e:
+                logger.error(
+                    f"Permission denied when opening file: Path={full_file_path}, "
+                    f"User={request.user.username}, Error={str(e)}"
+                )
+                messages.error(
+                    request,
+                    'Permission denied when accessing the file. '
+                    'Please contact the system administrator to check file permissions.'
+                )
+                return redirect('samples:sample_list')
             except IOError as e:
                 logger.error(
                     f"File read error: Path={full_file_path}, "
