@@ -85,9 +85,10 @@ python manage.py import_data --samples /path/to/samples.tsv --files /path/to/fil
 
 ### 4. **files** - File Management
 - BAM file location tracking
-- File type management (BAM, VCF, etc.)
+- File type management (BAM, VCF, FASTQ, TSV, etc.)
 - File upload and validation
 - Integration with sample data
+- **Network-mounted directory support** for genomic data files
 
 **Key Models:**
 - AnalysisFileLocation
@@ -96,6 +97,105 @@ python manage.py import_data --samples /path/to/samples.tsv --files /path/to/fil
 - Track file paths and metadata
 - Link files to samples
 - Support for multiple file types
+- Secure file downloads with permission validation
+- Support for network-mounted storage (NFS/CIFS)
+
+**Network-Mounted File Storage:**
+
+CholesTrack supports storing genomic data files on network-mounted directories, which is essential for handling large datasets that may be shared across multiple servers.
+
+**Directory Structure:**
+```
+/home/burlo/cholestrack/cholestrack/media/remote_files/
+├── vcf/          # VCF variant files + .tbi index files
+├── bam/          # BAM alignment files + .bai index files
+├── fastq/        # FASTQ sequencing files (_1.fastq.gz, _2.fastq.gz)
+├── tsv/          # TSV analysis files
+└── cram/         # CRAM compressed alignment files
+```
+
+**Required File Permissions:**
+
+All files in network-mounted directories must have the correct permissions for the Django user to read them:
+
+- **Directories**: `755` (drwxr-xr-x)
+- **Files**: `644` (-rw-r--r--)
+
+**Setting Up Network Mount:**
+
+1. **NFS Mount** (recommended for Linux-to-Linux):
+   ```bash
+   # On NFS server, edit /etc/exports
+   /path/to/genomic/data *(rw,sync,no_subtree_check,no_root_squash)
+
+   # On CholesTrack server, mount
+   sudo mkdir -p /home/burlo/cholestrack/cholestrack/media/remote_files
+   sudo mount -t nfs server.example.com:/path/to/genomic/data /home/burlo/cholestrack/cholestrack/media/remote_files
+
+   # Make permanent by adding to /etc/fstab
+   server.example.com:/path/to/genomic/data /home/burlo/cholestrack/cholestrack/media/remote_files nfs defaults 0 0
+   ```
+
+2. **CIFS/SMB Mount** (for Windows shares):
+   ```bash
+   # Create mount point
+   sudo mkdir -p /home/burlo/cholestrack/cholestrack/media/remote_files
+
+   # Mount with credentials
+   sudo mount -t cifs //server/share /home/burlo/cholestrack/cholestrack/media/remote_files \
+       -o username=user,password=pass,uid=burlo,gid=burlo,file_mode=0644,dir_mode=0755
+
+   # Make permanent in /etc/fstab
+   //server/share /home/burlo/cholestrack/cholestrack/media/remote_files cifs \
+       credentials=/root/.smbcredentials,uid=burlo,gid=burlo,file_mode=0644,dir_mode=0755 0 0
+   ```
+
+**Fixing File Permissions:**
+
+If you encounter permission errors when downloading files, ensure all files have correct permissions:
+
+```bash
+# Fix directory permissions
+sudo chmod 755 /home/burlo/cholestrack/cholestrack/media/remote_files/*/
+
+# Fix file permissions (THIS IS CRITICAL)
+sudo chmod 644 /home/burlo/cholestrack/cholestrack/media/remote_files/*/*.gz
+sudo chmod 644 /home/burlo/cholestrack/cholestrack/media/remote_files/*/*.vcf
+sudo chmod 644 /home/burlo/cholestrack/cholestrack/media/remote_files/*/*.bam
+sudo chmod 644 /home/burlo/cholestrack/cholestrack/media/remote_files/*/*.tsv
+
+# For FASTQ files specifically (common issue):
+sudo chmod 644 /home/burlo/cholestrack/cholestrack/media/remote_files/fastq/*.fastq.gz
+```
+
+**Verifying Permissions:**
+
+```bash
+# Check directory structure
+ls -ld /home/burlo/cholestrack/cholestrack/media/remote_files/*/
+
+# Check file permissions (should show -rw-r--r--)
+ls -l /home/burlo/cholestrack/cholestrack/media/remote_files/vcf/*.vcf.gz | head -2
+ls -l /home/burlo/cholestrack/cholestrack/media/remote_files/fastq/*.fastq.gz | head -2
+
+# Test as Django user (replace 'ronald_moura' with your Django user)
+sudo -u ronald_moura cat /home/burlo/cholestrack/cholestrack/media/remote_files/fastq/sample_1.fastq.gz > /dev/null && echo "OK" || echo "PERMISSION DENIED"
+```
+
+**Troubleshooting Permission Issues:**
+
+If downloads work for VCF/BAM but not FASTQ files:
+1. Compare permissions between working and non-working directories
+2. Ensure FASTQ files have `644` permissions (not `755`)
+3. Verify the Django user can read the files
+4. Check mount options don't restrict access
+
+**Important Notes:**
+- Django user (e.g., `ronald_moura` or `www-data`) must be able to read all files
+- Group ownership should be consistent (e.g., `burlo` group)
+- Avoid execute permissions on data files (`755` → `644`)
+- Test file access after any permission changes
+- Restart gunicorn after mount changes: `sudo systemctl restart gunicorn`
 
 ### 5. **home** - Dashboard
 - Landing page
@@ -561,6 +661,42 @@ python manage.py load_hpo_data
 2. Check `.env` file has correct credentials
 3. Verify database exists
 4. Check network connectivity
+
+### File Download Permission Errors
+**Problem**: "Permission denied" when downloading FASTQ files (but VCF/BAM work fine)
+
+**Symptoms**:
+- VCF and BAM files download successfully
+- FASTQ files fail with "Permission denied" or "File exists but is not readable"
+- Error appears in Django logs
+
+**Root Cause**: FASTQ files have incorrect permissions (755 instead of 644)
+
+**Solution**:
+```bash
+# Fix FASTQ file permissions to match working VCF/BAM files
+sudo chmod 644 /home/burlo/cholestrack/cholestrack/media/remote_files/fastq/*.fastq.gz
+
+# Verify the fix
+ls -l /home/burlo/cholestrack/cholestrack/media/remote_files/fastq/*.fastq.gz | head -2
+# Should show: -rw-r--r-- (NOT -rwxr-xr-x)
+
+# Test as Django user
+sudo -u ronald_moura cat /home/burlo/cholestrack/cholestrack/media/remote_files/fastq/sample_1.fastq.gz > /dev/null
+# Should complete without error
+
+# Restart Django
+sudo systemctl restart gunicorn
+```
+
+**Prevention**:
+- When copying files to network mount, use: `cp --preserve=mode` or explicitly set permissions
+- Ensure automated file transfers set correct permissions (644 for files, 755 for directories)
+- Run permission check script periodically:
+  ```bash
+  find /home/burlo/cholestrack/cholestrack/media/remote_files -type f -exec chmod 644 {} \;
+  find /home/burlo/cholestrack/cholestrack/media/remote_files -type d -exec chmod 755 {} \;
+  ```
 
 ## Development Workflow
 
