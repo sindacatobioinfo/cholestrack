@@ -1,0 +1,42 @@
+# Sudoers configuration for Cholestrack FASTQ file access
+# This file should be installed to /etc/sudoers.d/cholestrack
+#
+# Installation instructions:
+#   sudo cp sudoers.d/cholestrack /etc/sudoers.d/cholestrack
+#   sudo chmod 440 /etc/sudoers.d/cholestrack
+#   sudo visudo -c  # Verify syntax
+#
+# Purpose:
+#   Allow the Django/Gunicorn user to read FASTQ files that are owned by
+#   the 'burlo' user. FASTQ files are stored on a network mount with
+#   restricted permissions - only 'burlo' has read access.
+#
+# Security notes:
+#   - Only allows 'cat' command (read-only access)
+#   - Only for files in /home/burlo/cholestrack/*/media/remote_files/
+#   - No password required (NOPASSWD) since this is a service account
+#   - The -n flag is used in code to prevent interactive password prompts
+
+# Replace 'www-data' with the actual user that runs Gunicorn/Django
+# Common users: www-data, gunicorn, django, burlo, ronald_moura
+# To find the user: ps aux | grep gunicorn
+
+# Allow Django user to read files as burlo user
+www-data ALL=(burlo) NOPASSWD: /bin/cat /home/burlo/cholestrack/*/media/remote_files/fastq/*
+www-data ALL=(burlo) NOPASSWD: /bin/cp /home/burlo/cholestrack/*/media/remote_files/fastq/* /tmp/fastq_download_*
+
+# If gunicorn runs as a different user, uncomment and modify one of these:
+# gunicorn ALL=(burlo) NOPASSWD: /bin/cat /home/burlo/cholestrack/*/media/remote_files/fastq/*
+# gunicorn ALL=(burlo) NOPASSWD: /bin/cp /home/burlo/cholestrack/*/media/remote_files/fastq/* /tmp/fastq_download_*
+
+# ronald_moura ALL=(burlo) NOPASSWD: /bin/cat /home/burlo/cholestrack/*/media/remote_files/fastq/*
+# ronald_moura ALL=(burlo) NOPASSWD: /bin/cp /home/burlo/cholestrack/*/media/remote_files/fastq/* /tmp/fastq_download_*
+
+# django ALL=(burlo) NOPASSWD: /bin/cat /home/burlo/cholestrack/*/media/remote_files/fastq/*
+# django ALL=(burlo) NOPASSWD: /bin/cp /home/burlo/cholestrack/*/media/remote_files/fastq/* /tmp/fastq_download_*
+
+# Also need chmod for temp files
+www-data ALL=(root) NOPASSWD: /bin/chmod 644 /tmp/fastq_download_*
+# gunicorn ALL=(root) NOPASSWD: /bin/chmod 644 /tmp/fastq_download_*
+# ronald_moura ALL=(root) NOPASSWD: /bin/chmod 644 /tmp/fastq_download_*
+# django ALL=(root) NOPASSWD: /bin/chmod 644 /tmp/fastq_download_*

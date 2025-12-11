@@ -11,9 +11,149 @@ import logging
 import os
 import zipfile
 import io
+import subprocess
+import tempfile
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+# User that owns FASTQ files and has exclusive read access
+FASTQ_FILE_OWNER = 'burlo'
+
+
+def read_file_as_owner(file_path, file_owner=FASTQ_FILE_OWNER):
+    """
+    Read a file that requires specific user permissions using sudo.
+
+    This function is necessary for FASTQ files that are owned by a specific user
+    (burlo) and not readable by the Django application user. It uses sudo to
+    read the file as the owner and returns the content.
+
+    Security notes:
+    - Requires sudoers configuration to allow Django user to read specific files
+    - Path is validated before use to prevent command injection
+    - Only used for files in allowed directories (remote_files)
+
+    Args:
+        file_path: Path object or string of the file to read
+        file_owner: Username that owns the file (default: burlo)
+
+    Returns:
+        bytes: File content
+
+    Raises:
+        PermissionError: If sudo access is not configured or file is not readable
+        subprocess.CalledProcessError: If sudo command fails
+        FileNotFoundError: If file doesn't exist
+    """
+    file_path = Path(file_path)
+
+    # Validate that path doesn't contain shell metacharacters
+    path_str = str(file_path)
+    if any(char in path_str for char in ['&', '|', ';', '`', '$', '(', ')', '<', '>', '\n', '\r']):
+        raise ValueError(f"Invalid characters in file path: {path_str}")
+
+    try:
+        # Use sudo -u to read file as the owner
+        # -n flag ensures no password prompt (requires sudoers configuration)
+        result = subprocess.run(
+            ['sudo', '-n', '-u', file_owner, 'cat', path_str],
+            capture_output=True,
+            check=True,
+            timeout=300  # 5 minute timeout for large files
+        )
+
+        logger.info(f"Successfully read file as {file_owner}: {file_path.name}")
+        return result.stdout
+
+    except subprocess.CalledProcessError as e:
+        if e.returncode == 1 and b'Permission denied' in e.stderr:
+            raise PermissionError(f"Cannot read file as {file_owner}: {file_path}")
+        elif b'sudo' in e.stderr and b'password' in e.stderr:
+            raise PermissionError(
+                f"Sudo is not configured to allow reading files as {file_owner}. "
+                "Please configure /etc/sudoers.d/cholestrack"
+            )
+        else:
+            logger.error(f"Error reading file as {file_owner}: {e.stderr.decode()}")
+            raise
+    except subprocess.TimeoutExpired:
+        raise IOError(f"Timeout while reading file: {file_path}")
+    except Exception as e:
+        logger.error(f"Unexpected error reading file as {file_owner}: {str(e)}")
+        raise
+
+
+def copy_file_as_owner(file_path, file_owner=FASTQ_FILE_OWNER):
+    """
+    Copy a file to a temporary location using sudo, preserving permissions for reading.
+
+    This is an alternative to read_file_as_owner for very large files where
+    reading into memory is not practical. Creates a temporary copy that the
+    Django user can read.
+
+    Args:
+        file_path: Path object or string of the file to copy
+        file_owner: Username that owns the file (default: burlo)
+
+    Returns:
+        str: Path to temporary file (caller must delete when done)
+
+    Raises:
+        PermissionError: If sudo access is not configured
+        subprocess.CalledProcessError: If copy fails
+    """
+    file_path = Path(file_path)
+
+    # Validate path
+    path_str = str(file_path)
+    if any(char in path_str for char in ['&', '|', ';', '`', '$', '(', ')', '<', '>', '\n', '\r']):
+        raise ValueError(f"Invalid characters in file path: {path_str}")
+
+    # Create temporary file
+    temp_fd, temp_path = tempfile.mkstemp(suffix=file_path.suffix, prefix='fastq_download_')
+    os.close(temp_fd)
+
+    try:
+        # Copy file as owner, then change permissions so Django user can read
+        subprocess.run(
+            ['sudo', '-n', '-u', file_owner, 'cp', path_str, temp_path],
+            capture_output=True,
+            check=True,
+            timeout=300
+        )
+
+        # Make temp file readable by current user
+        subprocess.run(
+            ['sudo', '-n', 'chmod', '644', temp_path],
+            capture_output=True,
+            check=True,
+            timeout=10
+        )
+
+        logger.info(f"Created temporary copy of {file_path.name} at {temp_path}")
+        return temp_path
+
+    except subprocess.CalledProcessError as e:
+        # Clean up temp file on error
+        try:
+            os.unlink(temp_path)
+        except:
+            pass
+
+        if b'sudo' in e.stderr and b'password' in e.stderr:
+            raise PermissionError(
+                f"Sudo is not configured. Please configure /etc/sudoers.d/cholestrack"
+            )
+        logger.error(f"Error copying file as {file_owner}: {e.stderr.decode()}")
+        raise
+    except Exception as e:
+        # Clean up temp file on error
+        try:
+            os.unlink(temp_path)
+        except:
+            pass
+        raise
 
 @login_required
 def download_single_file(request, file_location_id, file_part='main'):
@@ -94,19 +234,6 @@ def download_single_file(request, file_location_id, file_part='main'):
             messages.error(request, 'The requested file could not be found on the server.')
             return redirect('samples:sample_list')
 
-        # Check file is readable (important for network-mounted directories)
-        if not os.access(target_path, os.R_OK):
-            logger.error(
-                f"File exists but is not readable - Permission denied: "
-                f"Path={target_path}, User={request.user.username}"
-            )
-            messages.error(
-                request,
-                'The file exists but cannot be read due to permission restrictions. '
-                'Please contact the system administrator.'
-            )
-            return redirect('samples:sample_list')
-
         # Determine content type
         content_type_map = {
             '.bai': 'application/octet-stream',
@@ -120,12 +247,44 @@ def download_single_file(request, file_location_id, file_part='main'):
         file_ext = ''.join(target_path.suffixes)
         content_type = content_type_map.get(file_ext.lower(), 'application/octet-stream')
 
+        # Check if this is a FASTQ file that requires sudo access
+        is_fastq = file_type_upper == 'FASTQ'
+
         # Stream file
         try:
-            file_handle = open(target_path, 'rb')
-            response = FileResponse(file_handle, content_type=content_type)
-            response['Content-Disposition'] = f'attachment; filename="{target_path.name}"'
-            response['Content-Length'] = target_path.stat().st_size
+            if is_fastq and not os.access(target_path, os.R_OK):
+                # FASTQ files owned by burlo - use sudo to read
+                logger.info(
+                    f"Using sudo to read FASTQ file as {FASTQ_FILE_OWNER}: "
+                    f"{target_path.name}"
+                )
+                try:
+                    file_content = read_file_as_owner(target_path)
+                    response = HttpResponse(file_content, content_type=content_type)
+                    response['Content-Disposition'] = f'attachment; filename="{target_path.name}"'
+                    response['Content-Length'] = len(file_content)
+                    logger.info(
+                        f"File download successful (via sudo): {target_path.name}, "
+                        f"Size={len(file_content)}"
+                    )
+                    return response
+                except PermissionError as e:
+                    logger.error(
+                        f"Permission error with sudo: {str(e)}, "
+                        f"Path={target_path}, User={request.user.username}"
+                    )
+                    messages.error(
+                        request,
+                        'Unable to access FASTQ file. Sudo configuration may be missing. '
+                        'Please contact the system administrator.'
+                    )
+                    return redirect('samples:sample_list')
+            else:
+                # Regular file access (non-FASTQ or readable FASTQ)
+                file_handle = open(target_path, 'rb')
+                response = FileResponse(file_handle, content_type=content_type)
+                response['Content-Disposition'] = f'attachment; filename="{target_path.name}"'
+                response['Content-Length'] = target_path.stat().st_size
 
             logger.info(f"File download successful: {target_path.name}, Size={target_path.stat().st_size}")
             return response
@@ -262,8 +421,16 @@ def download_file(request, file_location_id):
             messages.error(request, 'Invalid file path.')
             return redirect('samples:sample_list')
 
-        # Check file is readable (important for network-mounted directories)
-        if not os.access(full_file_path, os.R_OK):
+        # Use original filename only
+        original_filename = full_file_path.name
+
+        # Check if this is a VCF or BAM file that needs index file included
+        file_type_upper = file_location.file_type.upper()
+        needs_index = file_type_upper in ['VCF', 'BAM']
+        is_fastq = file_type_upper == 'FASTQ'
+
+        # Check file is readable (skip for FASTQ - will use sudo if needed)
+        if not is_fastq and not os.access(full_file_path, os.R_OK):
             logger.error(
                 f"File exists but is not readable - Permission denied: "
                 f"Path={full_file_path}, User={request.user.username}"
@@ -274,13 +441,6 @@ def download_file(request, file_location_id):
                 'Please contact the system administrator.'
             )
             return redirect('samples:sample_list')
-
-        # Use original filename only
-        original_filename = full_file_path.name
-
-        # Check if this is a VCF or BAM file that needs index file included
-        file_type_upper = file_location.file_type.upper()
-        needs_index = file_type_upper in ['VCF', 'BAM']
 
         if needs_index:
             # For VCF and BAM files, create a ZIP with the main file and index
@@ -400,19 +560,51 @@ def download_file(request, file_location_id):
 
             # Open and stream the file
             try:
-                file_handle = open(full_file_path, 'rb')
-                response = FileResponse(file_handle, content_type=content_type)
-                response['Content-Disposition'] = f'attachment; filename="{original_filename}"'
-                response['Content-Length'] = full_file_path.stat().st_size
+                if is_fastq and not os.access(full_file_path, os.R_OK):
+                    # FASTQ files owned by burlo - use sudo to read
+                    logger.info(
+                        f"Using sudo to read FASTQ file as {FASTQ_FILE_OWNER}: "
+                        f"{full_file_path.name}, Patient={file_location.patient.patient_id}"
+                    )
+                    try:
+                        file_content = read_file_as_owner(full_file_path)
+                        response = HttpResponse(file_content, content_type=content_type)
+                        response['Content-Disposition'] = f'attachment; filename="{original_filename}"'
+                        response['Content-Length'] = len(file_content)
 
-                logger.info(
-                    f"File download successful: User={request.user.username}, "
-                    f"Patient={file_location.patient.patient_id}, "
-                    f"FileType={file_location.file_type}, "
-                    f"Size={full_file_path.stat().st_size} bytes"
-                )
+                        logger.info(
+                            f"File download successful (via sudo): User={request.user.username}, "
+                            f"Patient={file_location.patient.patient_id}, "
+                            f"FileType={file_location.file_type}, "
+                            f"Size={len(file_content)} bytes"
+                        )
+                        return response
+                    except PermissionError as e:
+                        logger.error(
+                            f"Permission error with sudo: {str(e)}, "
+                            f"Path={full_file_path}, User={request.user.username}"
+                        )
+                        messages.error(
+                            request,
+                            'Unable to access FASTQ file. Sudo configuration may be missing. '
+                            'Please contact the system administrator.'
+                        )
+                        return redirect('samples:sample_list')
+                else:
+                    # Regular file access (non-FASTQ or readable FASTQ)
+                    file_handle = open(full_file_path, 'rb')
+                    response = FileResponse(file_handle, content_type=content_type)
+                    response['Content-Disposition'] = f'attachment; filename="{original_filename}"'
+                    response['Content-Length'] = full_file_path.stat().st_size
 
-                return response
+                    logger.info(
+                        f"File download successful: User={request.user.username}, "
+                        f"Patient={file_location.patient.patient_id}, "
+                        f"FileType={file_location.file_type}, "
+                        f"Size={full_file_path.stat().st_size} bytes"
+                    )
+
+                    return response
 
             except PermissionError as e:
                 logger.error(
