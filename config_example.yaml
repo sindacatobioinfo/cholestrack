@@ -197,8 +197,8 @@ ped_file: ""  # Leave empty if not available
 threads:
   others: 1          # Default for most tools
   fastp: 16          # fastp quality control and trimming
-  bwa: 12            # BWA-MEM alignment
-  minimap2: 12       # Minimap2 alignment (same as BWA by default)
+  bwa: 16            # BWA-MEM alignment
+  minimap2: 16       # Minimap2 alignment (same as BWA by default)
   samtools_sort: 4   # Samtools sort threads (used in alignment pipelines)
 
   # DeepVariant single-command workflow (if enabled)
@@ -219,6 +219,7 @@ threads:
 ram_memory:
   markduplicates: 102400  # 100 GB for MarkDuplicates
   recal_table: 102400     # 100 GB for BaseRecalibrator
+  recal_apply: 8192       # 8 GB for ApplyBQSR (default)
   bwa: ""                 # Auto-configured
 
 #-------------------------------------------------------------------------------
