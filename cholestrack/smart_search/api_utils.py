@@ -768,6 +768,7 @@ def fetch_phenotype_data(phenotype_search_term: str) -> Dict:
 def fetch_variant_data(variant_id: str) -> Dict:
     """
     Fetch variant information from Ensembl API.
+    Uses both the variation endpoint and VEP endpoint to get comprehensive data including gene information.
 
     Args:
         variant_id: Variant identifier (e.g., 'rs333')
@@ -776,6 +777,7 @@ def fetch_variant_data(variant_id: str) -> Dict:
         Dictionary with variant data or error information
     """
     try:
+        # First, get basic variant data
         url = f"https://rest.ensembl.org/variation/human/{variant_id}"
         headers = {
             'Content-type': 'application/json'
@@ -816,6 +818,39 @@ def fetch_variant_data(variant_id: str) -> Dict:
                 allele_string = 'N/A'
                 ancestral_allele = 'N/A'
 
+            # Now fetch gene information using VEP endpoint
+            gene_symbols = []
+            try:
+                vep_url = f"https://rest.ensembl.org/vep/human/id/{variant_id}"
+                vep_response = requests.get(vep_url, headers=headers, timeout=10)
+
+                if vep_response.status_code == 200:
+                    vep_data = vep_response.json()
+
+                    # Extract unique gene symbols from transcript_consequences
+                    if isinstance(vep_data, list) and len(vep_data) > 0:
+                        first_result = vep_data[0]
+                        if 'transcript_consequences' in first_result:
+                            seen_genes = set()
+                            for consequence in first_result['transcript_consequences']:
+                                gene_symbol = consequence.get('gene_symbol')
+                                # Only include protein coding genes to prioritize main genes
+                                biotype = consequence.get('biotype', '')
+                                if gene_symbol and gene_symbol not in seen_genes:
+                                    # Prioritize protein_coding genes
+                                    if biotype == 'protein_coding':
+                                        gene_symbols.insert(0, gene_symbol)
+                                        seen_genes.add(gene_symbol)
+                                    elif gene_symbol not in [g for g in gene_symbols]:
+                                        gene_symbols.append(gene_symbol)
+                                        seen_genes.add(gene_symbol)
+            except Exception as vep_error:
+                logger.warning(f"Failed to fetch VEP data for {variant_id}: {vep_error}")
+                # Continue without gene data
+
+            # Format gene symbols for display
+            gene_display = ', '.join(gene_symbols[:3]) if gene_symbols else 'N/A'  # Show up to 3 genes
+
             return {
                 'name': data.get('name', variant_id),
                 'assembly_name': assembly_name,
@@ -824,6 +859,7 @@ def fetch_variant_data(variant_id: str) -> Dict:
                 'ancestral_allele': ancestral_allele,
                 'MAF': maf if maf else 'N/A',
                 'most_severe_consequence': data.get('most_severe_consequence', 'N/A'),
+                'gene_symbol': gene_display,
                 'success': True
             }
         elif response.status_code == 404:
@@ -836,6 +872,7 @@ def fetch_variant_data(variant_id: str) -> Dict:
                 'ancestral_allele': 'N/A',
                 'MAF': 'N/A',
                 'most_severe_consequence': 'N/A',
+                'gene_symbol': 'N/A',
                 'success': False,
                 'error': f'Variant "{variant_id}" not found in Ensembl database'
             }
@@ -849,6 +886,7 @@ def fetch_variant_data(variant_id: str) -> Dict:
                 'ancestral_allele': 'N/A',
                 'MAF': 'N/A',
                 'most_severe_consequence': 'N/A',
+                'gene_symbol': 'N/A',
                 'success': False,
                 'error': f'Ensembl API error: HTTP {response.status_code}'
             }
@@ -862,6 +900,7 @@ def fetch_variant_data(variant_id: str) -> Dict:
             'ancestral_allele': 'N/A',
             'MAF': 'N/A',
             'most_severe_consequence': 'N/A',
+            'gene_symbol': 'N/A',
             'success': False,
             'error': 'Ensembl API request timeout'
         }
@@ -874,6 +913,7 @@ def fetch_variant_data(variant_id: str) -> Dict:
             'ancestral_allele': 'N/A',
             'MAF': 'N/A',
             'most_severe_consequence': 'N/A',
+            'gene_symbol': 'N/A',
             'success': False,
             'error': f'Ensembl API request failed: {str(e)}'
         }
@@ -886,6 +926,7 @@ def fetch_variant_data(variant_id: str) -> Dict:
             'ancestral_allele': 'N/A',
             'MAF': 'N/A',
             'most_severe_consequence': 'N/A',
+            'gene_symbol': 'N/A',
             'success': False,
             'error': f'Error fetching variant data: {str(e)}'
         }
