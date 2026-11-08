@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Delete User {{ target.username }} - Admin Center - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">
+            <i class="fas fa-trash text-red-600 mr-2"></i> Delete User: {{ target.username }}
+        </h1>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md p-6 max-w-lg border-l-4 border-red-500">
+        <div class="flex items-start mb-6">
+            <div class="bg-red-100 rounded-full p-3 mr-4 flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-1">This action is irreversible.</h2>
+                <p class="text-gray-600 text-sm">
+                    You are about to permanently delete the user account
+                    <strong>{{ target.username }}</strong> ({{ target.email }}).
+                    All related data (role, email verification, profile) will be removed.
+                </p>
+            </div>
+        </div>
+
+        <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-6 text-sm text-yellow-800">
+            <i class="fas fa-lightbulb mr-2"></i>
+            <strong>Recommended:</strong> Instead of deleting, consider
+            <a href="{% url 'home:admin_user_detail' target.id %}" class="underline font-medium">deactivating the account</a>.
+            Deactivation prevents login while preserving the audit trail.
+        </div>
+
+        <div class="flex space-x-3">
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit"
+                        class="px-6 py-2 bg-red-600 text-white rounded-md font-semibold hover:bg-red-700 transition">
+                    <i class="fas fa-trash mr-2"></i> Yes, Delete Permanently
+                </button>
+            </form>
+            <a href="{% url 'home:admin_user_detail' target.id %}" class="btn btn-secondary">
+                Cancel
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn { display: inline-block; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: 600; transition: background-color 0.3s; }
+    .btn-secondary { background-color: #6c757d; color: white; }
+    .btn-secondary:hover { background-color: #545b62; }
+</style>
+{% endblock %}

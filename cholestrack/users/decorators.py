@@ -44,7 +44,7 @@ def role_required(allowed_roles):
                     request,
                     'Your account does not have a role assigned. Please contact an administrator.'
                 )
-                return redirect('home:index')
+                return redirect('home:dashboard')
 
             # Check if role is confirmed by admin
             if not request.user.role.confirmed_by_admin:
@@ -53,7 +53,7 @@ def role_required(allowed_roles):
                     'Your role has not been confirmed by an administrator yet. '
                     'You will receive an email once your account is fully activated.'
                 )
-                return redirect('home:index')
+                return redirect('home:dashboard')
 
             # Check if user's role is in allowed roles
             if request.user.role.role not in allowed_roles:
@@ -114,14 +114,14 @@ def role_confirmed_required(view_func):
 
         if not hasattr(request.user, 'role'):
             messages.error(request, 'Your account does not have a role assigned.')
-            return redirect('home:index')
+            return redirect('home:dashboard')
 
         if not request.user.role.confirmed_by_admin:
             messages.error(
                 request,
                 'Your role has not been confirmed by an administrator yet.'
             )
-            return redirect('home:index')
+            return redirect('home:dashboard')
 
         return view_func(request, *args, **kwargs)
     return wrapper

@@ -162,19 +162,27 @@
                             {{ user.email }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
+                            {% if user.role %}
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                                 {{ user.role.get_role_display }}
                             </span>
+                            {% else %}
+                            <span class="text-gray-400 text-xs">No role</span>
+                            {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            {% if user.role.confirmed_by_admin %}
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                <i class="fas fa-check mr-1"></i> Confirmed
-                            </span>
+                            {% if user.role %}
+                                {% if user.role.confirmed_by_admin %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i> Confirmed
+                                </span>
+                                {% else %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-clock mr-1"></i> Pending
+                                </span>
+                                {% endif %}
                             {% else %}
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                <i class="fas fa-clock mr-1"></i> Pending
-                            </span>
+                            <span class="text-gray-400 text-xs">—</span>
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

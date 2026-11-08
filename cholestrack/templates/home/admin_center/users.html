@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load i18n %}
 
 {% block title %}User Management - Admin Center - {{ block.super }}{% endblock %}
 
@@ -13,9 +14,14 @@
                 </h1>
                 <p class="text-gray-600">Manage user accounts, roles, and permissions</p>
             </div>
-            <a href="{% url 'home:admin_center' %}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left mr-2"></i> Back to Admin Center
-            </a>
+            <div class="flex space-x-3">
+                <a href="{% url 'home:admin_user_create' %}" class="btn btn-success">
+                    <i class="fas fa-user-plus mr-2"></i> New User
+                </a>
+                <a href="{% url 'home:admin_center' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left mr-2"></i> Back to Admin Center
+                </a>
+            </div>
         </div>
     </div>
 
@@ -86,6 +92,7 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for user in page_obj %}
                     <tr class="hover:bg-gray-50">
+                        <!-- User info -->
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
@@ -97,34 +104,44 @@
                                 </div>
                             </div>
                         </td>
+
+                        <!-- Email + verification badge -->
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-900">{{ user.email }}</div>
-                            {% if hasattr user, 'email_verification' %}
-                            <div class="text-xs">
-                                {% if user.email_verification.email_confirmed %}
-                                <span class="text-green-600"><i class="fas fa-check-circle"></i> Verified</span>
-                                {% else %}
-                                <span class="text-yellow-600"><i class="fas fa-clock"></i> Pending</span>
-                                {% endif %}
-                            </div>
+                            {% if user.has_email_verification %}
+                                <div class="text-xs">
+                                    {% if user.email_verification.email_confirmed %}
+                                    <span class="text-green-600"><i class="fas fa-check-circle"></i> Verified</span>
+                                    {% else %}
+                                    <span class="text-yellow-600"><i class="fas fa-clock"></i> Pending</span>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <div class="text-xs text-gray-400">No verification record</div>
                             {% endif %}
                         </td>
+
+                        <!-- Role selector -->
                         <td class="px-6 py-4 whitespace-nowrap">
-                            {% if hasattr user, 'role' %}
-                            <form method="post" action="{% url 'home:admin_change_user_role' user.id %}" class="inline-block">
+                            {% if user.has_role %}
+                            <form method="post"
+                                  action="{% url 'home:admin_change_user_role' user.id %}"
+                                  class="inline-block"
+                                  data-username="{{ user.username|escapejs }}">
                                 {% csrf_token %}
                                 <select name="role"
-                                        onchange="if(confirm('Change role for {{ user.username }}?')) this.form.submit();"
-                                        class="text-xs px-2 py-1 border border-gray-300 rounded">
+                                        class="role-change-select text-xs px-2 py-1 border border-gray-300 rounded">
                                     {% for code, name in role_choices %}
                                     <option value="{{ code }}" {% if user.role.role == code %}selected{% endif %}>{{ name }}</option>
                                     {% endfor %}
                                 </select>
                             </form>
                             {% else %}
-                            <span class="text-gray-400">No role</span>
+                            <span class="text-gray-400 text-xs">No role</span>
                             {% endif %}
                         </td>
+
+                        <!-- Status badges -->
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex flex-col space-y-1">
                                 {% if user.is_active %}
@@ -137,7 +154,7 @@
                                 </span>
                                 {% endif %}
 
-                                {% if hasattr user, 'role' %}
+                                {% if user.has_role %}
                                     {% if user.role.confirmed_by_admin %}
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                                         <i class="fas fa-check mr-1"></i> Confirmed
@@ -150,20 +167,66 @@
                                 {% endif %}
                             </div>
                         </td>
+
+                        <!-- Registered date -->
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {{ user.date_joined|date:"Y-m-d H:i" }}
                         </td>
+
+                        <!-- Action buttons -->
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            {% if hasattr user, 'role' and not user.role.confirmed_by_admin %}
-                            <form method="post" action="{% url 'home:admin_confirm_role' user.id %}" class="inline-block">
-                                {% csrf_token %}
-                                <button type="submit"
-                                        onclick="return confirm('Confirm role for {{ user.username }}?')"
-                                        class="text-green-600 hover:text-green-900 mr-3">
-                                    <i class="fas fa-check-circle"></i> Confirm Role
-                                </button>
-                            </form>
-                            {% endif %}
+                            <div class="flex flex-wrap gap-1">
+                                <!-- View detail -->
+                                <a href="{% url 'home:admin_user_detail' user.id %}"
+                                   class="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                   title="View details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+
+                                <!-- Edit -->
+                                <a href="{% url 'home:admin_user_edit' user.id %}"
+                                   class="inline-flex items-center px-2 py-1 text-xs bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200"
+                                   title="Edit user">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+
+                                <!-- Toggle active -->
+                                <form method="post"
+                                      action="{% url 'home:admin_user_toggle_active' user.id %}"
+                                      class="inline-block"
+                                      data-username="{{ user.username|escapejs }}"
+                                      data-active="{{ user.is_active|yesno:'true,false' }}">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="toggle-active-btn inline-flex items-center px-2 py-1 text-xs {% if user.is_active %}bg-orange-100 text-orange-700 hover:bg-orange-200{% else %}bg-green-100 text-green-700 hover:bg-green-200{% endif %} rounded"
+                                            title="{% if user.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                        <i class="fas {% if user.is_active %}fa-ban{% else %}fa-check{% endif %}"></i>
+                                    </button>
+                                </form>
+
+                                <!-- Confirm/revoke role -->
+                                {% if user.has_role %}
+                                <form method="post"
+                                      action="{% url 'home:admin_user_toggle_role_confirm' user.id %}"
+                                      class="inline-block"
+                                      data-username="{{ user.username|escapejs }}"
+                                      data-confirmed="{{ user.role.confirmed_by_admin|yesno:'true,false' }}">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="toggle-role-btn inline-flex items-center px-2 py-1 text-xs {% if user.role.confirmed_by_admin %}bg-yellow-100 text-yellow-700 hover:bg-yellow-200{% else %}bg-teal-100 text-teal-700 hover:bg-teal-200{% endif %} rounded"
+                                            title="{% if user.role.confirmed_by_admin %}Revoke role confirmation{% else %}Confirm role{% endif %}">
+                                        <i class="fas {% if user.role.confirmed_by_admin %}fa-times-circle{% else %}fa-check-circle{% endif %}"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+
+                                <!-- Delete -->
+                                <a href="{% url 'home:admin_user_delete' user.id %}"
+                                   class="inline-flex items-center px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                                   title="Delete user">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
@@ -186,14 +249,10 @@
             </div>
             <div class="flex space-x-2">
                 {% if page_obj.has_previous %}
-                <a href="?page=1&status={{ status_filter }}&role={{ role_filter }}&search={{ search_query }}"
-                   class="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white hover:bg-gray-50">
-                    First
-                </a>
-                <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&role={{ role_filter }}&search={{ search_query }}"
-                   class="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white hover:bg-gray-50">
-                    Previous
-                </a>
+                <a href="?page=1&status={{ status_filter }}&role={{ role_filter }}&search={{ search_query|urlencode }}"
+                   class="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white hover:bg-gray-50">First</a>
+                <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&role={{ role_filter }}&search={{ search_query|urlencode }}"
+                   class="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white hover:bg-gray-50">Previous</a>
                 {% endif %}
 
                 <span class="px-3 py-2 border border-blue-500 rounded-md text-sm bg-blue-50 text-blue-600">
@@ -201,14 +260,10 @@
                 </span>
 
                 {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&role={{ role_filter }}&search={{ search_query }}"
-                   class="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white hover:bg-gray-50">
-                    Next
-                </a>
-                <a href="?page={{ page_obj.paginator.num_pages }}&status={{ status_filter }}&role={{ role_filter }}&search={{ search_query }}"
-                   class="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white hover:bg-gray-50">
-                    Last
-                </a>
+                <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&role={{ role_filter }}&search={{ search_query|urlencode }}"
+                   class="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white hover:bg-gray-50">Next</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}&status={{ status_filter }}&role={{ role_filter }}&search={{ search_query|urlencode }}"
+                   class="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white hover:bg-gray-50">Last</a>
                 {% endif %}
             </div>
         </div>
@@ -224,24 +279,60 @@
         text-decoration: none;
         font-weight: 600;
         transition: background-color 0.3s;
+        cursor: pointer;
+        border: none;
     }
-
-    .btn-primary {
-        background-color: #007bff;
-        color: white;
-    }
-
-    .btn-primary:hover {
-        background-color: #0056b3;
-    }
-
-    .btn-secondary {
-        background-color: #6c757d;
-        color: white;
-    }
-
-    .btn-secondary:hover {
-        background-color: #545b62;
-    }
+    .btn-primary { background-color: #007bff; color: white; }
+    .btn-primary:hover { background-color: #0056b3; }
+    .btn-secondary { background-color: #6c757d; color: white; }
+    .btn-secondary:hover { background-color: #545b62; }
+    .btn-success { background-color: #28a745; color: white; }
+    .btn-success:hover { background-color: #1e7e34; }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Role change via select: prompt confirmation using data-username attribute
+    document.querySelectorAll('.role-change-select').forEach(function (select) {
+        var originalValue = select.value;
+        select.addEventListener('change', function () {
+            var form = select.closest('form');
+            var username = form.dataset.username;
+            if (confirm('Change role for user "' + username + '"?')) {
+                form.submit();
+            } else {
+                select.value = originalValue;
+            }
+        });
+    });
+
+    // Toggle active: prompt before deactivating
+    document.querySelectorAll('.toggle-active-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            var form = btn.closest('form');
+            var username = form.dataset.username;
+            var isActive = form.dataset.active === 'true';
+            if (isActive) {
+                if (!confirm('Deactivate user "' + username + '"? They will not be able to log in.')) {
+                    e.preventDefault();
+                }
+            }
+        });
+    });
+
+    // Toggle role confirm: prompt before revoking
+    document.querySelectorAll('.toggle-role-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            var form = btn.closest('form');
+            var username = form.dataset.username;
+            var confirmed = form.dataset.confirmed === 'true';
+            if (confirmed) {
+                if (!confirm('Revoke role confirmation for "' + username + '"? They will lose access.')) {
+                    e.preventDefault();
+                }
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
